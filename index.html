@@ -497,6 +497,7 @@
         let localUploadedFileList = [];
         let isAdminLoggedIn = false;
         let isDragAndDropReady = false;
+        let isSavingEvidence = false;
 
         const mockImgLinks = [
             "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
@@ -717,12 +718,9 @@
             imagesStack.classList.toggle("hidden", imagesList.length === 0);
             imagesList.forEach((src, index) => {
                 const wrap = document.createElement("div");
-                wrap.className = "w-full overflow-hidden rounded-xl bg-slate-955 flex flex-col justify-center items-center py-1";
+                wrap.className = "w-full overflow-hidden rounded-xl bg-slate-955 flex justify-center items-start py-1";
                 wrap.innerHTML = `
-                    <img src="${src}" class="max-w-full max-h-[60vh] object-contain" onerror="this.src='${mockImgLinks[0]}'">
-                    <a href="${src}" download="${getSuggestedImageFileName(item, index, src)}" class="self-end m-2 bg-white/95 hover:bg-white text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-200" target="_blank" rel="noopener noreferrer">
-                        이미지 저장
-                    </a>
+                    <img src="${src}" class="w-full h-auto object-contain" onerror="this.src='${mockImgLinks[0]}'">
                 `;
                 imagesStack.appendChild(wrap);
             });
@@ -984,6 +982,16 @@
 
         window.saveEvidence = async function(e) {
             e.preventDefault();
+            if (isSavingEvidence) return;
+            isSavingEvidence = true;
+            const submitButton = e.submitter;
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "저장중...";
+                submitButton.classList.add("opacity-60", "cursor-not-allowed");
+            }
+
+            try {
             const editId = document.getElementById("edit-id").value;
             const title = document.getElementById("form-title").value.trim();
             const category = document.getElementById("form-category").value;
@@ -1057,6 +1065,14 @@
                 showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
             } else {
                 alert("저장되지 않았습니다. Firebase 규칙 또는 네트워크 상태를 확인해주세요.");
+            }
+            } finally {
+                isSavingEvidence = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "저장하기";
+                    submitButton.classList.remove("opacity-60", "cursor-not-allowed");
+                }
             }
         };
 
