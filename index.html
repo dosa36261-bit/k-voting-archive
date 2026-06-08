@@ -329,13 +329,13 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진 등록 or 영상/SNS 링크 <span class="text-red-600">*</span></label>
+                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진/GIF 등록 or 영상/SNS 링크 <span class="text-red-600">*</span></label>
                     
                     <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 transition-colors cursor-pointer relative">
-                        <input type="file" id="form-files" accept="image/*" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <input type="file" id="form-files" accept="image/*,.gif" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
-                            <p class="text-xs font-bold text-slate-500">사진 파일을 이 박스 안으로 끌어다 놓거나 클릭하세요.</p>
+                            <p class="text-xs font-bold text-slate-500">사진 또는 GIF 파일을 이 박스 안으로 끌어다 놓거나 클릭하세요.</p>
                             <p id="file-status" class="text-[11px] text-blue-600 font-extrabold"></p>
                         </div>
                     </div>
@@ -793,7 +793,7 @@
             const status = document.getElementById("file-status");
             container.innerHTML = "";
             if (localUploadedBase64List.length === 0) { status.textContent = ""; return; }
-            status.textContent = `대기열 사진 ${localUploadedBase64List.length}장 등록 완료.`;
+            status.textContent = `대기열 이미지 ${localUploadedBase64List.length}장 등록 완료.`;
 
             localUploadedBase64List.forEach((base64, index) => {
                 const div = document.createElement("div");
