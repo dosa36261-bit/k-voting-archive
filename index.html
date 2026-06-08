@@ -575,7 +575,7 @@
             const thumb = getThumbnail(item);
 
             let sourceHtml = item.source ? `<div class="text-sm text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 font-bold border border-slate-200"><span class="font-black text-slate-800">출처:</span> ${escapeHtml(item.source)}</div>` : "";
-            let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-white whitespace-pre-wrap">${escapeHtml(item.desc)}</p>` : "";
+            let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-white whitespace-pre-wrap">${linkifyText(item.desc)}</p>` : "";
             let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-200"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>` : "";
 
             container.innerHTML = `
@@ -700,7 +700,7 @@
             document.getElementById("lightbox-likes-count").textContent = item.likes || 0;
 
             const descWrapper = document.getElementById("lightbox-desc-wrapper");
-            if (item.desc) { descWrapper.classList.remove("hidden"); document.getElementById("lightbox-desc").textContent = item.desc; }
+            if (item.desc) { descWrapper.classList.remove("hidden"); document.getElementById("lightbox-desc").innerHTML = linkifyText(item.desc); }
             else descWrapper.classList.add("hidden");
 
             const srcWrapper = document.getElementById("lightbox-source-wrapper");
@@ -1485,6 +1485,15 @@
         function escapeHtml(text) {
             if (!text) return "";
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function linkifyText(text) {
+            const escaped = escapeHtml(text);
+            return escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
+                const cleanUrl = url.replace(/[.,!?)]$/, "");
+                const trailing = url.slice(cleanUrl.length);
+                return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-800 underline underline-offset-2 font-bold">${cleanUrl}</a>${trailing}`;
+            });
         }
 
         function showNotification(msg) {
