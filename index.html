@@ -304,7 +304,7 @@
             </button>
 
             <div class="mb-4">
-                <h3 id="modal-form-title" class="text-xl font-black text-slate-950">새로운 사례 제출</h3>
+                <h3 id="modal-form-title" class="text-xl font-black text-slate-955">새로운 사례 제출</h3>
             </div>
 
             <form id="evidence-form" onsubmit="saveEvidence(event)" class="space-y-4">
@@ -384,6 +384,7 @@
         </div>
     </div>
 
+    <!-- Firebase SDK 모듈 및 인증 동기화 완벽 튜닝 영역 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -401,67 +402,84 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        
+        // 규칙 준수 경로 변수 선언 (RULE 1)
         const appId = 'k-voting';
         const collectionName = 'evidences';
 
         let currentUser = null;
 
-        // 익명 인증 보장 로직
+        // 동기 보장형 익명 인증 강제 (RULE 3 준수)
         async function ensureAuth() {
             if (auth.currentUser) {
                 currentUser = auth.currentUser;
                 return currentUser;
             }
             try {
+                // 커스텀 토큰이 없는 환경이므로 즉시 익명 로그인 실행
                 const credential = await signInAnonymously(auth);
                 currentUser = credential.user;
                 return currentUser;
             } catch (err) {
-                console.error("인증 처리 중 오류:", err);
+                console.error("Firebase 익명 인증 도중 심각한 에러 발생:", err);
                 throw err;
             }
         }
 
-        // 전역 스코프에 Firestore 연동 함수 주입
+        // 전역 스코프에 Firestore 안전 저장 함수 주입 (엄격한 artifacts 규칙 경로 반영)
         window.saveEvidenceToFirestore = async function(evidenceId, dataObj) {
             try {
-                await ensureAuth();
+                // 1단계: 인증이 완료될 때까지 기다리기
+                const user = await ensureAuth();
+                if (!user) {
+                    console.error("인증에 실패하여 쓰기를 거부합니다.");
+                    return false;
+                }
+                // 2단계: RULE 1 Strict Path에 맞춰 문서 참조 생성
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
                 await setDoc(docRef, dataObj, { merge: true });
                 return true;
             } catch (err) {
-                console.error("Firestore 저장 오류: ", err);
+                console.error("Firestore 저장 프로세스 실패: ", err);
                 return false;
             }
         };
 
+        // 전역 삭제 함수 보강
         window.deleteEvidenceFromFirestore = async function(evidenceId) {
             try {
-                await ensureAuth();
+                const user = await ensureAuth();
+                if (!user) return false;
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
                 await deleteDoc(docRef);
                 return true;
             } catch (err) {
-                console.error("삭제 실패: ", err);
+                console.error("Firestore 문서 삭제 중 오류: ", err);
                 return false;
             }
         };
 
-        // 실시간 리스너 자동 구동
+        // 앱 구동 즉시 비동기 리스너 바인딩 및 인증 보장
         async function startApp() {
             try {
+                // 시작하자마자 인증을 먼저 동기화 (RULE 3)
                 await ensureAuth();
+                
+                // Firestore 실시간 데이터 스트림 리스너 활성화 (Strict Path)
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
                 onSnapshot(colRef, (snapshot) => {
                     const fetched = [];
                     snapshot.forEach((doc) => {
                         fetched.push({ id: doc.id, ...doc.data() });
                     });
+                    
+                    // 내림차순 정렬
                     fetched.sort((a, b) => {
                         const idA = Number(a.id.replace('ev-', '')) || 0;
                         const idB = Number(b.id.replace('ev-', '')) || 0;
                         return idB - idA;
                     });
+                    
                     window.evidences = fetched;
                     window.updateCategoryCounters();
                     window.renderHeroSlider();
@@ -469,16 +487,21 @@
                         window.renderCategoryGrid();
                     }
                 }, (error) => {
-                    console.error("실시간 수신 에러:", error);
+                    console.error("실시간 수신 에러 (보안 규칙 또는 경로 확인 필요):", error);
                 });
 
+                // 인증 상태 변경 리스너
                 onAuthStateChanged(auth, (user) => {
-                    if (user) currentUser = user;
+                    if (user) {
+                        currentUser = user;
+                    }
                 });
             } catch (e) {
-                console.error("초기 구동 에러: ", e);
+                console.error("초기 데이터 로딩 및 익명인증 프로세스 실패: ", e);
             }
         }
+        
+        // 앱 자동 실행
         startApp();
     </script>
 
@@ -926,12 +949,26 @@
                         editor: "공동기여자",
                         data: { title: original.title, source: original.source, desc: original.desc }
                     });
-                    success = await window.saveEvidenceToFirestore(editId, { title, category, images: resolvedImages, source, desc, history: original.history });
+                    success = await window.saveEvidenceToFirestore(editId, { 
+                        title, 
+                        category, 
+                        images: resolvedImages, 
+                        source, 
+                        desc, 
+                        history: original.history 
+                    });
                 }
             } else {
                 const newId = "ev-" + Date.now();
                 success = await window.saveEvidenceToFirestore(newId, {
-                    id: newId, title, category, images: finalImages, source, desc, likes: 0, comments: [],
+                    id: newId, 
+                    title, 
+                    category, 
+                    images: finalImages, 
+                    source, 
+                    desc, 
+                    likes: 0, 
+                    comments: [],
                     history: [{ version: 1, date: new Date().toISOString().split('T')[0], note: "최초 등록", editor: "시민기여자", data: { title, source, desc } }]
                 });
             }
