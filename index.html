@@ -294,6 +294,7 @@
                         <form onsubmit="addComment(event)" class="flex gap-2 pt-2">
                             <input type="text" id="comment-author" placeholder="작성자" required class="w-20 md:w-24 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
                             <input type="text" id="comment-text" placeholder="의견을 남겨보세요..." required class="flex-grow px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-300">
+                            <input type="password" id="comment-password" placeholder="비번" required minlength="4" class="w-16 md:w-20 px-2 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
                             <button type="submit" class="bg-slate-900 hover:bg-slate-850 text-white px-4 py-2 rounded-xl text-sm font-black whitespace-nowrap">등록</button>
                         </form>
                     </div>
@@ -520,6 +521,8 @@
                     event.preventDefault();
                     if (isLightboxOpen) window.closeLightbox();
                     else if (window.selectedCategoryKey) window.goHome();
+                } else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && isTextInputTarget(event.target)) {
+                    return;
                 } else if (event.key === "ArrowLeft") {
                     if (isLightboxOpen) window.prevLightboxSlide();
                     else window.prevSlide();
@@ -809,9 +812,14 @@
             } else {
                 comments.forEach((c, idx) => {
                     const node = document.createElement("div");
-                    node.className = "p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex justify-between items-start";
-                    let delBtn = isAdminLoggedIn ? `<button onclick="deleteComment('${item.id}', ${idx})" class="text-red-500 text-[11px] ml-2 bg-red-50 px-2 py-0.5 rounded border border-red-100">삭제</button>` : "";
-                    node.innerHTML = `<div class="flex-grow text-left"><span class="font-extrabold text-slate-800 text-xs">${escapeHtml(c.author)}</span><p class="text-slate-700 text-sm mt-0.5 font-medium">${escapeHtml(c.text)}</p></div>${delBtn}`;
+                    node.className = "p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs flex justify-between items-center gap-2";
+                    node.innerHTML = `
+                        <p class="flex-grow min-w-0 text-left text-sm text-slate-700 font-medium truncate">
+                            <span class="font-extrabold text-slate-800 text-xs mr-1">${escapeHtml(c.author)}</span>
+                            <span>${escapeHtml(c.text)}</span>
+                        </p>
+                        <button onclick="deleteComment('${item.id}', ${idx})" class="shrink-0 text-slate-400 hover:text-red-600 text-[11px] bg-white hover:bg-red-50 px-2 py-0.5 rounded border border-slate-200">삭제</button>
+                    `;
                     list.appendChild(node);
                 });
             }
@@ -821,16 +829,22 @@
             e.preventDefault();
             const authorInput = document.getElementById("comment-author");
             const textInput = document.getElementById("comment-text");
+            const passwordInput = document.getElementById("comment-password");
             const item = window.currentGridEvidences[window.currentLightboxIndex];
 
             if (!authorInput.value.trim() || !textInput.value.trim()) return;
+            if (passwordInput.value.trim().length < 4) {
+                alert("댓글 비밀번호는 4자 이상으로 입력해주세요.");
+                return;
+            }
             if (!item.comments) item.comments = [];
             
-            item.comments.push({ author: authorInput.value.trim(), text: textInput.value.trim() });
+            const passwordHash = await hashPassword(passwordInput.value.trim());
+            item.comments.push({ author: authorInput.value.trim(), text: textInput.value.trim(), passwordHash });
             const saved = await window.saveEvidenceToFirestore(item.id, { comments: item.comments });
             if (saved) {
                 renderPostComments(item);
-                authorInput.value = ""; textInput.value = "";
+                authorInput.value = ""; textInput.value = ""; passwordInput.value = "";
                 showNotification("댓글이 등록되었습니다.");
             } else {
                 alert("네트워크 문제로 댓글 저장에 실패했습니다.");
@@ -1205,15 +1219,30 @@
         };
 
         window.deleteComment = async function(itemId, commentIdx) {
+            const item = window.evidences.find(e => e.id === itemId);
+            if (!item || !item.comments || !item.comments[commentIdx]) return;
+
+            const comment = item.comments[commentIdx];
+            if (!isAdminLoggedIn) {
+                if (!comment.passwordHash) {
+                    alert("이전 댓글은 작성자 비밀번호 삭제를 지원하지 않습니다. 관리자에게 문의해주세요.");
+                    return;
+                }
+                const password = prompt("댓글 작성 시 설정한 비밀번호를 입력해주세요.");
+                if (!password) return;
+                const inputHash = await hashPassword(password.trim());
+                if (inputHash !== comment.passwordHash) {
+                    alert("비밀번호가 다릅니다.");
+                    return;
+                }
+            }
+
             if (confirm("정말 이 댓글을 삭제하시겠습니까?")) {
-                const item = window.evidences.find(e => e.id === itemId);
-                if (item) {
-                    item.comments.splice(commentIdx, 1);
-                    const deleted = await window.saveEvidenceToFirestore(itemId, { comments: item.comments });
-                    if (deleted) {
-                        showNotification("댓글 삭제 완료.");
-                        if (window.currentGridEvidences[window.currentLightboxIndex]) renderPostComments(window.currentGridEvidences[window.currentLightboxIndex]);
-                    }
+                item.comments.splice(commentIdx, 1);
+                const deleted = await window.saveEvidenceToFirestore(itemId, { comments: item.comments });
+                if (deleted) {
+                    showNotification("댓글 삭제 완료.");
+                    if (window.currentGridEvidences[window.currentLightboxIndex]) renderPostComments(window.currentGridEvidences[window.currentLightboxIndex]);
                 }
             }
         };
