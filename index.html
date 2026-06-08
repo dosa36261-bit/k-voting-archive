@@ -766,7 +766,7 @@
         window.copyCurrentPostLink = async function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
             if (!item) return;
-            const url = `${window.location.origin}${window.location.pathname}#post=${encodeURIComponent(item.id)}`;
+            const url = `${window.location.origin}/?post=${encodeURIComponent(item.id)}`;
             try {
                 await navigator.clipboard.writeText(url);
                 showNotification("게시글 링크가 복사되었습니다.");
@@ -776,9 +776,11 @@
         };
 
         function openPostFromHashIfNeeded() {
-            const match = window.location.hash.match(/^#post=(.+)$/);
-            if (!match) return;
-            const itemId = decodeURIComponent(match[1]);
+            const params = new URLSearchParams(window.location.search);
+            const queryPostId = params.get("post");
+            const hashMatch = window.location.hash.match(/^#post=(.+)$/);
+            const itemId = queryPostId || (hashMatch ? decodeURIComponent(hashMatch[1]) : "");
+            if (!itemId) return;
             if (!window.evidences.some(item => item.id === itemId)) return;
             window.openLightboxDirectly(itemId);
         }
