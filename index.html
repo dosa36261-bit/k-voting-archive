@@ -188,7 +188,7 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <input type="text" id="grid-search-input" oninput="filterGridData()" placeholder="출처, 제목 검색..." class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60">
+                    <input type="text" id="grid-search-input" oninput="filterGridData()" placeholder="제목, 출처, 내용 검색..." class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60">
                     <button onclick="clearGridSearch()" class="p-2.5 border-2 border-slate-300 rounded-xl hover:bg-slate-50 text-slate-500" title="필터 리셋">
                         <i class="fa-solid fa-rotate-left"></i>
                     </button>
@@ -257,8 +257,11 @@
                         </button>
                         
                         <div class="flex gap-2">
-                            <button onclick="deleteEvidence(getCurrentLightboxItemId())" class="text-red-600 hover:text-red-700 font-black flex items-center gap-1 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl transition-colors text-sm border border-red-100">
-                                <i class="fa-solid fa-trash-can"></i> 게시글 삭제
+                            <button onclick="editCurrentPost()" class="text-slate-600 hover:text-blue-700 font-bold flex items-center gap-1 bg-white hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
+                                <i class="fa-solid fa-pen"></i> 수정
+                            </button>
+                            <button onclick="deleteEvidence(getCurrentLightboxItemId())" class="text-slate-500 hover:text-red-600 font-bold flex items-center gap-1 bg-white hover:bg-red-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
+                                <i class="fa-solid fa-trash-can"></i> 삭제
                             </button>
                         </div>
                     </div>
@@ -289,6 +292,8 @@
             </div>
 
             <form id="evidence-form" onsubmit="saveEvidence(event)" class="space-y-4">
+                <input type="hidden" id="edit-id" value="">
+
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 *</label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
@@ -309,14 +314,14 @@
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">게시글 비밀번호 *</label>
                     <input type="password" id="form-post-password" required minlength="4" placeholder="삭제할 때 사용할 비밀번호를 정해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-[11px] text-slate-400 font-bold mt-1">나중에 작성자가 게시글을 삭제할 때 필요합니다. 4자 이상으로 입력해주세요.</p>
+                    <p class="text-[11px] text-slate-400 font-bold mt-1">나중에 작성자가 게시글을 수정하거나 삭제할 때 필요합니다. 4자 이상으로 입력해주세요.</p>
                 </div>
 
                 <div class="space-y-2">
                     <label class="block text-sm font-black text-slate-700 mb-0.5">사진 등록 (여러 장 개별 추가 및 드래그 가능) *</label>
                     
                     <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 transition-colors cursor-pointer relative">
-                        <input type="file" id="form-files" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <input type="file" id="form-files" accept="image/*" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
                             <p class="text-xs font-bold text-slate-500">사진 파일을 이 박스 안으로 끌어다 놓거나 클릭하세요.</p>
@@ -454,6 +459,7 @@
         window.currentGridEvidences = [];
         let localUploadedBase64List = [];
         let isAdminLoggedIn = false;
+        let isDragAndDropReady = false;
 
         const mockImgLinks = [
             "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
@@ -520,7 +526,7 @@
 
             let sourceHtml = item.source ? `<div class="text-sm text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 font-bold border border-slate-200"><span class="font-black text-slate-800">출처:</span> ${escapeHtml(item.source)}</div>` : "";
             let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-150">${escapeHtml(item.desc)}</p>` : "";
-            let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-black px-3 py-1.5 rounded-lg border border-red-200"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>` : "";
+            let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-200"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>` : "";
 
             container.innerHTML = `
                 <div class="w-full cursor-pointer" onclick="openLightboxDirectly('${item.id}')">
@@ -575,7 +581,8 @@
                 if (item.category !== window.selectedCategoryKey) return false;
                 if (searchVal) {
                     const srcMatch = item.source ? item.source.toLowerCase().includes(searchVal) : false;
-                    return item.title.toLowerCase().includes(searchVal) || srcMatch;
+                    const descMatch = item.desc ? item.desc.toLowerCase().includes(searchVal) : false;
+                    return item.title.toLowerCase().includes(searchVal) || srcMatch || descMatch;
                 }
                 return true;
             });
@@ -596,7 +603,7 @@
 
                 const imagesList = item.images && item.images.length > 0 ? item.images : [item.image || mockImgLinks[0]];
                 let sourceTag = item.source ? `<span class="truncate text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${escapeHtml(item.source)}</span>` : `<span class="text-xs text-slate-300">출처 미상</span>`;
-                let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-red-50 text-red-600 text-[11px] font-black px-2 py-1 rounded border border-red-200">삭제</button>` : "";
+                let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
 
                 card.innerHTML = `
                     <div class="aspect-square bg-slate-900 overflow-hidden relative">
@@ -765,7 +772,8 @@
         // 드래그 앤 드롭 전용 이벤트 바인딩
         function setupDragAndDrop() {
             const dropZone = document.getElementById("drop-zone");
-            if (!dropZone) return;
+            if (!dropZone || isDragAndDropReady) return;
+            isDragAndDropReady = true;
 
             // 브라우저 기본 행동 방지 및 드롭 존 강조
             ['dragenter', 'dragover'].forEach(eventName => {
@@ -796,16 +804,16 @@
         window.openUploadModal = function() {
             resetUploadForm();
             document.getElementById("modal-form-title").textContent = "새로운 사례 제출";
+            document.getElementById("form-category").value = window.selectedCategoryKey || "free-board";
             document.getElementById("upload-modal").classList.remove("hidden");
-            
-            // 모달 오픈 직후 지연시간을 확보해 확실하게 바인딩 처리
-            setTimeout(setupDragAndDrop, 100);
+            setupDragAndDrop();
         };
 
         window.closeUploadModal = function() { document.getElementById("upload-modal").classList.add("hidden"); resetUploadForm(); };
 
         function resetUploadForm() {
             document.getElementById("evidence-form").reset();
+            document.getElementById("edit-id").value = "";
             document.getElementById("file-status").textContent = "";
             localUploadedBase64List = [];
             document.getElementById("upload-preview-container").innerHTML = "";
@@ -817,8 +825,25 @@
             return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
         }
 
+        async function verifyPostPassword(item, message) {
+            if (isAdminLoggedIn) return true;
+            if (!item.passwordHash) {
+                alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 확인을 지원하지 않습니다. 관리자에게 문의해주세요.");
+                return false;
+            }
+            const inputPassword = prompt(message);
+            if (!inputPassword) return false;
+            const inputHash = await hashPassword(inputPassword.trim());
+            if (inputHash !== item.passwordHash) {
+                alert("비밀번호가 다릅니다.");
+                return false;
+            }
+            return true;
+        }
+
         window.saveEvidence = async function(e) {
             e.preventDefault();
+            const editId = document.getElementById("edit-id").value;
             const title = document.getElementById("form-title").value.trim();
             const category = document.getElementById("form-category").value;
             const source = document.getElementById("form-source").value.trim();
@@ -831,24 +856,47 @@
             }
 
             let finalImages = localUploadedBase64List.length > 0 ? [...localUploadedBase64List] : [mockImgLinks[0]];
-            const newId = "ev-" + Date.now();
             const passwordHash = await hashPassword(postPassword);
-            const success = await window.saveEvidenceToFirestore(newId, {
-                id: newId,
-                title,
-                category,
-                images: finalImages,
-                source,
-                desc,
-                likes: 0,
-                comments: [],
-                passwordHash,
-                createdAt: new Date().toISOString()
-            });
+            let success = false;
+
+            if (editId) {
+                const original = window.evidences.find(item => item.id === editId);
+                if (!original) return;
+                if (!isAdminLoggedIn && !original.passwordHash) {
+                    alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 수정을 지원하지 않습니다. 관리자에게 문의해주세요.");
+                    return;
+                }
+                if (!isAdminLoggedIn && passwordHash !== original.passwordHash) {
+                    alert("비밀번호가 다릅니다.");
+                    return;
+                }
+                success = await window.saveEvidenceToFirestore(editId, {
+                    title,
+                    category,
+                    images: finalImages,
+                    source,
+                    desc,
+                    updatedAt: new Date().toISOString()
+                });
+            } else {
+                const newId = "ev-" + Date.now();
+                success = await window.saveEvidenceToFirestore(newId, {
+                    id: newId,
+                    title,
+                    category,
+                    images: finalImages,
+                    source,
+                    desc,
+                    likes: 0,
+                    comments: [],
+                    passwordHash,
+                    createdAt: new Date().toISOString()
+                });
+            }
 
             if (success) {
                 window.closeUploadModal(); window.closeLightbox();
-                showNotification("제출 완료되었습니다.");
+                showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
             } else {
                 alert("저장되지 않았습니다. Firebase 규칙 또는 네트워크 상태를 확인해주세요.");
             }
@@ -857,6 +905,24 @@
         window.getCurrentLightboxItemId = function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
             return item ? item.id : "";
+        };
+
+        window.editCurrentPost = async function() {
+            const item = window.currentGridEvidences[window.currentLightboxIndex];
+            if (!item) return;
+
+            resetUploadForm();
+            document.getElementById("edit-id").value = item.id;
+            document.getElementById("form-category").value = item.category || "free-board";
+            document.getElementById("form-title").value = item.title || "";
+            document.getElementById("form-source").value = item.source || "";
+            document.getElementById("form-desc").value = item.desc || "";
+            document.getElementById("form-post-password").value = "";
+            localUploadedBase64List = item.images && item.images.length > 0 ? [...item.images] : [];
+            renderUploadPreviews();
+            document.getElementById("modal-form-title").textContent = "게시글 수정";
+            document.getElementById("upload-modal").classList.remove("hidden");
+            setupDragAndDrop();
         };
 
         window.openAdminModal = function() { document.getElementById("admin-pass-input").value = ""; document.getElementById("admin-modal").classList.remove("hidden"); };
@@ -874,19 +940,8 @@
             const item = window.evidences.find(e => e.id === id);
             if (!item) return;
 
-            if (!isAdminLoggedIn) {
-                if (!item.passwordHash) {
-                    alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 삭제를 지원하지 않습니다. 관리자에게 문의해주세요.");
-                    return;
-                }
-                const inputPassword = prompt("게시글 작성 시 설정한 비밀번호를 입력해주세요.");
-                if (!inputPassword) return;
-                const inputHash = await hashPassword(inputPassword.trim());
-                if (inputHash !== item.passwordHash) {
-                    alert("비밀번호가 다릅니다.");
-                    return;
-                }
-            }
+            const verified = await verifyPostPassword(item, "게시글 작성 시 설정한 비밀번호를 입력해주세요.");
+            if (!verified) return;
 
             if (confirm("정말 이 게시물을 삭제하시겠습니까?")) {
                 const deleted = await window.deleteEvidenceFromFirestore(id);
