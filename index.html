@@ -340,7 +340,7 @@
                         <input type="file" id="form-files" accept="image/*,.gif" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
-                            <p class="text-xs font-bold text-slate-500">사진 또는 GIF 파일을 이 박스 안으로 끌어다 놓거나 클릭하세요.</p>
+                            <p class="text-xs font-bold text-slate-500">사진 또는 GIF 파일을 이 박스 안으로 끌어다 놓거나 클릭하세요. (~10MB)</p>
                             <p id="file-status" class="text-[11px] text-blue-600 font-extrabold"></p>
                         </div>
                     </div>
@@ -478,7 +478,7 @@
         const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
         const CLOUDINARY_CLOUD_NAME = "dz4iuka76";
         const CLOUDINARY_UPLOAD_PRESET = "kvoting_unsigned";
-        const MAX_IMAGE_FILE_SIZE = 20 * 1024 * 1024;
+        const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
         window.evidences = [];
@@ -794,7 +794,7 @@
 
             imageFiles.forEach(file => {
                 if (file.size > MAX_IMAGE_FILE_SIZE) {
-                    alert(`${file.name} 파일이 20MB를 넘습니다. 20MB 이하 이미지만 등록해주세요.`);
+                    alert(`${file.name} 파일이 10MB를 넘습니다. 10MB 이하 이미지만 등록해주세요.`);
                     return;
                 }
                 const reader = new FileReader();
