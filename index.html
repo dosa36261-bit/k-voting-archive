@@ -812,13 +812,13 @@
             } else {
                 comments.forEach((c, idx) => {
                     const node = document.createElement("div");
-                    node.className = "p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs flex justify-between items-center gap-2";
+                    node.className = "p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex justify-between items-start";
                     node.innerHTML = `
-                        <p class="flex-grow min-w-0 text-left text-sm text-slate-700 font-medium truncate">
-                            <span class="font-extrabold text-slate-800 text-xs mr-1">${escapeHtml(c.author)}</span>
-                            <span>${escapeHtml(c.text)}</span>
-                        </p>
-                        <button onclick="deleteComment('${item.id}', ${idx})" class="shrink-0 text-slate-400 hover:text-red-600 text-[11px] bg-white hover:bg-red-50 px-2 py-0.5 rounded border border-slate-200">삭제</button>
+                        <div class="flex-grow text-left min-w-0">
+                            <span class="font-extrabold text-slate-800 text-xs">${escapeHtml(c.author)}</span>
+                            <p class="text-slate-700 text-sm mt-0.5 font-medium break-words">${escapeHtml(c.text)}</p>
+                        </div>
+                        <button onclick="deleteComment('${item.id}', ${idx})" class="shrink-0 text-slate-400 hover:text-red-600 text-[11px] ml-2 bg-white hover:bg-red-50 px-2 py-0.5 rounded border border-slate-200">삭제</button>
                     `;
                     list.appendChild(node);
                 });
@@ -968,6 +968,7 @@
         function resetUploadForm() {
             document.getElementById("evidence-form").reset();
             document.getElementById("edit-id").value = "";
+            document.getElementById("form-post-password").setAttribute("required", "true");
             document.getElementById("file-status").textContent = "";
             localUploadedBase64List = [];
             localUploadedFileList = [];
@@ -1016,7 +1017,7 @@
             const desc = document.getElementById("form-desc").value.trim();
             const postPassword = document.getElementById("form-post-password").value.trim();
 
-            if (postPassword.length < 4) {
+            if (!isAdminLoggedIn && postPassword.length < 4) {
                 alert("게시글 비밀번호는 4자 이상으로 입력해주세요.");
                 return;
             }
@@ -1026,7 +1027,7 @@
                 return;
             }
 
-            const passwordHash = await hashPassword(postPassword);
+            const passwordHash = postPassword ? await hashPassword(postPassword) : "";
             let success = false;
             const evidenceId = editId || "ev-" + Date.now();
 
@@ -1181,6 +1182,7 @@
             document.getElementById("form-media-links").value = getMediaLinks(item).join("\n");
             document.getElementById("form-desc").value = item.desc || "";
             document.getElementById("form-post-password").value = "";
+            if (isAdminLoggedIn) document.getElementById("form-post-password").removeAttribute("required");
             localUploadedBase64List = getImages(item);
             localUploadedFileList = localUploadedBase64List.map(() => null);
             renderUploadPreviews();
