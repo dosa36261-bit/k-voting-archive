@@ -405,7 +405,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB2kFGyKrq2liuD3r0WDkN5lMZTN0va9Ik",
@@ -418,7 +417,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
         
         const appId = 'k-voting';
         const collectionName = 'evidences';
@@ -434,41 +432,6 @@
                 return false;
             }
         };
-
-        window.uploadImagesToStorage = async function(evidenceId, title, source, files) {
-            try {
-                const baseName = makeStorageFileBaseName(title, source);
-                const uploads = files.map(async (file, index) => {
-                    const extension = getFileExtension(file.name, file.type);
-                    const fileName = `${baseName}-${index + 1}${extension}`;
-                    const fileRef = ref(storage, `evidences/${evidenceId}/${fileName}`);
-                    await uploadBytes(fileRef, file, { contentType: file.type || "application/octet-stream" });
-                    return await getDownloadURL(fileRef);
-                });
-                return await Promise.all(uploads);
-            } catch (err) {
-                console.error("Storage 이미지 업로드 실패: ", err);
-                return null;
-            }
-        };
-
-        function makeStorageFileBaseName(title, source) {
-            const raw = [title, source].filter(Boolean).join("_") || "kvoting-image";
-            return raw
-                .replace(/[\\/:*?"<>|#%&{}$!'@+=`~]/g, " ")
-                .replace(/\s+/g, "_")
-                .replace(/^_+|_+$/g, "")
-                .slice(0, 80) || "kvoting-image";
-        }
-
-        function getFileExtension(fileName, mimeType) {
-            const match = fileName.match(/\.[a-z0-9]+$/i);
-            if (match) return match[0].toLowerCase();
-            if (mimeType === "image/gif") return ".gif";
-            if (mimeType === "image/png") return ".png";
-            if (mimeType === "image/webp") return ".webp";
-            return ".jpg";
-        }
 
         // 전역 삭제 함수 보강
         window.deleteEvidenceFromFirestore = async function(evidenceId) {
@@ -513,6 +476,9 @@
 
     <script>
         const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
+        const CLOUDINARY_CLOUD_NAME = "";
+        const CLOUDINARY_UPLOAD_PRESET = "";
+        const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
 
         window.evidences = [];
         window.currentSlideIndex = 0;
@@ -825,6 +791,10 @@
             if (imageFiles.length === 0) return;
 
             imageFiles.forEach(file => {
+                if (file.size > MAX_IMAGE_FILE_SIZE) {
+                    alert(`${file.name} 파일이 10MB를 넘습니다. Cloudinary 무료 플랜 기준으로 10MB 이하 이미지만 등록해주세요.`);
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     localUploadedBase64List.push(evt.target.result);
@@ -969,7 +939,7 @@
                 }
                 const finalImages = await prepareImagesForSave(evidenceId, title, source);
                 if (!finalImages) {
-                    alert("이미지 업로드에 실패했습니다. Firebase Storage 규칙 또는 네트워크 상태를 확인해주세요.");
+                    alert("이미지 업로드에 실패했습니다. Cloudinary 설정 또는 네트워크 상태를 확인해주세요.");
                     return;
                 }
                 success = await window.saveEvidenceToFirestore(evidenceId, {
@@ -984,7 +954,7 @@
             } else {
                 const finalImages = await prepareImagesForSave(evidenceId, title, source);
                 if (!finalImages) {
-                    alert("이미지 업로드에 실패했습니다. Firebase Storage 규칙 또는 네트워크 상태를 확인해주세요.");
+                    alert("이미지 업로드에 실패했습니다. Cloudinary 설정 또는 네트워크 상태를 확인해주세요.");
                     return;
                 }
                 success = await window.saveEvidenceToFirestore(evidenceId, {
@@ -1028,7 +998,7 @@
             });
 
             if (filesToUpload.length === 0) return finalImages;
-            const uploadedUrls = await window.uploadImagesToStorage(evidenceId, title, source, filesToUpload);
+            const uploadedUrls = await uploadImagesToCloudinary(evidenceId, title, source, filesToUpload);
             if (!uploadedUrls) return null;
             return [...finalImages, ...uploadedUrls];
         }
@@ -1046,6 +1016,40 @@
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
             return new File([bytes], `${fallbackName}${extension}`, { type: mimeType });
+        }
+
+        async function uploadImagesToCloudinary(evidenceId, title, source, files) {
+            if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+                alert("Cloudinary 설정이 아직 비어 있습니다. CLOUDINARY_CLOUD_NAME과 CLOUDINARY_UPLOAD_PRESET 값을 입력해주세요.");
+                return null;
+            }
+
+            try {
+                const uploads = files.map(async (file, index) => {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+                    formData.append("tags", "k-voting-archive");
+                    formData.append("context", `evidence_id=${evidenceId}|title=${title}|source=${source}`);
+
+                    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText);
+                    }
+
+                    const result = await response.json();
+                    return result.secure_url;
+                });
+                return await Promise.all(uploads);
+            } catch (err) {
+                console.error("Cloudinary 이미지 업로드 실패: ", err);
+                return null;
+            }
         }
 
         window.getCurrentLightboxItemId = function() {
