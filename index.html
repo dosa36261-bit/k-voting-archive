@@ -36,7 +36,12 @@
                     <i class="fa-solid fa-square-poll-horizontal text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-black text-2xl text-slate-955 tracking-tight leading-tight">선거 이슈 아카이브</h1>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-black text-2xl text-slate-955 tracking-tight leading-tight">선거 이슈 아카이브</h1>
+                        <button onclick="event.stopPropagation(); openGuideModal()" class="bg-white hover:bg-slate-50 text-slate-600 text-xs font-black px-2.5 py-1 rounded-lg border border-slate-200">
+                            이용안내
+                        </button>
+                    </div>
                     <p class="text-sm text-slate-500 font-bold">선거 이슈를 모으는 시민 아카이브</p>
                 </div>
             </div>
@@ -56,11 +61,18 @@
                     <span class="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-full flex items-center gap-2">
                         <span class="w-2 h-2 bg-white rounded-full animate-ping"></span> 주목받는 자료
                     </span>
-                    <span class="hidden md:inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold">
-                        <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">←</kbd>
-                        <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">→</kbd>
-                        키보드 방향키 이동
-                    </span>
+                    <div class="hidden md:flex items-center gap-2">
+                        <select id="home-sort-select" onchange="setSortMode(this.value)" class="px-3 py-1.5 rounded-lg border-2 border-slate-200 text-xs font-bold focus:outline-none bg-white text-slate-600">
+                            <option value="updated">수정순</option>
+                            <option value="created">생성순</option>
+                            <option value="likes">추천순</option>
+                        </select>
+                        <span class="inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold">
+                            <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">←</kbd>
+                            <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">→</kbd>
+                            키보드 방향키 이동
+                        </span>
+                    </div>
                 </div>
 
                 <div class="relative flex flex-col items-center">
@@ -187,7 +199,12 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="sort-select" onchange="setSortMode(this.value)" class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="updated">수정순</option>
+                        <option value="created">생성순</option>
+                        <option value="likes">추천순</option>
+                    </select>
                     <input type="text" id="grid-search-input" oninput="filterGridData()" placeholder="제목, 출처, 내용 검색..." class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60">
                     <button onclick="clearGridSearch()" class="p-2.5 border-2 border-slate-300 rounded-xl hover:bg-slate-50 text-slate-500" title="필터 리셋">
                         <i class="fa-solid fa-rotate-left"></i>
@@ -245,9 +262,10 @@
                 </div>
 
                 <div id="lightbox-images-stack" class="space-y-4 bg-slate-50 p-3 rounded-xl border-2 border-slate-100"></div>
+                <div id="lightbox-media-stack" class="space-y-4"></div>
 
                 <div id="lightbox-desc-wrapper" class="space-y-2">
-                    <p id="lightbox-desc" class="text-lg text-slate-800 leading-relaxed font-medium whitespace-pre-wrap bg-slate-50 p-5 rounded-xl border-2 border-slate-150">상황 설명 내용</p>
+                    <p id="lightbox-desc" class="text-lg text-slate-800 leading-relaxed font-medium whitespace-pre-wrap bg-white">상황 설명 내용</p>
                 </div>
 
                 <div class="pt-6 border-t-2 border-slate-100 space-y-4">
@@ -318,7 +336,7 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진 등록 (여러 장 개별 추가 및 드래그 가능) *</label>
+                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진 등록 (선택, 여러 장 개별 추가 및 드래그 가능)</label>
                     
                     <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 transition-colors cursor-pointer relative">
                         <input type="file" id="form-files" accept="image/*" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
@@ -335,6 +353,11 @@
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">출처 (선택)</label>
                     <input type="text" id="form-source" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-black text-slate-700 mb-1">영상/SNS 링크 (선택)</label>
+                    <textarea id="form-media-links" rows="3" placeholder="유튜브, X, 스레드 링크를 한 줄에 하나씩 입력해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
                 <div>
@@ -365,6 +388,21 @@
                     <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">취소</button>
                     <button onclick="tryAdminLogin()" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">로그인</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative">
+            <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="space-y-4 pr-6">
+                <h3 class="text-xl font-black text-slate-955">이용안내</h3>
+                <div class="space-y-3 text-sm md:text-base text-slate-700 leading-relaxed font-semibold whitespace-pre-wrap">본 아카이브는 선거 무결성을 확보하기 위해 시민들이 자발적으로 참여하여 기록을 모으는 공개 공간입니다.
+이곳은 특정 정당의 이익이나 좌우 이념을 대변하지 않습니다. 정파적 이해관계를 넘어, 헌법이 보장하는 국민의 소중한 기본권을 지키고 선거 제도의 신뢰를 회복하는 것을 최우선 가치로 삼습니다.
+대한민국 국민이라면 누구나 자유롭게 아카이브에 참여하실 수 있습니다.
+가능한 한 출처가 명확하고 객관적인 사실이나 정황을 담은 자료를 등록해 주시기 바랍니다.</div>
             </div>
         </div>
     </div>
@@ -423,13 +461,6 @@
                         fetched.push({ id: doc.id, ...doc.data() });
                     });
                     
-                    // 내림차순 정렬
-                    fetched.sort((a, b) => {
-                        const idA = Number(a.id.replace('ev-', '')) || 0;
-                        const idB = Number(b.id.replace('ev-', '')) || 0;
-                        return idB - idA;
-                    });
-                    
                     window.evidences = fetched;
                     window.updateCategoryCounters();
                     window.renderHeroSlider();
@@ -457,6 +488,7 @@
         window.selectedCategoryKey = "";
         window.currentLightboxIndex = 0;
         window.currentGridEvidences = [];
+        window.currentSortMode = "updated";
         let localUploadedBase64List = [];
         let isAdminLoggedIn = false;
         let isDragAndDropReady = false;
@@ -481,6 +513,7 @@
                 } else if (event.key === "Escape") {
                     if (isLightboxOpen) window.closeLightbox();
                     if (isUploadModalOpen) window.closeUploadModal();
+                    window.closeGuideModal();
                     window.closeAdminModal();
                 }
             });
@@ -501,6 +534,7 @@
             window.selectedCategoryKey = "";
             document.getElementById("page-category").classList.add("hidden");
             document.getElementById("page-home").classList.remove("hidden");
+            syncSortSelects();
             window.renderHeroSlider();
         };
 
@@ -508,32 +542,35 @@
         window.renderHeroSlider = function() {
             const container = document.getElementById("hero-slide-container");
             const heroSection = document.getElementById("hero-section");
+            const sortedEvidences = getSortedEvidences(window.evidences);
             
-            if (!window.evidences || window.evidences.length === 0) {
+            if (!sortedEvidences || sortedEvidences.length === 0) {
                 heroSection.classList.add("hidden");
                 return;
             }
             heroSection.classList.remove("hidden");
 
-            if (window.currentSlideIndex < 0) window.currentSlideIndex = window.evidences.length - 1;
-            if (window.currentSlideIndex >= window.evidences.length) window.currentSlideIndex = 0;
+            if (window.currentSlideIndex < 0) window.currentSlideIndex = sortedEvidences.length - 1;
+            if (window.currentSlideIndex >= sortedEvidences.length) window.currentSlideIndex = 0;
 
-            const item = window.evidences[window.currentSlideIndex];
+            const item = sortedEvidences[window.currentSlideIndex];
             const catLabel = getCategoryLabel(item.category);
             const catBadgeClass = getCategoryBadgeClass(item.category);
-            const imagesList = item.images && item.images.length > 0 ? item.images : [item.image || mockImgLinks[0]];
-            const mainImg = imagesList[0];
+            const imageCount = getImageCount(item);
+            const mediaCount = getMediaLinks(item).length;
+            const thumb = getThumbnail(item);
 
             let sourceHtml = item.source ? `<div class="text-sm text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 font-bold border border-slate-200"><span class="font-black text-slate-800">출처:</span> ${escapeHtml(item.source)}</div>` : "";
-            let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-150">${escapeHtml(item.desc)}</p>` : "";
+            let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-white whitespace-pre-wrap">${escapeHtml(item.desc)}</p>` : "";
             let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-200"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>` : "";
 
             container.innerHTML = `
                 <div class="w-full cursor-pointer" onclick="openLightboxDirectly('${item.id}')">
                     <div class="relative overflow-hidden rounded-xl border border-slate-200 aspect-[16/8] min-h-[180px] md:min-h-[340px] w-full bg-slate-900 shadow-xs">
-                        <img src="${mainImg}" alt="${item.title}" class="w-full h-full object-cover" onerror="this.src='${mockImgLinks[0]}'">
+                        ${renderThumbnailHtml(thumb, item.title)}
                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end justify-between p-3 md:p-5">
                             <span class="text-white text-sm bg-slate-955/80 px-4 py-2 rounded-xl font-black">[게시물보기]</span>
+                            <span class="text-white text-sm bg-slate-955/80 px-4 py-2 rounded-xl font-black">${getMediaBadgeText(imageCount, mediaCount)}</span>
                         </div>
                     </div>
                 </div>
@@ -547,9 +584,6 @@
                     </div>
                     <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600" onclick="openLightboxDirectly('${item.id}')">${escapeHtml(item.title)}</h3>
                     ${sourceHtml} ${descHtml}
-                    <div class="flex gap-2 justify-end pt-1">
-                        <button onclick="openLightboxDirectly('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-black py-2.5 px-5 rounded-xl">[게시물보기]</button>
-                    </div>
                 </div>
             `;
         };
@@ -567,6 +601,7 @@
             const badgeNode = document.getElementById("cat-badge");
             badgeNode.textContent = title;
             badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${badgeClass}`;
+            syncSortSelects();
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
@@ -577,7 +612,7 @@
             const emptyState = document.getElementById("gallery-empty-state");
             const searchVal = document.getElementById("grid-search-input").value.toLowerCase().trim();
 
-            window.currentGridEvidences = window.evidences.filter(item => {
+            window.currentGridEvidences = getSortedEvidences(window.evidences.filter(item => {
                 if (item.category !== window.selectedCategoryKey) return false;
                 if (searchVal) {
                     const srcMatch = item.source ? item.source.toLowerCase().includes(searchVal) : false;
@@ -585,7 +620,7 @@
                     return item.title.toLowerCase().includes(searchVal) || srcMatch || descMatch;
                 }
                 return true;
-            });
+            }));
 
             if (window.currentGridEvidences.length === 0) {
                 gridContainer.innerHTML = "";
@@ -601,14 +636,17 @@
                 card.className = "group bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col";
                 card.onclick = () => window.openLightboxFromGrid(index);
 
-                const imagesList = item.images && item.images.length > 0 ? item.images : [item.image || mockImgLinks[0]];
+                const imageCount = getImageCount(item);
+                const mediaLinks = getMediaLinks(item);
+                const thumb = getThumbnail(item);
                 let sourceTag = item.source ? `<span class="truncate text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${escapeHtml(item.source)}</span>` : `<span class="text-xs text-slate-300">출처 미상</span>`;
                 let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
 
                 card.innerHTML = `
                     <div class="aspect-square bg-slate-900 overflow-hidden relative">
-                        <img src="${imagesList[0]}" alt="${item.title}" class="w-full h-full object-cover" onerror="this.src='${mockImgLinks[0]}'">
+                        ${renderThumbnailHtml(thumb, item.title)}
                         <div class="absolute bottom-2 left-2 bg-slate-955/80 text-white text-[11px] px-2 py-0.5 rounded font-black">추천 ${item.likes || 0}</div>
+                        <div class="absolute bottom-2 right-2 bg-slate-955/80 text-white text-[11px] px-2 py-0.5 rounded font-black">${getMediaBadgeText(imageCount, mediaLinks.length)}</div>
                     </div>
                     <div class="p-4 flex-grow flex flex-col justify-between space-y-4">
                         <h4 class="font-bold text-slate-955 text-base group-hover:text-blue-600 line-clamp-2 leading-snug">${escapeHtml(item.title)}</h4>
@@ -621,13 +659,20 @@
 
         window.filterGridData = function() { window.renderCategoryGrid(); };
         window.clearGridSearch = function() { document.getElementById("grid-search-input").value = ""; window.renderCategoryGrid(); };
+        window.setSortMode = function(mode) {
+            window.currentSortMode = mode;
+            window.currentSlideIndex = 0;
+            syncSortSelects();
+            if (window.selectedCategoryKey) window.renderCategoryGrid();
+            else window.renderHeroSlider();
+        };
 
         window.openLightboxFromGrid = function(index) { window.currentLightboxIndex = index; window.showLightbox(); };
         window.openLightboxDirectly = function(itemId) {
             const itemObj = window.evidences.find(i => i.id === itemId);
             if (!itemObj) return;
             window.selectedCategoryKey = itemObj.category;
-            window.currentGridEvidences = window.evidences.filter(i => i.category === window.selectedCategoryKey);
+            window.currentGridEvidences = getSortedEvidences(window.evidences.filter(i => i.category === window.selectedCategoryKey));
             window.currentLightboxIndex = window.currentGridEvidences.findIndex(i => i.id === itemId);
             window.showLightbox();
         };
@@ -657,13 +702,19 @@
 
             const imagesStack = document.getElementById("lightbox-images-stack");
             imagesStack.innerHTML = "";
-            const imagesList = item.images && item.images.length > 0 ? item.images : [item.image || mockImgLinks[0]];
+            const imagesList = getImages(item);
+            imagesStack.classList.toggle("hidden", imagesList.length === 0);
             imagesList.forEach(src => {
                 const wrap = document.createElement("div");
                 wrap.className = "w-full overflow-hidden rounded-xl bg-slate-955 flex justify-center items-center py-1";
                 wrap.innerHTML = `<img src="${src}" class="max-w-full max-h-[60vh] object-contain" onerror="this.src='${mockImgLinks[0]}'">`;
                 imagesStack.appendChild(wrap);
             });
+
+            const mediaStack = document.getElementById("lightbox-media-stack");
+            mediaStack.innerHTML = "";
+            getMediaLinks(item).forEach(link => mediaStack.appendChild(createMediaNode(link)));
+            mediaStack.classList.toggle("hidden", mediaStack.children.length === 0);
 
             renderPostComments(item);
             modal.classList.remove("hidden");
@@ -847,6 +898,7 @@
             const title = document.getElementById("form-title").value.trim();
             const category = document.getElementById("form-category").value;
             const source = document.getElementById("form-source").value.trim();
+            const mediaLinks = parseMediaLinks(document.getElementById("form-media-links").value);
             const desc = document.getElementById("form-desc").value.trim();
             const postPassword = document.getElementById("form-post-password").value.trim();
 
@@ -855,7 +907,7 @@
                 return;
             }
 
-            let finalImages = localUploadedBase64List.length > 0 ? [...localUploadedBase64List] : [mockImgLinks[0]];
+            let finalImages = [...localUploadedBase64List];
             const passwordHash = await hashPassword(postPassword);
             let success = false;
 
@@ -874,6 +926,7 @@
                     title,
                     category,
                     images: finalImages,
+                    mediaLinks,
                     source,
                     desc,
                     updatedAt: new Date().toISOString()
@@ -885,6 +938,7 @@
                     title,
                     category,
                     images: finalImages,
+                    mediaLinks,
                     source,
                     desc,
                     likes: 0,
@@ -916,9 +970,10 @@
             document.getElementById("form-category").value = item.category || "free-board";
             document.getElementById("form-title").value = item.title || "";
             document.getElementById("form-source").value = item.source || "";
+            document.getElementById("form-media-links").value = getMediaLinks(item).join("\n");
             document.getElementById("form-desc").value = item.desc || "";
             document.getElementById("form-post-password").value = "";
-            localUploadedBase64List = item.images && item.images.length > 0 ? [...item.images] : [];
+            localUploadedBase64List = getImages(item);
             renderUploadPreviews();
             document.getElementById("modal-form-title").textContent = "게시글 수정";
             document.getElementById("upload-modal").classList.remove("hidden");
@@ -967,6 +1022,135 @@
                 }
             }
         };
+
+        window.openGuideModal = function() { document.getElementById("guide-modal").classList.remove("hidden"); };
+        window.closeGuideModal = function() { document.getElementById("guide-modal").classList.add("hidden"); };
+
+        function syncSortSelects() {
+            const selects = [document.getElementById("sort-select"), document.getElementById("home-sort-select")];
+            selects.forEach(select => {
+                if (select) select.value = window.currentSortMode;
+            });
+        }
+
+        function getSortedEvidences(items) {
+            return [...(items || [])].sort((a, b) => {
+                if (window.currentSortMode === "likes") return (b.likes || 0) - (a.likes || 0);
+                if (window.currentSortMode === "created") return getCreatedTime(b) - getCreatedTime(a);
+                return getUpdatedTime(b) - getUpdatedTime(a);
+            });
+        }
+
+        function getCreatedTime(item) {
+            if (item.createdAt) return Date.parse(item.createdAt) || 0;
+            return Number(String(item.id || "").replace("ev-", "")) || 0;
+        }
+
+        function getUpdatedTime(item) {
+            return Date.parse(item.updatedAt || item.createdAt || "") || getCreatedTime(item);
+        }
+
+        function getImages(item) {
+            if (item.images && item.images.length > 0) return item.images;
+            if (item.image) return [item.image];
+            return [];
+        }
+
+        function getImageCount(item) {
+            return getImages(item).length;
+        }
+
+        function parseMediaLinks(rawText) {
+            return rawText.split(/\r?\n/)
+                .map(link => link.trim())
+                .filter(link => link.length > 0)
+                .filter(isSafeHttpUrl)
+                .filter((link, index, arr) => arr.indexOf(link) === index);
+        }
+
+        function isSafeHttpUrl(url) {
+            try {
+                const parsed = new URL(url);
+                return parsed.protocol === "http:" || parsed.protocol === "https:";
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function getMediaLinks(item) {
+            if (Array.isArray(item.mediaLinks)) return item.mediaLinks.filter(link => link && isSafeHttpUrl(link));
+            if (item.mediaLink && isSafeHttpUrl(item.mediaLink)) return [item.mediaLink];
+            return [];
+        }
+
+        function getMediaBadgeText(imageCount, mediaCount) {
+            const parts = [];
+            if (imageCount > 0) parts.push(`사진 ${imageCount}장`);
+            if (mediaCount > 0) parts.push(`링크 ${mediaCount}개`);
+            return parts.length > 0 ? parts.join(" · ") : "자료 없음";
+        }
+
+        function getThumbnail(item) {
+            const images = getImages(item);
+            if (images.length > 0) return { type: "image", src: images[0] };
+            const youtube = getMediaLinks(item).map(parseYouTubeId).find(Boolean);
+            if (youtube) return { type: "image", src: `https://img.youtube.com/vi/${youtube}/hqdefault.jpg` };
+            return { type: "placeholder" };
+        }
+
+        function renderThumbnailHtml(thumb, title) {
+            if (thumb.type === "image") {
+                return `<img src="${escapeHtml(thumb.src)}" alt="${escapeHtml(title)}" class="w-full h-full object-cover" onerror="this.src='${mockImgLinks[0]}'">`;
+            }
+            return `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-2"><i class="fa-solid fa-link text-3xl text-slate-300"></i><span class="text-xs font-black text-slate-300">링크 자료</span></div>`;
+        }
+
+        function parseYouTubeId(url) {
+            try {
+                const parsed = new URL(url);
+                if (parsed.hostname.includes("youtu.be")) return parsed.pathname.replace("/", "").split(/[?&]/)[0];
+                if (parsed.hostname.includes("youtube.com")) {
+                    if (parsed.searchParams.get("v")) return parsed.searchParams.get("v");
+                    const shorts = parsed.pathname.match(/\/shorts\/([^/?]+)/);
+                    if (shorts) return shorts[1];
+                    const embed = parsed.pathname.match(/\/embed\/([^/?]+)/);
+                    if (embed) return embed[1];
+                }
+            } catch (e) {}
+            return "";
+        }
+
+        function getMediaTypeLabel(url) {
+            try {
+                const host = new URL(url).hostname.replace("www.", "");
+                if (host.includes("youtube") || host.includes("youtu.be")) return "YouTube";
+                if (host.includes("x.com") || host.includes("twitter.com")) return "X";
+                if (host.includes("threads.net")) return "Threads";
+                return host;
+            } catch (e) {
+                return "링크";
+            }
+        }
+
+        function createMediaNode(link) {
+            const youtubeId = parseYouTubeId(link);
+            const node = document.createElement("div");
+            if (youtubeId) {
+                node.className = "w-full overflow-hidden rounded-xl border-2 border-slate-100 bg-black aspect-video";
+                node.innerHTML = `<iframe class="w-full h-full" src="https://www.youtube.com/embed/${youtubeId}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+                return node;
+            }
+
+            node.className = "bg-white border-2 border-slate-100 rounded-xl p-4 flex items-center justify-between gap-3";
+            node.innerHTML = `
+                <div class="min-w-0">
+                    <div class="text-xs font-black text-slate-400 mb-1">${escapeHtml(getMediaTypeLabel(link))}</div>
+                    <div class="text-sm font-bold text-slate-700 truncate">${escapeHtml(link)}</div>
+                </div>
+                <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black px-3 py-2 rounded-lg">열기</a>
+            `;
+            return node;
+        }
 
         function getCategoryLabel(catKey) {
             switch(catKey) {
