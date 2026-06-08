@@ -37,7 +37,7 @@
                 </div>
                 <div>
                     <h1 class="font-black text-2xl text-slate-955 tracking-tight leading-tight">선거 이슈 아카이브</h1>
-                    <p class="text-sm text-slate-500 font-bold">선거 무결성을 위한 위키형 갤러리</p>
+                    <p class="text-sm text-slate-500 font-bold">선거 이슈를 모으는 시민 아카이브</p>
                 </div>
             </div>
             
@@ -90,11 +90,11 @@
                                     <div class="w-10 h-10 bg-emerald-100 text-emerald-800 rounded-lg flex items-center justify-center group-hover:bg-emerald-200/50 transition-colors">
                                         <i class="fa-solid fa-scroll text-lg"></i>
                                     </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">형상기억 종이</span>
+                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">신비한 투표지</span>
                                 </div>
                                 <span class="bg-emerald-100 text-emerald-800 font-bold text-sm px-3 py-1 rounded-full border border-emerald-200 group-hover:bg-white group-hover:text-emerald-800 group-hover:border-transparent" id="count-shape-memory">0</span>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">개표장에 발견되는 선관위가 전세계 최초 개발한 마법의 종이 사례집</p>
+                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">형상기억 종이, 비정상 적 투표지 등 개표장에서 발견되는 마법의 종이 사례집</p>
                         </div>
                     </div>
 
@@ -109,7 +109,7 @@
                                 </div>
                                 <span class="bg-amber-100 text-amber-800 font-bold text-sm px-3 py-1 rounded-full border border-amber-200 group-hover:bg-white group-hover:text-amber-800 group-hover:border-transparent" id="count-strange-ballot">0</span>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">인쇄오류, 절단 흔적, 통계 이상 등, 지금까지의 상식이 박살나는 신비하고 기묘한 현상 모음집</p>
+                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">통계 이상, 운영상 이상 징후 등 지금까지의 상식이 박살나는 신비하고 기묘한 현상 모음집</p>
                         </div>
                     </div>
 
@@ -207,7 +207,7 @@
 
     <footer class="bg-white border-t-2 border-slate-200 py-8 mt-16 text-slate-500 text-sm">
         <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p>시민들이 자발적으로 사진 자료를 축적하고 가치를 공유하는 위키형 오픈 아카이브입니다.</p>
+            <p>시민들이 자발적으로 사진 자료와 제보를 모으는 오픈 아카이브입니다.</p>
             <div class="flex items-center gap-4">
                 <button onclick="openAdminModal()" class="text-slate-400 hover:text-blue-600 font-bold transition-colors">
                     <i class="fa-solid fa-lock mr-1"></i> 관리자 로그인
@@ -257,11 +257,8 @@
                         </button>
                         
                         <div class="flex gap-2">
-                            <button onclick="openHistoryModal()" class="text-slate-500 hover:text-slate-800 font-bold text-sm bg-slate-100 hover:bg-slate-200 px-3.5 py-2.5 rounded-xl transition-colors">
-                                <i class="fa-solid fa-clock-rotate-left mr-1"></i> 편집 이력 보기
-                            </button>
-                            <button onclick="editCurrentLightbox()" class="text-blue-700 hover:text-blue-800 font-black flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors text-sm border border-blue-100">
-                                <i class="fa-solid fa-pen-to-square"></i> 위키 수정하기
+                            <button onclick="deleteEvidence(getCurrentLightboxItemId())" class="text-red-600 hover:text-red-700 font-black flex items-center gap-1 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl transition-colors text-sm border border-red-100">
+                                <i class="fa-solid fa-trash-can"></i> 게시글 삭제
                             </button>
                         </div>
                     </div>
@@ -281,22 +278,6 @@
         </div>
     </div>
 
-    <div id="history-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-            <button onclick="closeHistoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="mb-4">
-                <h3 class="text-lg font-black text-slate-955"><i class="fa-solid fa-clock-rotate-left mr-1 text-slate-500"></i>위키 편집 역사</h3>
-                <p class="text-xs text-slate-500 mt-1">임의로 잘못 정정된 데이터를 발견했다면 원하시는 예전 버전으로 즉시 복구할 수 있습니다.</p>
-            </div>
-            <div id="wiki-history-list" class="space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border-2 border-slate-100 max-h-60 overflow-y-auto"></div>
-            <div class="flex justify-end mt-4">
-                <button onclick="closeHistoryModal()" class="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm">확인</button>
-            </div>
-        </div>
-    </div>
-
     <div id="upload-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2">
         <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeUploadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
@@ -308,12 +289,10 @@
             </div>
 
             <form id="evidence-form" onsubmit="saveEvidence(event)" class="space-y-4">
-                <input type="hidden" id="edit-id" value="">
-
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 *</label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="shape-memory">형상기억 종이</option>
+                        <option value="shape-memory">신비한 투표지</option>
                         <option value="strange-ballot">이상 현상</option>
                         <option value="bad-management">관리 부실</option>
                         <option value="nec-admin">선관위 행정</option>
@@ -325,6 +304,12 @@
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">제목 *</label>
                     <input type="text" id="form-title" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-black text-slate-700 mb-1">게시글 비밀번호 *</label>
+                    <input type="password" id="form-post-password" required minlength="4" placeholder="삭제할 때 사용할 비밀번호를 정해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-[11px] text-slate-400 font-bold mt-1">나중에 작성자가 게시글을 삭제할 때 필요합니다. 4자 이상으로 입력해주세요.</p>
                 </div>
 
                 <div class="space-y-2">
@@ -350,11 +335,6 @@
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">상황 설명 기재 (선택)</label>
                     <textarea id="form-desc" rows="4" placeholder="상황에 대한 핵심 내용을 간단하게 기록해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-
-                <div id="edit-note-wrapper" class="hidden">
-                    <label class="block text-sm font-black text-amber-800 mb-1">수정 사유 입력 *</label>
-                    <input type="text" id="form-edit-note" placeholder="예: 구체적인 발견 장소 정보 보강" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-amber-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50">
                 </div>
 
                 <div class="flex gap-2 justify-end pt-1">
@@ -384,10 +364,9 @@
         </div>
     </div>
 
-    <!-- Firebase SDK 모듈 및 인증 동기화 완벽 튜닝 영역 -->
+    <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -400,42 +379,14 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // 규칙 준수 경로 변수 선언 (RULE 1)
         const appId = 'k-voting';
         const collectionName = 'evidences';
 
-        let currentUser = null;
-
-        // 동기 보장형 익명 인증 강제 (RULE 3 준수)
-        async function ensureAuth() {
-            if (auth.currentUser) {
-                currentUser = auth.currentUser;
-                return currentUser;
-            }
-            try {
-                // 커스텀 토큰이 없는 환경이므로 즉시 익명 로그인 실행
-                const credential = await signInAnonymously(auth);
-                currentUser = credential.user;
-                return currentUser;
-            } catch (err) {
-                console.error("Firebase 익명 인증 도중 심각한 에러 발생:", err);
-                throw err;
-            }
-        }
-
-        // 전역 스코프에 Firestore 안전 저장 함수 주입 (엄격한 artifacts 규칙 경로 반영)
+        // 전역 스코프에 Firestore 저장 함수 주입
         window.saveEvidenceToFirestore = async function(evidenceId, dataObj) {
             try {
-                // 1단계: 인증이 완료될 때까지 기다리기
-                const user = await ensureAuth();
-                if (!user) {
-                    console.error("인증에 실패하여 쓰기를 거부합니다.");
-                    return false;
-                }
-                // 2단계: RULE 1 Strict Path에 맞춰 문서 참조 생성
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
                 await setDoc(docRef, dataObj, { merge: true });
                 return true;
@@ -448,8 +399,6 @@
         // 전역 삭제 함수 보강
         window.deleteEvidenceFromFirestore = async function(evidenceId) {
             try {
-                const user = await ensureAuth();
-                if (!user) return false;
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
                 await deleteDoc(docRef);
                 return true;
@@ -459,13 +408,9 @@
             }
         };
 
-        // 앱 구동 즉시 비동기 리스너 바인딩 및 인증 보장
+        // 앱 구동 즉시 비동기 리스너 바인딩
         async function startApp() {
             try {
-                // 시작하자마자 인증을 먼저 동기화 (RULE 3)
-                await ensureAuth();
-                
-                // Firestore 실시간 데이터 스트림 리스너 활성화 (Strict Path)
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
                 onSnapshot(colRef, (snapshot) => {
                     const fetched = [];
@@ -490,14 +435,8 @@
                     console.error("실시간 수신 에러 (보안 규칙 또는 경로 확인 필요):", error);
                 });
 
-                // 인증 상태 변경 리스너
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        currentUser = user;
-                    }
-                });
             } catch (e) {
-                console.error("초기 데이터 로딩 및 익명인증 프로세스 실패: ", e);
+                console.error("초기 데이터 로딩 실패: ", e);
             }
         }
         
@@ -536,7 +475,6 @@
                 } else if (event.key === "Escape") {
                     if (isLightboxOpen) window.closeLightbox();
                     if (isUploadModalOpen) window.closeUploadModal();
-                    window.closeHistoryModal();
                     window.closeAdminModal();
                 }
             });
@@ -604,7 +542,6 @@
                     <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600" onclick="openLightboxDirectly('${item.id}')">${escapeHtml(item.title)}</h3>
                     ${sourceHtml} ${descHtml}
                     <div class="flex gap-2 justify-end pt-1">
-                        <button onclick="startEditing('${item.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-2.5 px-4 rounded-xl">위키 정보 수정</button>
                         <button onclick="openLightboxDirectly('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-black py-2.5 px-5 rounded-xl">[게시물보기]</button>
                     </div>
                 </div>
@@ -778,54 +715,7 @@
                 authorInput.value = ""; textInput.value = "";
                 showNotification("댓글이 등록되었습니다.");
             } else {
-                alert("인증 오류로 댓글 저장에 실패했습니다.");
-            }
-        };
-
-        window.openHistoryModal = function() {
-            const item = window.currentGridEvidences[window.currentLightboxIndex];
-            const list = document.getElementById("wiki-history-list");
-            list.innerHTML = "";
-            const history = item.history || [];
-
-            if (history.length === 0) {
-                list.innerHTML = `<p class="text-slate-400 text-center py-2 text-xs">수정 내역이 없습니다.</p>`;
-            } else {
-                history.forEach(log => {
-                    list.innerHTML += `
-                        <div class="flex items-center justify-between py-2 border-b border-slate-200 last:border-b-0 text-left">
-                            <div><span class="font-black text-blue-600">[버전 ${log.version}]</span><span class="text-slate-700 ml-1.5 font-bold">${escapeHtml(log.note)}</span><span class="text-slate-400 ml-1 text-xs">(${escapeHtml(log.editor)})</span></div>
-                            <button onclick="restoreVersion('${item.id}', ${log.version})" class="text-xs text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-150">복구</button>
-                        </div>`;
-                });
-            }
-            document.getElementById("history-modal").classList.remove("hidden");
-        };
-
-        window.closeHistoryModal = function() { document.getElementById("history-modal").classList.add("hidden"); };
-
-        window.restoreVersion = async function(itemId, versionNum) {
-            const item = window.evidences.find(e => e.id === itemId);
-            if (!item) return;
-            const log = item.history.find(h => h.version === versionNum);
-            if (!log) return;
-
-            if (confirm(`게시물을 [버전 ${versionNum}] 상태로 복구하시겠습니까?`)) {
-                item.title = log.data.title; item.source = log.data.source; item.desc = log.data.desc;
-                item.history.push({
-                    version: item.history.length + 1,
-                    date: new Date().toISOString().split('T')[0],
-                    note: `버전 ${versionNum} 복구 적용`,
-                    editor: "시민보호관",
-                    data: { title: item.title, source: item.source, desc: item.desc }
-                });
-                const restored = await window.saveEvidenceToFirestore(item.id, { title: item.title, source: item.source, desc: item.desc, history: item.history });
-                if (restored) {
-                    window.closeHistoryModal(); window.closeLightbox();
-                    showNotification("위키가 성공적으로 복구되었습니다.");
-                } else {
-                    alert("인증 만료 또는 일시적 네트워크 오류입니다.");
-                }
+                alert("네트워크 문제로 댓글 저장에 실패했습니다.");
             }
         };
 
@@ -906,7 +796,6 @@
         window.openUploadModal = function() {
             resetUploadForm();
             document.getElementById("modal-form-title").textContent = "새로운 사례 제출";
-            document.getElementById("edit-note-wrapper").classList.add("hidden");
             document.getElementById("upload-modal").classList.remove("hidden");
             
             // 모달 오픈 직후 지연시간을 확보해 확실하게 바인딩 처리
@@ -917,93 +806,57 @@
 
         function resetUploadForm() {
             document.getElementById("evidence-form").reset();
-            document.getElementById("edit-id").value = "";
             document.getElementById("file-status").textContent = "";
-            document.getElementById("form-edit-note").removeAttribute("required");
             localUploadedBase64List = [];
             document.getElementById("upload-preview-container").innerHTML = "";
         }
 
+        async function hashPassword(password) {
+            const encoded = new TextEncoder().encode(password);
+            const digest = await crypto.subtle.digest("SHA-256", encoded);
+            return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+        }
+
         window.saveEvidence = async function(e) {
             e.preventDefault();
-            const editId = document.getElementById("edit-id").value;
             const title = document.getElementById("form-title").value.trim();
             const category = document.getElementById("form-category").value;
             const source = document.getElementById("form-source").value.trim();
             const desc = document.getElementById("form-desc").value.trim();
-            const editNote = document.getElementById("form-edit-note").value.trim();
-            
-            let finalImages = localUploadedBase64List.length > 0 ? [...localUploadedBase64List] : [mockImgLinks[0]];
-            let success = false;
+            const postPassword = document.getElementById("form-post-password").value.trim();
 
-            if (editId) {
-                const targetIdx = window.evidences.findIndex(item => item.id === editId);
-                if (targetIdx !== -1) {
-                    const original = window.evidences[targetIdx];
-                    const resolvedImages = (localUploadedBase64List.length === 0 && original.images) ? original.images : finalImages;
-                    if (!original.history) original.history = [];
-                    original.history.push({
-                        version: original.history.length + 1,
-                        date: new Date().toISOString().split('T')[0],
-                        note: editNote || "정보 정정",
-                        editor: "공동기여자",
-                        data: { title: original.title, source: original.source, desc: original.desc }
-                    });
-                    success = await window.saveEvidenceToFirestore(editId, { 
-                        title, 
-                        category, 
-                        images: resolvedImages, 
-                        source, 
-                        desc, 
-                        history: original.history 
-                    });
-                }
-            } else {
-                const newId = "ev-" + Date.now();
-                success = await window.saveEvidenceToFirestore(newId, {
-                    id: newId, 
-                    title, 
-                    category, 
-                    images: finalImages, 
-                    source, 
-                    desc, 
-                    likes: 0, 
-                    comments: [],
-                    history: [{ version: 1, date: new Date().toISOString().split('T')[0], note: "최초 등록", editor: "시민기여자", data: { title, source, desc } }]
-                });
+            if (postPassword.length < 4) {
+                alert("게시글 비밀번호는 4자 이상으로 입력해주세요.");
+                return;
             }
+
+            let finalImages = localUploadedBase64List.length > 0 ? [...localUploadedBase64List] : [mockImgLinks[0]];
+            const newId = "ev-" + Date.now();
+            const passwordHash = await hashPassword(postPassword);
+            const success = await window.saveEvidenceToFirestore(newId, {
+                id: newId,
+                title,
+                category,
+                images: finalImages,
+                source,
+                desc,
+                likes: 0,
+                comments: [],
+                passwordHash,
+                createdAt: new Date().toISOString()
+            });
 
             if (success) {
                 window.closeUploadModal(); window.closeLightbox();
-                showNotification(editId ? "정정되었습니다." : "제출 완료되었습니다.");
+                showNotification("제출 완료되었습니다.");
             } else {
-                alert("인증 오류 또는 네트워크 문제로 저장되지 않았습니다. 잠시 후 다시 시도해주세요.");
+                alert("저장되지 않았습니다. Firebase 규칙 또는 네트워크 상태를 확인해주세요.");
             }
         };
 
-        window.editCurrentLightbox = function() {
-            if (window.currentGridEvidences.length === 0) return;
+        window.getCurrentLightboxItemId = function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
-            window.closeLightbox(); window.startEditing(item.id);
-        };
-
-        window.startEditing = function(itemId) {
-            const item = window.evidences.find(i => i.id === itemId);
-            if (!item) return;
-
-            document.getElementById("edit-id").value = item.id;
-            document.getElementById("form-title").value = item.title;
-            document.getElementById("form-category").value = item.category;
-            localUploadedBase64List = item.images && item.images.length > 0 ? [...item.images] : [];
-            renderUploadPreviews();
-            
-            document.getElementById("form-source").value = item.source || "";
-            document.getElementById("form-desc").value = item.desc || "";
-            document.getElementById("edit-note-wrapper").classList.remove("hidden");
-            document.getElementById("form-edit-note").setAttribute("required", "true");
-            document.getElementById("modal-form-title").textContent = "사례 수정";
-            document.getElementById("upload-modal").classList.remove("hidden");
-            setTimeout(setupDragAndDrop, 100);
+            return item ? item.id : "";
         };
 
         window.openAdminModal = function() { document.getElementById("admin-pass-input").value = ""; document.getElementById("admin-modal").classList.remove("hidden"); };
@@ -1018,9 +871,31 @@
         };
 
         window.deleteEvidence = async function(id) {
+            const item = window.evidences.find(e => e.id === id);
+            if (!item) return;
+
+            if (!isAdminLoggedIn) {
+                if (!item.passwordHash) {
+                    alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 삭제를 지원하지 않습니다. 관리자에게 문의해주세요.");
+                    return;
+                }
+                const inputPassword = prompt("게시글 작성 시 설정한 비밀번호를 입력해주세요.");
+                if (!inputPassword) return;
+                const inputHash = await hashPassword(inputPassword.trim());
+                if (inputHash !== item.passwordHash) {
+                    alert("비밀번호가 다릅니다.");
+                    return;
+                }
+            }
+
             if (confirm("정말 이 게시물을 삭제하시겠습니까?")) {
                 const deleted = await window.deleteEvidenceFromFirestore(id);
-                if (deleted) { showNotification("삭제되었습니다."); window.closeLightbox(); }
+                if (deleted) {
+                    showNotification("삭제되었습니다.");
+                    window.closeLightbox();
+                } else {
+                    alert("삭제되지 않았습니다. Firebase 규칙 또는 네트워크 상태를 확인해주세요.");
+                }
             }
         };
 
@@ -1040,7 +915,7 @@
 
         function getCategoryLabel(catKey) {
             switch(catKey) {
-                case "shape-memory": return "형상기억 종이";
+                case "shape-memory": return "신비한 투표지";
                 case "strange-ballot": return "이상 현상";
                 case "bad-management": return "관리 부실";
                 case "nec-admin": return "선관위 행정";
