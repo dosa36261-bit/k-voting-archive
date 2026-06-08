@@ -476,9 +476,10 @@
 
     <script>
         const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
-        const CLOUDINARY_CLOUD_NAME = "";
-        const CLOUDINARY_UPLOAD_PRESET = "";
+        const CLOUDINARY_CLOUD_NAME = "dz4iuka76";
+        const CLOUDINARY_UPLOAD_PRESET = "kvoting_unsigned";
         const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+        const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
         window.evidences = [];
         window.currentSlideIndex = 0;
@@ -787,7 +788,7 @@
 
         function processFiles(files) {
             let loaded = 0;
-            const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            const imageFiles = Array.from(files).filter(f => ALLOWED_IMAGE_TYPES.includes(f.type));
             if (imageFiles.length === 0) return;
 
             imageFiles.forEach(file => {
