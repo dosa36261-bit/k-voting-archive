@@ -517,6 +517,20 @@
                     else window.nextSlide();
                 }
             });
+
+            document.addEventListener("paste", function(event) {
+                const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
+                if (!isUploadModalOpen || !event.clipboardData) return;
+
+                const pastedFiles = Array.from(event.clipboardData.items || [])
+                    .filter(item => item.kind === "file")
+                    .map(item => item.getAsFile())
+                    .filter(Boolean);
+
+                if (pastedFiles.length === 0) return;
+                event.preventDefault();
+                processFiles(pastedFiles);
+            });
         };
         window.setupKeyboardNavigation();
 
@@ -724,9 +738,26 @@
             document.body.style.overflow = "hidden";
         };
 
-        window.closeLightbox = function() { document.getElementById("lightbox-modal").classList.add("hidden"); document.body.style.overflow = "auto"; };
+        window.closeLightbox = function() {
+            document.getElementById("lightbox-modal").classList.add("hidden");
+            clearLightboxMedia();
+            document.body.style.overflow = "auto";
+        };
         window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox(); };
         window.nextLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex + 1) % window.currentGridEvidences.length; window.showLightbox(); };
+
+        function clearLightboxMedia() {
+            const mediaStack = document.getElementById("lightbox-media-stack");
+            const imagesStack = document.getElementById("lightbox-images-stack");
+            if (mediaStack) {
+                mediaStack.innerHTML = "";
+                mediaStack.classList.add("hidden");
+            }
+            if (imagesStack) {
+                imagesStack.innerHTML = "";
+                imagesStack.classList.add("hidden");
+            }
+        }
 
         window.likeCurrentPost = async function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
