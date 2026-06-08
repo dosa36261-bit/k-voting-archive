@@ -73,7 +73,7 @@
                         <i class="fa-solid fa-chevron-left text-xl"></i>
                     </button>
 
-                    <div id="hero-slide-container" class="w-full space-y-5 px-1 md:px-12"></div>
+                    <div id="hero-slide-container" class="w-full max-w-4xl mx-auto space-y-5 px-1 md:px-12"></div>
 
                     <button onclick="nextSlide()" class="absolute right-2 top-[35%] md:top-[40%] -translate-y-1/2 z-10 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
                         <i class="fa-solid fa-chevron-right text-xl"></i>
@@ -478,7 +478,7 @@
         const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
         const CLOUDINARY_CLOUD_NAME = "dz4iuka76";
         const CLOUDINARY_UPLOAD_PRESET = "kvoting_unsigned";
-        const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+        const MAX_IMAGE_FILE_SIZE = 20 * 1024 * 1024;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
         window.evidences = [];
@@ -501,19 +501,20 @@
             document.addEventListener("keydown", function(event) {
                 const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
                 const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
-                if (isUploadModalOpen) return;
 
-                if (event.key === "ArrowLeft") {
+                if (event.key === "Escape") {
+                    if (isUploadModalOpen) window.closeUploadModal();
+                    if (isLightboxOpen) window.closeLightbox();
+                    window.closeGuideModal();
+                    window.closeAdminModal();
+                } else if (isUploadModalOpen) {
+                    return;
+                } else if (event.key === "ArrowLeft") {
                     if (isLightboxOpen) window.prevLightboxSlide();
                     else window.prevSlide();
                 } else if (event.key === "ArrowRight") {
                     if (isLightboxOpen) window.nextLightboxSlide();
                     else window.nextSlide();
-                } else if (event.key === "Escape") {
-                    if (isLightboxOpen) window.closeLightbox();
-                    if (isUploadModalOpen) window.closeUploadModal();
-                    window.closeGuideModal();
-                    window.closeAdminModal();
                 }
             });
         };
@@ -564,7 +565,7 @@
 
             container.innerHTML = `
                 <div class="w-full cursor-pointer" onclick="openLightboxDirectly('${item.id}')">
-                    <div class="relative overflow-hidden rounded-xl border border-slate-200 aspect-[16/8] min-h-[180px] md:min-h-[340px] w-full bg-slate-900 shadow-xs">
+                    <div class="relative overflow-hidden rounded-xl border border-slate-200 aspect-[4/3] min-h-[180px] md:min-h-[300px] w-full bg-slate-900 shadow-xs">
                         ${renderThumbnailHtml(thumb, item.title)}
                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end justify-between p-3 md:p-5">
                             <span class="text-white text-sm bg-slate-955/80 px-4 py-2 rounded-xl font-black">[게시물보기]</span>
@@ -793,7 +794,7 @@
 
             imageFiles.forEach(file => {
                 if (file.size > MAX_IMAGE_FILE_SIZE) {
-                    alert(`${file.name} 파일이 10MB를 넘습니다. Cloudinary 무료 플랜 기준으로 10MB 이하 이미지만 등록해주세요.`);
+                    alert(`${file.name} 파일이 20MB를 넘습니다. 20MB 이하 이미지만 등록해주세요.`);
                     return;
                 }
                 const reader = new FileReader();
