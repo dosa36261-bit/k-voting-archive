@@ -335,13 +335,13 @@
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">게시글 비밀번호 <span class="text-red-600">*</span></label>
                     <input type="password" id="form-post-password" required minlength="4" placeholder="삭제할 때 사용할 비밀번호를 정해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-[11px] text-slate-400 font-bold mt-1">나중에 작성자가 게시글을 수정하거나 삭제할 때 필요합니다. 4자 이상으로 입력해주세요.</p>
+                    <p class="text-[11px] text-slate-400 font-bold mt-1 text-right">4자 이상</p>
                 </div>
 
                 <div class="space-y-2">
                     <label class="block text-sm font-black text-slate-700 mb-0.5">사진/GIF 등록 or 영상/SNS 링크 <span class="text-red-600">*</span></label>
                     
-                    <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 transition-colors cursor-pointer relative">
+                    <div id="drop-zone" tabindex="0" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 focus:bg-blue-50 focus:border-blue-300 focus:outline-none transition-colors cursor-pointer relative">
                         <input type="file" id="form-files" accept="image/*,.gif" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
@@ -529,17 +529,7 @@
             });
 
             document.addEventListener("paste", function(event) {
-                const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
-                if (!isUploadModalOpen || !event.clipboardData) return;
-
-                const pastedFiles = Array.from(event.clipboardData.items || [])
-                    .filter(item => item.kind === "file")
-                    .map(item => item.getAsFile())
-                    .filter(Boolean);
-
-                if (pastedFiles.length === 0) return;
-                event.preventDefault();
-                processFiles(pastedFiles);
+                handlePasteUpload(event);
             });
         };
         window.setupKeyboardNavigation();
@@ -855,10 +845,27 @@
             e.target.value = "";
         };
 
-        function processFiles(files) {
+        function handlePasteUpload(event) {
+            const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
+            if (!isUploadModalOpen || !event.clipboardData) return;
+
+            const pastedFiles = Array.from(event.clipboardData.items || [])
+                .filter(item => item.kind === "file")
+                .map(item => item.getAsFile())
+                .filter(Boolean);
+
+            if (pastedFiles.length === 0) return;
+            event.preventDefault();
+            processFiles(pastedFiles, "paste");
+        }
+
+        function processFiles(files, sourceType = "file") {
             let loaded = 0;
             const imageFiles = Array.from(files).filter(f => ALLOWED_IMAGE_TYPES.includes(f.type));
-            if (imageFiles.length === 0) return;
+            if (imageFiles.length === 0) {
+                if (sourceType === "paste") showNotification("붙여넣은 내용에 이미지가 없습니다.");
+                return;
+            }
 
             imageFiles.forEach(file => {
                 if (file.size > MAX_IMAGE_FILE_SIZE) {
@@ -872,6 +879,7 @@
                     loaded++;
                     if (loaded === imageFiles.length) {
                         renderUploadPreviews();
+                        if (sourceType === "paste") showNotification("붙여넣은 이미지가 등록되었습니다.");
                     }
                 };
                 reader.readAsDataURL(file);
@@ -929,6 +937,8 @@
                     processFiles(files); 
                 }
             }, false);
+
+            dropZone.addEventListener('paste', handlePasteUpload, false);
         }
 
         window.openUploadModal = function() {
