@@ -61,18 +61,11 @@
                     <span class="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-full flex items-center gap-2">
                         <span class="w-2 h-2 bg-white rounded-full animate-ping"></span> 주목받는 자료
                     </span>
-                    <div class="hidden md:flex items-center gap-2">
-                        <select id="home-sort-select" onchange="setSortMode(this.value)" class="px-3 py-1.5 rounded-lg border-2 border-slate-200 text-xs font-bold focus:outline-none bg-white text-slate-600">
-                            <option value="updated">수정순</option>
-                            <option value="created">생성순</option>
-                            <option value="likes">추천순</option>
-                        </select>
-                        <span class="inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold">
-                            <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">←</kbd>
-                            <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">→</kbd>
-                            키보드 방향키 이동
-                        </span>
-                    </div>
+                    <span class="hidden md:inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold">
+                        <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">←</kbd>
+                        <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">→</kbd>
+                        키보드 방향키 이동
+                    </span>
                 </div>
 
                 <div class="relative flex flex-col items-center">
@@ -313,7 +306,7 @@
                 <input type="hidden" id="edit-id" value="">
 
                 <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 *</label>
+                    <label class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 <span class="text-red-600">*</span></label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="shape-memory">신비한 투표지</option>
                         <option value="strange-ballot">이상 현상</option>
@@ -325,18 +318,18 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">제목 *</label>
+                    <label class="block text-sm font-black text-slate-700 mb-1">제목 <span class="text-red-600">*</span></label>
                     <input type="text" id="form-title" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">게시글 비밀번호 *</label>
+                    <label class="block text-sm font-black text-slate-700 mb-1">게시글 비밀번호 <span class="text-red-600">*</span></label>
                     <input type="password" id="form-post-password" required minlength="4" placeholder="삭제할 때 사용할 비밀번호를 정해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="text-[11px] text-slate-400 font-bold mt-1">나중에 작성자가 게시글을 수정하거나 삭제할 때 필요합니다. 4자 이상으로 입력해주세요.</p>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진 등록 (선택, 여러 장 개별 추가 및 드래그 가능)</label>
+                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진 등록 or 영상/SNS 링크 <span class="text-red-600">*</span></label>
                     
                     <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 transition-colors cursor-pointer relative">
                         <input type="file" id="form-files" accept="image/*" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
@@ -348,20 +341,16 @@
                     </div>
 
                     <div id="upload-preview-container" class="flex flex-wrap gap-2 pt-1"></div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">출처 (선택)</label>
-                    <input type="text" id="form-source" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">영상/SNS 링크 (선택)</label>
                     <textarea id="form-media-links" rows="3" placeholder="유튜브, X, 스레드 링크를 한 줄에 하나씩 입력해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">상황 설명 기재 (선택)</label>
+                    <label class="block text-sm font-black text-slate-700 mb-1">출처</label>
+                    <input type="text" id="form-source" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-black text-slate-700 mb-1">내용</label>
                     <textarea id="form-desc" rows="4" placeholder="상황에 대한 핵심 내용을 간단하게 기록해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
@@ -534,7 +523,6 @@
             window.selectedCategoryKey = "";
             document.getElementById("page-category").classList.add("hidden");
             document.getElementById("page-home").classList.remove("hidden");
-            syncSortSelects();
             window.renderHeroSlider();
         };
 
@@ -542,18 +530,18 @@
         window.renderHeroSlider = function() {
             const container = document.getElementById("hero-slide-container");
             const heroSection = document.getElementById("hero-section");
-            const sortedEvidences = getSortedEvidences(window.evidences);
+            const heroEvidences = getHeroEvidences();
             
-            if (!sortedEvidences || sortedEvidences.length === 0) {
+            if (!heroEvidences || heroEvidences.length === 0) {
                 heroSection.classList.add("hidden");
                 return;
             }
             heroSection.classList.remove("hidden");
 
-            if (window.currentSlideIndex < 0) window.currentSlideIndex = sortedEvidences.length - 1;
-            if (window.currentSlideIndex >= sortedEvidences.length) window.currentSlideIndex = 0;
+            if (window.currentSlideIndex < 0) window.currentSlideIndex = heroEvidences.length - 1;
+            if (window.currentSlideIndex >= heroEvidences.length) window.currentSlideIndex = 0;
 
-            const item = sortedEvidences[window.currentSlideIndex];
+            const item = heroEvidences[window.currentSlideIndex];
             const catLabel = getCategoryLabel(item.category);
             const catBadgeClass = getCategoryBadgeClass(item.category);
             const imageCount = getImageCount(item);
@@ -601,7 +589,7 @@
             const badgeNode = document.getElementById("cat-badge");
             badgeNode.textContent = title;
             badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${badgeClass}`;
-            syncSortSelects();
+            document.getElementById("sort-select").value = window.currentSortMode;
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
@@ -661,10 +649,7 @@
         window.clearGridSearch = function() { document.getElementById("grid-search-input").value = ""; window.renderCategoryGrid(); };
         window.setSortMode = function(mode) {
             window.currentSortMode = mode;
-            window.currentSlideIndex = 0;
-            syncSortSelects();
-            if (window.selectedCategoryKey) window.renderCategoryGrid();
-            else window.renderHeroSlider();
+            window.renderCategoryGrid();
         };
 
         window.openLightboxFromGrid = function(index) { window.currentLightboxIndex = index; window.showLightbox(); };
@@ -908,6 +893,11 @@
             }
 
             let finalImages = [...localUploadedBase64List];
+            if (finalImages.length === 0 && mediaLinks.length === 0) {
+                alert("사진 또는 영상/SNS 링크 중 하나는 등록해주세요.");
+                return;
+            }
+
             const passwordHash = await hashPassword(postPassword);
             let success = false;
 
@@ -1026,19 +1016,31 @@
         window.openGuideModal = function() { document.getElementById("guide-modal").classList.remove("hidden"); };
         window.closeGuideModal = function() { document.getElementById("guide-modal").classList.add("hidden"); };
 
-        function syncSortSelects() {
-            const selects = [document.getElementById("sort-select"), document.getElementById("home-sort-select")];
-            selects.forEach(select => {
-                if (select) select.value = window.currentSortMode;
-            });
-        }
-
         function getSortedEvidences(items) {
             return [...(items || [])].sort((a, b) => {
                 if (window.currentSortMode === "likes") return (b.likes || 0) - (a.likes || 0);
                 if (window.currentSortMode === "created") return getCreatedTime(b) - getCreatedTime(a);
                 return getUpdatedTime(b) - getUpdatedTime(a);
             });
+        }
+
+        function getHeroEvidences() {
+            const categories = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
+            return categories.flatMap(category => {
+                const categoryItems = window.evidences
+                    .filter(item => item.category === category)
+                    .sort((a, b) => (b.likes || 0) - (a.likes || 0) || getUpdatedTime(b) - getUpdatedTime(a));
+                return shuffleArray(categoryItems.slice(0, 5)).slice(0, 2);
+            });
+        }
+
+        function shuffleArray(items) {
+            const shuffled = [...items];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
         }
 
         function getCreatedTime(item) {
