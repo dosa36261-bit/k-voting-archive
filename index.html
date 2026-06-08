@@ -717,6 +717,7 @@
             mediaStack.innerHTML = "";
             getMediaLinks(item).forEach(link => mediaStack.appendChild(createMediaNode(link)));
             mediaStack.classList.toggle("hidden", mediaStack.children.length === 0);
+            loadSocialEmbeds(mediaStack);
 
             renderPostComments(item);
             modal.classList.remove("hidden");
@@ -1272,6 +1273,16 @@
                 return node;
             }
 
+            if (isXPostUrl(link)) {
+                node.className = "bg-white border-2 border-slate-100 rounded-xl p-3 flex justify-center overflow-hidden";
+                node.innerHTML = `
+                    <blockquote class="twitter-tweet" data-dnt="true" data-theme="light">
+                        <a href="${escapeHtml(normalizeXEmbedUrl(link))}"></a>
+                    </blockquote>
+                `;
+                return node;
+            }
+
             node.className = "bg-white border-2 border-slate-100 rounded-xl p-4 flex items-center justify-between gap-3";
             node.innerHTML = `
                 <div class="min-w-0">
@@ -1281,6 +1292,41 @@
                 <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black px-3 py-2 rounded-lg">열기</a>
             `;
             return node;
+        }
+
+        function isXPostUrl(link) {
+            try {
+                const parsed = new URL(link);
+                const host = parsed.hostname.replace("www.", "");
+                return (host === "x.com" || host === "twitter.com") && /\/status\/\d+/.test(parsed.pathname);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function normalizeXEmbedUrl(link) {
+            try {
+                const parsed = new URL(link);
+                parsed.hostname = "twitter.com";
+                return parsed.toString();
+            } catch (e) {
+                return link;
+            }
+        }
+
+        function loadSocialEmbeds(container) {
+            if (!container.querySelector(".twitter-tweet")) return;
+            if (window.twttr && window.twttr.widgets) {
+                window.twttr.widgets.load(container);
+                return;
+            }
+            if (document.getElementById("twitter-widgets-script")) return;
+            const script = document.createElement("script");
+            script.id = "twitter-widgets-script";
+            script.async = true;
+            script.src = "https://platform.twitter.com/widgets.js";
+            script.charset = "utf-8";
+            document.body.appendChild(script);
         }
 
         function getSuggestedImageFileName(item, index, src) {
