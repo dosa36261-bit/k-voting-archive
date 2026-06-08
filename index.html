@@ -1225,14 +1225,28 @@
         function getThumbnail(item) {
             const images = getImages(item);
             if (images.length > 0) return { type: "image", src: images[0] };
-            const youtube = getMediaLinks(item).map(parseYouTubeId).find(Boolean);
+            const mediaLinks = getMediaLinks(item);
+            const youtube = mediaLinks.map(parseYouTubeId).find(Boolean);
             if (youtube) return { type: "image", src: `https://img.youtube.com/vi/${youtube}/hqdefault.jpg` };
+            const xPost = mediaLinks.find(isXPostUrl);
+            if (xPost) return { type: "x", src: xPost };
             return { type: "placeholder" };
         }
 
         function renderThumbnailHtml(thumb, title) {
             if (thumb.type === "image") {
                 return `<img src="${escapeHtml(thumb.src)}" alt="${escapeHtml(title)}" class="w-full h-full object-cover" onerror="this.src='${mockImgLinks[0]}'">`;
+            }
+            if (thumb.type === "x") {
+                return `
+                    <div class="w-full h-full bg-slate-950 text-white flex flex-col items-center justify-center gap-3 p-5 text-center">
+                        <div class="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center font-black text-3xl">X</div>
+                        <div class="space-y-1 max-w-full">
+                            <div class="text-xs font-black text-slate-400">X 영상/게시물</div>
+                            <div class="text-sm md:text-base font-black line-clamp-2">${escapeHtml(title)}</div>
+                        </div>
+                    </div>
+                `;
             }
             return `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-2"><i class="fa-solid fa-link text-3xl text-slate-300"></i><span class="text-xs font-black text-slate-300">링크 자료</span></div>`;
         }
