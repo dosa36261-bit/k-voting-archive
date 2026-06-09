@@ -436,7 +436,7 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB2kFGyKrq2liuD3r0WDkN5lMZTN0va9Ik",
@@ -469,7 +469,11 @@
         window.deleteEvidenceFromFirestore = async function(evidenceId) {
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
-                await deleteDoc(docRef);
+                await setDoc(docRef, {
+                    deleted: true,
+                    deletedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
                 return true;
             } catch (err) {
                 console.error("Firestore 문서 삭제 중 오류: ", err);
@@ -641,7 +645,7 @@
                 return false;
             }
 
-            window.evidences = fetched || [];
+            window.evidences = (fetched || []).filter(item => !item.deleted);
             window.hasReceivedEvidenceSnapshot = true;
             window.hasVisibleEvidenceData = window.evidences.length > 0;
             cacheFetchedEvidences(window.evidences);

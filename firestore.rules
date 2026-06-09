@@ -3,14 +3,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /artifacts/k-voting/public/data/evidences/{evidenceId} {
+      function hasValidCoreFields(data) {
+        return data.id == evidenceId
+          && data.title is string
+          && data.category is string;
+      }
+
+      function hasValidPasswordHash(data) {
+        return data.passwordHash is string
+          && data.passwordHash.size() == 64;
+      }
+
+      function hasValidLegacyOrCurrentPasswordHash(data) {
+        return !data.keys().hasAny(['passwordHash'])
+          || (data.passwordHash is string
+            && (data.passwordHash.size() == 0 || data.passwordHash.size() == 64));
+      }
+
       allow read: if true;
-      allow create: if request.resource.data.id == evidenceId
-        && request.resource.data.title is string
-        && request.resource.data.category is string
-        && request.resource.data.passwordHash is string
-        && request.resource.data.passwordHash.size() == 64;
-      allow update: if true;
-      allow delete: if true;
+      allow create: if hasValidCoreFields(request.resource.data)
+        && hasValidPasswordHash(request.resource.data)
+        && !request.resource.data.keys().hasAny(['deleted', 'deletedAt']);
+      allow update: if hasValidCoreFields(request.resource.data)
+        && request.resource.data.id == resource.data.id
+        && hasValidLegacyOrCurrentPasswordHash(request.resource.data);
+      allow delete: if false;
     }
   }
 }

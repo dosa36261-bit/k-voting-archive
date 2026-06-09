@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "backup": "node scripts/backup-data.mjs"
+  }
+}
