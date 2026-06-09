@@ -460,47 +460,23 @@
                     snapshot.forEach((doc) => {
                         fetched.push({ id: doc.id, ...doc.data() });
                     });
-                    if (snapshot.metadata.fromCache && fetched.length === 0 && !window.hasReceivedEvidenceSnapshot) {
-                        window.setCategoryCountersLoading();
-                        return;
-                    }
+                    if (window.shouldWaitForEvidenceLoad(fetched, snapshot.metadata.fromCache)) return;
                     
-                    window.evidences = fetched;
-                    window.hasReceivedEvidenceSnapshot = true;
-                    window.updateCategoryCounters();
-                    window.renderHeroSlider();
-                    if (window.selectedCategoryKey) {
-                        window.renderCategoryGrid();
-                    }
-                    openPostFromHashIfNeeded();
+                    window.applyFetchedEvidences(fetched, { allowEmpty: true });
                 }, (error) => {
                     window.hasReceivedEvidenceSnapshot = false;
                     window.showCategoryLoadError();
                     console.error("실시간 수신 에러 (보안 규칙 또는 경로 확인 필요):", error);
                 });
 
-                setTimeout(async () => {
-                    if (window.hasReceivedEvidenceSnapshot && window.evidences.length > 0) return;
-                    try {
-                        const snapshot = await getDocs(colRef);
-                        const fetched = [];
-                        snapshot.forEach((doc) => {
-                            fetched.push({ id: doc.id, ...doc.data() });
-                        });
-                        if (fetched.length === 0 && window.hasReceivedEvidenceSnapshot) return;
-                        window.evidences = fetched;
-                        window.hasReceivedEvidenceSnapshot = true;
-                        window.updateCategoryCounters();
-                        window.renderHeroSlider();
-                        if (window.selectedCategoryKey) {
-                            window.renderCategoryGrid();
-                        }
-                        openPostFromHashIfNeeded();
-                    } catch (fallbackError) {
-                        console.error("Firestore fallback load failed:", fallbackError);
-                        window.showCategoryLoadError();
-                    }
-                }, 2500);
+                window.startEvidenceLoadRetries(async () => {
+                    const snapshot = await getDocs(colRef);
+                    const fetched = [];
+                    snapshot.forEach((doc) => {
+                        fetched.push({ id: doc.id, ...doc.data() });
+                    });
+                    return fetched;
+                });
 
             } catch (e) {
                 window.showCategoryLoadError();
@@ -526,6 +502,7 @@
         window.currentGridEvidences = [];
         window.currentSortMode = "updated";
         window.hasReceivedEvidenceSnapshot = false;
+        window.hasVisibleEvidenceData = false;
         window.pendingDeepLinkPostId = "";
         window.openedDeepLinkPostId = "";
         let localUploadedBase64List = [];
@@ -533,6 +510,7 @@
         let isAdminLoggedIn = false;
         let isDragAndDropReady = false;
         let isSavingEvidence = false;
+        let evidenceLoadRetryTimer = null;
 
         const mockImgLinks = [
             "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
@@ -573,6 +551,7 @@
         window.setupKeyboardNavigation();
 
         const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
+        const EVIDENCE_CACHE_KEY = "kvoting:evidences:v1";
 
         function setCategoryCounterText(text, title) {
             CATEGORY_KEYS.forEach(cat => {
@@ -584,11 +563,98 @@
         }
 
         window.setCategoryCountersLoading = function() {
-            setCategoryCounterText("...", "자료를 불러오는 중입니다.");
+            setCategoryCounterText("로딩중", "자료를 불러오는 중입니다.");
         };
 
         window.showCategoryLoadError = function() {
-            setCategoryCounterText("!", "자료를 불러오지 못했습니다. 새로고침해 주세요.");
+            setCategoryCounterText("재시도", "자료를 불러오는 중입니다. 잠시 뒤 다시 시도합니다.");
+        };
+
+        function refreshEvidenceViews() {
+            window.updateCategoryCounters();
+            window.renderHeroSlider();
+            if (window.selectedCategoryKey) {
+                window.renderCategoryGrid();
+            }
+            openPostFromHashIfNeeded();
+        }
+
+        function cacheFetchedEvidences(items) {
+            if (!items || items.length === 0) return;
+            try {
+                localStorage.setItem(EVIDENCE_CACHE_KEY, JSON.stringify(items));
+            } catch (error) {
+                console.warn("Evidence cache save failed:", error);
+            }
+        }
+
+        window.restoreCachedEvidences = function() {
+            try {
+                const cached = JSON.parse(localStorage.getItem(EVIDENCE_CACHE_KEY) || "[]");
+                if (!Array.isArray(cached) || cached.length === 0) return false;
+                window.evidences = cached;
+                window.hasVisibleEvidenceData = true;
+                refreshEvidenceViews();
+                return true;
+            } catch (error) {
+                console.warn("Evidence cache restore failed:", error);
+                return false;
+            }
+        };
+
+        window.shouldWaitForEvidenceLoad = function(fetched, fromCache) {
+            if (fetched.length > 0) return false;
+            if (!window.hasReceivedEvidenceSnapshot) {
+                window.setCategoryCountersLoading();
+                return true;
+            }
+            return false;
+        };
+
+        window.applyFetchedEvidences = function(fetched, options = {}) {
+            const allowEmpty = options.allowEmpty === true;
+            if ((!fetched || fetched.length === 0) && !allowEmpty) {
+                window.setCategoryCountersLoading();
+                return false;
+            }
+
+            window.evidences = fetched || [];
+            window.hasReceivedEvidenceSnapshot = true;
+            window.hasVisibleEvidenceData = window.evidences.length > 0;
+            cacheFetchedEvidences(window.evidences);
+            refreshEvidenceViews();
+            return true;
+        };
+
+        window.startEvidenceLoadRetries = function(loadFn) {
+            if (evidenceLoadRetryTimer) clearTimeout(evidenceLoadRetryTimer);
+            let attempts = 0;
+            const maxAttempts = 12;
+
+            const run = async () => {
+                if (window.hasReceivedEvidenceSnapshot && window.evidences.length > 0) return;
+                attempts++;
+                window.setCategoryCountersLoading();
+
+                try {
+                    const fetched = await loadFn();
+                    if (fetched.length > 0) {
+                        window.applyFetchedEvidences(fetched);
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Evidence retry load failed:", error);
+                }
+
+                if (attempts >= maxAttempts) {
+                    if (!window.hasVisibleEvidenceData) window.showCategoryLoadError();
+                    return;
+                }
+
+                evidenceLoadRetryTimer = setTimeout(run, 1500);
+            };
+
+            evidenceLoadRetryTimer = setTimeout(run, 1200);
         };
 
         window.setCategoryCountersLoading();
@@ -857,6 +923,8 @@
             window.openedDeepLinkPostId = itemId;
             window.openLightboxDirectly(itemId);
         }
+
+        window.restoreCachedEvidences();
 
         window.likeCurrentPost = async function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
