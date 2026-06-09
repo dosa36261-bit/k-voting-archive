@@ -1,5 +1,6 @@
 {
   "scripts": {
-    "backup": "node scripts/backup-data.mjs"
+    "backup": "node scripts/backup-data.mjs",
+    "rebuild-counts": "node scripts/rebuild-category-counts.mjs"
   }
 }

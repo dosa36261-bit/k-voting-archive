@@ -29,5 +29,19 @@ service cloud.firestore {
         && hasValidLegacyOrCurrentPasswordHash(request.resource.data);
       allow delete: if false;
     }
+
+    match /artifacts/k-voting/public/data/stats/categoryCounts {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly([
+        'shape-memory',
+        'strange-ballot',
+        'bad-management',
+        'nec-admin',
+        'etc',
+        'free-board',
+        'updatedAt'
+      ]);
+      allow delete: if false;
+    }
   }
 }

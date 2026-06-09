@@ -436,7 +436,7 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, setDoc, getDoc, getDocs, getCountFromServer, query, where, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, setDoc, getDoc, getDocs, increment, query, where, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB2kFGyKrq2liuD3r0WDkN5lMZTN0va9Ik",
@@ -452,12 +452,18 @@
         
         const appId = 'k-voting';
         const collectionName = 'evidences';
+        const statsCollectionName = 'stats';
+        const categoryCountsDocId = 'categoryCounts';
         const categoryKeys = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const homeItemsPerCategory = 8;
         const categoryPageLimit = 80;
 
         function getEvidenceCollectionRef() {
             return collection(db, 'artifacts', appId, 'public', 'data', collectionName);
+        }
+
+        function getCategoryCountsDocRef() {
+            return doc(db, 'artifacts', appId, 'public', 'data', statsCollectionName, categoryCountsDocId);
         }
 
         function snapshotToEvidences(snapshot) {
@@ -537,15 +543,53 @@
         };
 
         window.loadCategoryCounts = async function() {
-            const colRef = getEvidenceCollectionRef();
-            const counts = {};
-            await Promise.all(categoryKeys.map(async (category) => {
-                const snapshot = await getCountFromServer(query(colRef, where("category", "==", category)));
-                counts[category] = snapshot.data().count || 0;
-            }));
-            window.categoryCounts = counts;
+            const snap = await getDoc(getCategoryCountsDocRef());
+            const data = snap.exists() ? snap.data() : {};
+            window.categoryCounts = Object.fromEntries(categoryKeys.map(category => [category, Number(data[category] || 0)]));
             window.updateCategoryCounters();
-            return counts;
+            return window.categoryCounts;
+        };
+
+        window.adjustCategoryCount = async function(category, amount) {
+            if (!category || !categoryKeys.includes(category) || !amount) return true;
+            try {
+                await setDoc(getCategoryCountsDocRef(), {
+                    [category]: increment(amount),
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                window.categoryCounts = {
+                    ...(window.categoryCounts || {}),
+                    [category]: Math.max(0, Number((window.categoryCounts || {})[category] || 0) + amount)
+                };
+                window.updateCategoryCounters();
+                return true;
+            } catch (error) {
+                console.error("Category count update failed:", error);
+                return false;
+            }
+        };
+
+        window.adjustCategoryCountsForChange = async function(oldCategory, newCategory) {
+            if (!oldCategory && newCategory) return window.adjustCategoryCount(newCategory, 1);
+            if (oldCategory && !newCategory) return window.adjustCategoryCount(oldCategory, -1);
+            if (!oldCategory || !newCategory || oldCategory === newCategory) return true;
+            try {
+                await setDoc(getCategoryCountsDocRef(), {
+                    [oldCategory]: increment(-1),
+                    [newCategory]: increment(1),
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                window.categoryCounts = {
+                    ...(window.categoryCounts || {}),
+                    [oldCategory]: Math.max(0, Number((window.categoryCounts || {})[oldCategory] || 0) - 1),
+                    [newCategory]: Number((window.categoryCounts || {})[newCategory] || 0) + 1
+                };
+                window.updateCategoryCounters();
+                return true;
+            } catch (error) {
+                console.error("Category count change update failed:", error);
+                return false;
+            }
         };
 
         async function startApp() {
@@ -1343,10 +1387,12 @@
             const passwordHash = postPassword ? await hashPassword(postPassword) : "";
             let success = false;
             const evidenceId = editId || "ev-" + Date.now();
+            let previousCategory = "";
 
             if (editId) {
                 const original = window.evidences.find(item => item.id === editId);
                 if (!original) return;
+                previousCategory = original.category || "";
                 if (!isAdminLoggedIn && !original.passwordHash) {
                     alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 수정을 지원하지 않습니다. 관리자에게 문의해주세요.");
                     return;
@@ -1391,7 +1437,11 @@
             }
 
             if (success) {
-                if (window.loadCategoryCounts) window.loadCategoryCounts().catch(() => {});
+                if (editId) {
+                    window.adjustCategoryCountsForChange(previousCategory, category).catch(() => {});
+                } else {
+                    window.adjustCategoryCount(category, 1).catch(() => {});
+                }
                 if (window.loadCategoryEvidenceBatch) window.loadCategoryEvidenceBatch(category).catch(() => {});
                 window.closeUploadModal(); window.closeLightbox();
                 showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
@@ -1529,7 +1579,7 @@
                 if (deleted) {
                     window.evidences = window.evidences.filter(e => e.id !== id);
                     window.currentGridEvidences = window.currentGridEvidences.filter(e => e.id !== id);
-                    if (window.loadCategoryCounts) window.loadCategoryCounts().catch(() => {});
+                    if (window.adjustCategoryCount) window.adjustCategoryCount(item.category, -1).catch(() => {});
                     if (window.selectedCategoryKey) window.renderCategoryGrid(); else window.renderHeroSlider();
                     showNotification("삭제되었습니다.");
                     window.closeLightbox();
