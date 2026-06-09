@@ -72,13 +72,13 @@
                 </div>
 
                 <div class="relative flex flex-col items-center">
-                    <button onclick="prevSlide()" class="absolute left-2 top-[35%] md:top-[40%] -translate-y-1/2 z-10 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
+                    <button onclick="prevSlide()" class="absolute left-2 top-[35%] md:top-[40%] -translate-y-1/2 z-0 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
                         <i class="fa-solid fa-chevron-left text-xl"></i>
                     </button>
 
                     <div id="hero-slide-container" class="w-full max-w-4xl mx-auto space-y-5 px-1 md:px-12"></div>
 
-                    <button onclick="nextSlide()" class="absolute right-2 top-[35%] md:top-[40%] -translate-y-1/2 z-10 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
+                    <button onclick="nextSlide()" class="absolute right-2 top-[35%] md:top-[40%] -translate-y-1/2 z-0 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
                         <i class="fa-solid fa-chevron-right text-xl"></i>
                     </button>
                 </div>
@@ -395,7 +395,7 @@
         </div>
     </div>
 
-    <div id="guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3">
+    <div id="guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleGuideOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative">
             <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
                 <i class="fa-solid fa-xmark"></i>
@@ -416,7 +416,7 @@
         </div>
     </div>
 
-    <div id="upload-guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3">
+    <div id="upload-guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleUploadGuideOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative">
             <button onclick="closeUploadGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
                 <i class="fa-solid fa-xmark"></i>
@@ -1487,9 +1487,16 @@
             }
         };
 
-        window.openGuideModal = function() { document.getElementById("guide-modal").classList.remove("hidden"); };
+        window.openGuideModal = function() {
+            window.closeUploadGuideModal();
+            document.getElementById("guide-modal").classList.remove("hidden");
+        };
         window.closeGuideModal = function() { document.getElementById("guide-modal").classList.add("hidden"); };
+        window.handleGuideOutsideClick = function(event) {
+            if (event.target.id === "guide-modal") window.closeGuideModal();
+        };
         window.openUploadGuideModal = function() {
+            window.closeGuideModal();
             const modal = document.getElementById("upload-guide-modal");
             const video = modal.querySelector("video");
             modal.classList.remove("hidden");
@@ -1503,6 +1510,9 @@
             const video = modal.querySelector("video");
             if (video) video.pause();
             modal.classList.add("hidden");
+        };
+        window.handleUploadGuideOutsideClick = function(event) {
+            if (event.target.id === "upload-guide-modal") window.closeUploadGuideModal();
         };
 
         function getSortedEvidences(items) {
