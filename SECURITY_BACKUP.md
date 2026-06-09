@@ -7,7 +7,7 @@ This project is a public, browser-only archive. Users write directly to Firestor
 Run this from the repository root:
 
 ```bash
-node scripts/backup-data.mjs
+npm run backup
 ```
 
 The script creates:
@@ -21,6 +21,29 @@ backups/<date>/images/
 `backups/` is ignored by Git so private backup files are not pushed to GitHub.
 
 If the script says `Firestore quota exceeded`, Firebase/Google Cloud read quota is exhausted. Wait for quota reset or enable billing with a budget cap before trying again.
+
+## Owner Checklist
+
+Do these in order.
+
+1. In Firebase Console, open Firestore Database > Rules.
+2. Copy the contents of `firestore.rules` into the rules editor.
+3. Click Publish.
+4. Open Firebase/Google Cloud usage or quotas and check whether Firestore reads are exhausted.
+5. If quota is exhausted, wait for the free quota reset or enable Blaze only after setting budget alerts.
+6. After quota is available again, run:
+
+```bash
+npm run backup
+```
+
+7. Confirm that a new `backups/<date>/manifest.json` and `backups/<date>/evidences.json` exist.
+
+If Firebase CLI is installed and logged in, rules can also be deployed with:
+
+```bash
+firebase deploy --only firestore:rules
+```
 
 ## What Is Backed Up
 
