@@ -410,7 +410,7 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB2kFGyKrq2liuD3r0WDkN5lMZTN0va9Ik",
@@ -460,8 +460,13 @@
                     snapshot.forEach((doc) => {
                         fetched.push({ id: doc.id, ...doc.data() });
                     });
+                    if (snapshot.metadata.fromCache && fetched.length === 0 && !window.hasReceivedEvidenceSnapshot) {
+                        window.setCategoryCountersLoading();
+                        return;
+                    }
                     
                     window.evidences = fetched;
+                    window.hasReceivedEvidenceSnapshot = true;
                     window.updateCategoryCounters();
                     window.renderHeroSlider();
                     if (window.selectedCategoryKey) {
@@ -469,10 +474,36 @@
                     }
                     openPostFromHashIfNeeded();
                 }, (error) => {
+                    window.hasReceivedEvidenceSnapshot = false;
+                    window.showCategoryLoadError();
                     console.error("실시간 수신 에러 (보안 규칙 또는 경로 확인 필요):", error);
                 });
 
+                setTimeout(async () => {
+                    if (window.hasReceivedEvidenceSnapshot && window.evidences.length > 0) return;
+                    try {
+                        const snapshot = await getDocs(colRef);
+                        const fetched = [];
+                        snapshot.forEach((doc) => {
+                            fetched.push({ id: doc.id, ...doc.data() });
+                        });
+                        if (fetched.length === 0 && window.hasReceivedEvidenceSnapshot) return;
+                        window.evidences = fetched;
+                        window.hasReceivedEvidenceSnapshot = true;
+                        window.updateCategoryCounters();
+                        window.renderHeroSlider();
+                        if (window.selectedCategoryKey) {
+                            window.renderCategoryGrid();
+                        }
+                        openPostFromHashIfNeeded();
+                    } catch (fallbackError) {
+                        console.error("Firestore fallback load failed:", fallbackError);
+                        window.showCategoryLoadError();
+                    }
+                }, 2500);
+
             } catch (e) {
+                window.showCategoryLoadError();
                 console.error("초기 데이터 로딩 실패: ", e);
             }
         }
@@ -494,6 +525,9 @@
         window.currentLightboxIndex = 0;
         window.currentGridEvidences = [];
         window.currentSortMode = "updated";
+        window.hasReceivedEvidenceSnapshot = false;
+        window.pendingDeepLinkPostId = "";
+        window.openedDeepLinkPostId = "";
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
         let isAdminLoggedIn = false;
@@ -538,13 +572,36 @@
         };
         window.setupKeyboardNavigation();
 
+        const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
+
+        function setCategoryCounterText(text, title) {
+            CATEGORY_KEYS.forEach(cat => {
+                const badge = document.getElementById(`count-${cat}`);
+                if (!badge) return;
+                badge.textContent = text;
+                badge.title = title || "";
+            });
+        }
+
+        window.setCategoryCountersLoading = function() {
+            setCategoryCounterText("...", "자료를 불러오는 중입니다.");
+        };
+
+        window.showCategoryLoadError = function() {
+            setCategoryCounterText("!", "자료를 불러오지 못했습니다. 새로고침해 주세요.");
+        };
+
+        window.setCategoryCountersLoading();
+
         // 카운터 갱신
         window.updateCategoryCounters = function() {
-            const categories = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
-            categories.forEach(cat => {
+            CATEGORY_KEYS.forEach(cat => {
                 const count = window.evidences.filter(item => item.category === cat).length;
                 const badge = document.getElementById(`count-${cat}`);
-                if (badge) badge.textContent = count;
+                if (badge) {
+                    badge.textContent = count;
+                    badge.title = "";
+                }
             });
         };
 
@@ -791,7 +848,13 @@
             const hashMatch = window.location.hash.match(/^#post=(.+)$/);
             const itemId = queryPostId || (hashMatch ? decodeURIComponent(hashMatch[1]) : "");
             if (!itemId) return;
-            if (!window.evidences.some(item => item.id === itemId)) return;
+            if (window.openedDeepLinkPostId === itemId) return;
+            if (!window.evidences.some(item => item.id === itemId)) {
+                window.pendingDeepLinkPostId = itemId;
+                return;
+            }
+            window.pendingDeepLinkPostId = "";
+            window.openedDeepLinkPostId = itemId;
             window.openLightboxDirectly(itemId);
         }
 
