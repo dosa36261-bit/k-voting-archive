@@ -576,6 +576,7 @@
             const imageCount = getImageCount(item);
             const mediaCount = getMediaLinks(item).length;
             const thumb = getThumbnail(item);
+            const commentCount = getCommentCount(item);
 
             let sourceHtml = item.source ? `<div class="text-sm text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 font-bold border border-slate-200"><span class="font-black text-slate-800">출처:</span> ${escapeHtml(item.source)}</div>` : "";
             let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-white whitespace-pre-wrap">${linkifyText(item.desc)}</p>` : "";
@@ -595,11 +596,11 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <span class="px-3 py-1 rounded-full text-xs font-black ${catBadgeClass}">${catLabel}</span>
-                            <span class="text-xs text-slate-400 font-bold">추천 ${item.likes || 0}</span>
+                            <span class="text-xs text-slate-400 font-bold">👍 ${item.likes || 0}</span>
                         </div>
                         ${deleteBtn}
                     </div>
-                    <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600" onclick="openLightboxDirectly('${item.id}')">${escapeHtml(item.title)}</h3>
+                    <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600" onclick="openLightboxDirectly('${item.id}')">${escapeHtml(item.title)}${commentCount > 0 ? ` <span class="text-blue-600">[${commentCount}]</span>` : ""}</h3>
                     ${sourceHtml} ${descHtml}
                 </div>
             `;
@@ -656,18 +657,24 @@
                 const imageCount = getImageCount(item);
                 const mediaLinks = getMediaLinks(item);
                 const thumb = getThumbnail(item);
+                const commentCount = getCommentCount(item);
                 let sourceTag = item.source ? `<span class="truncate text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${escapeHtml(item.source)}</span>` : `<span class="text-xs text-slate-300">출처 미상</span>`;
                 let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
 
                 card.innerHTML = `
                     <div class="aspect-square bg-slate-900 overflow-hidden relative">
                         ${renderThumbnailHtml(thumb, item.title)}
-                        <div class="absolute bottom-2 left-2 bg-slate-955/80 text-white text-[11px] px-2 py-0.5 rounded font-black">추천 ${item.likes || 0}</div>
                         <div class="absolute bottom-2 right-2 bg-slate-955/80 text-white text-[11px] px-2 py-0.5 rounded font-black">${getMediaBadgeText(imageCount, mediaLinks.length)}</div>
                     </div>
                     <div class="p-4 flex-grow flex flex-col justify-between space-y-4">
-                        <h4 class="font-bold text-slate-955 text-base group-hover:text-blue-600 line-clamp-2 leading-snug">${escapeHtml(item.title)}</h4>
-                        <div class="pt-2 border-t border-slate-155 flex items-center justify-between">${sourceTag}${deleteBtn}</div>
+                        <h4 class="font-bold text-slate-955 text-base group-hover:text-blue-600 line-clamp-2 leading-snug">${escapeHtml(item.title)}${commentCount > 0 ? ` <span class="text-blue-600">[${commentCount}]</span>` : ""}</h4>
+                        <div class="pt-2 border-t border-slate-155 flex items-center justify-between gap-2">
+                            ${sourceTag}
+                            <div class="shrink-0 flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-black">👍 ${item.likes || 0}</span>
+                                ${deleteBtn}
+                            </div>
+                        </div>
                     </div>
                 `;
                 gridContainer.appendChild(card);
@@ -699,7 +706,7 @@
 
             const item = window.currentGridEvidences[window.currentLightboxIndex];
             document.getElementById("lightbox-item-id").textContent = item.id;
-            document.getElementById("lightbox-title").textContent = item.title;
+            document.getElementById("lightbox-title").innerHTML = `${escapeHtml(item.title)}${getCommentCount(item) > 0 ? ` <span class="text-blue-600">[${getCommentCount(item)}]</span>` : ""}`;
             document.getElementById("lightbox-likes-count").textContent = item.likes || 0;
 
             const descWrapper = document.getElementById("lightbox-desc-wrapper");
@@ -790,15 +797,28 @@
 
         window.likeCurrentPost = async function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
+            if (hasLikedPost(item.id)) {
+                alert("이미 추천한 게시글입니다.");
+                return;
+            }
             item.likes = (item.likes || 0) + 1;
             const updated = await window.saveEvidenceToFirestore(item.id, { likes: item.likes });
             if (updated) {
+                markPostLiked(item.id);
                 document.getElementById("lightbox-likes-count").textContent = item.likes;
                 showNotification("추천 완료!");
             } else {
                 alert("추천 도중 네트워크에 일시적인 장애가 생겼습니다.");
             }
         };
+
+        function hasLikedPost(itemId) {
+            return localStorage.getItem(`liked:${itemId}`) === "1";
+        }
+
+        function markPostLiked(itemId) {
+            localStorage.setItem(`liked:${itemId}`, "1");
+        }
 
         function renderPostComments(item) {
             const list = document.getElementById("comments-list");
@@ -1346,6 +1366,10 @@
             if (imageCount > 0) parts.push(`사진 ${imageCount}장`);
             if (mediaCount > 0) parts.push(`링크 ${mediaCount}개`);
             return parts.length > 0 ? parts.join(" · ") : "자료 없음";
+        }
+
+        function getCommentCount(item) {
+            return item.comments ? item.comments.length : 0;
         }
 
         function getThumbnail(item) {
