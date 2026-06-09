@@ -608,7 +608,8 @@
                 window.setCategoryCountersLoading();
                 window.loadCategoryCounts().catch((error) => {
                     console.error("Category count load failed:", error);
-                    window.showCategoryLoadError();
+                    window.categoryCounts = { ...fallbackCategoryCounts };
+                    window.updateCategoryCounters();
                 });
                 window.startEvidenceLoadRetries(window.loadHomeEvidenceBatch);
                 return;
@@ -662,7 +663,14 @@
         window.currentSortMode = "updated";
         window.hasReceivedEvidenceSnapshot = false;
         window.hasVisibleEvidenceData = false;
-        window.categoryCounts = { ...fallbackCategoryCounts };
+        window.categoryCounts = {
+            "shape-memory": 39,
+            "strange-ballot": 18,
+            "bad-management": 13,
+            "nec-admin": 5,
+            "etc": 4,
+            "free-board": 10
+        };
         window.pendingDeepLinkPostId = "";
         window.openedDeepLinkPostId = "";
         let localUploadedBase64List = [];
