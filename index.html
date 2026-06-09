@@ -36,13 +36,16 @@
                     <i class="fa-solid fa-square-poll-horizontal text-2xl"></i>
                 </div>
                 <div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <h1 class="font-black text-2xl text-slate-955 tracking-tight leading-tight">선거 이슈 아카이브</h1>
                         <button onclick="event.stopPropagation(); openGuideModal()" class="bg-white hover:bg-slate-50 text-slate-600 text-xs font-black px-2.5 py-1 rounded-lg border border-slate-200">
                             이용안내
                         </button>
+                        <button onclick="event.stopPropagation(); openUploadGuideModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-black px-2.5 py-1 rounded-lg border border-blue-200">
+                            업로드 방법
+                        </button>
                     </div>
-                    <p class="text-sm text-slate-500 font-bold">선거 이슈를 모으는 시민 아카이브</p>
+                    <p class="text-sm text-slate-500 font-bold">선거 무결성을 위한 시민 참여형 아카이브</p>
                 </div>
             </div>
             
@@ -399,10 +402,33 @@
             </button>
             <div class="space-y-4 pr-6">
                 <h3 class="text-xl font-black text-slate-955">이용안내</h3>
-                <div class="space-y-3 text-sm md:text-base text-slate-700 leading-relaxed font-semibold whitespace-pre-wrap">본 아카이브는 선거 무결성을 확보하기 위해 시민들이 자발적으로 참여하여 기록을 모으는 공개 공간입니다.
-이곳은 특정 정당의 이익이나 좌우 이념을 대변하지 않습니다. 정파적 이해관계를 넘어, 헌법이 보장하는 국민의 소중한 기본권을 지키고 선거 제도의 신뢰를 회복하는 것을 최우선 가치로 삼습니다.
-대한민국 국민이라면 누구나 자유롭게 아카이브에 참여하실 수 있습니다.
-가능한 한 출처가 명확하고 객관적인 사실이나 정황을 담은 자료를 등록해 주시기 바랍니다.</div>
+                <div class="space-y-4 text-sm md:text-base text-slate-700 leading-relaxed font-semibold">
+                    <p>본 아카이브는 선거 무결성을 확보하기 위해 시민들이 자발적으로 참여하여 기록을 모으는 공개 공간입니다.</p>
+                    <p>이곳은 특정 정당의 이익이나 좌우 이념을 대변하지 않습니다. 정파적 이해관계를 넘어, 헌법이 보장하는 국민의 소중한 기본권을 지키고 선거 제도의 신뢰를 회복하는 것을 최우선 가치로 삼습니다.</p>
+                    <p>대한민국 국민이라면 누구나 자유롭게 아카이브에 참여하실 수 있습니다.</p>
+                    <p>가능한 한 출처가 명확하고 객관적인 사실이나 정황을 담은 자료를 등록해 주시기 바랍니다.</p>
+                </div>
+                <div class="border-t border-slate-200 pt-4 text-xs md:text-sm text-slate-500 font-bold space-y-2">
+                    <p><span class="text-slate-800 font-black">좌/우 방향키</span>로 게시글이나 메인 자료를 넘길 수 있습니다.</p>
+                    <p><span class="text-slate-800 font-black">ESC 또는 Backspace</span>를 누르면 게시글에서 카테고리로, 카테고리에서 메인페이지로 돌아갑니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="upload-guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative">
+            <button onclick="closeUploadGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="space-y-4 pr-6">
+                <h3 class="text-xl font-black text-slate-955">업로드 방법</h3>
+                <video class="w-full rounded-xl border border-slate-200 bg-slate-100" src="uploadGuide.mp4" controls autoplay muted loop playsinline></video>
+                <div class="space-y-2 text-sm md:text-base text-slate-700 leading-relaxed font-semibold">
+                    <p>간단하게 사진자료나 영상, SNS를 공유하세요.</p>
+                    <p>컴퓨터에서 드래그 하거나 다른 웹사이트 이미지를 드래그해도 됩니다.</p>
+                    <p><span class="font-black text-slate-900">윈도우+Shift+S</span> 키를 눌러 캡쳐 후 <span class="font-black text-slate-900">Ctrl+V</span>로 붙여넣으면 쉬워요.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -523,16 +549,13 @@
                 const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
 
                 if (event.key === "Escape") {
-                    if (isUploadModalOpen) window.closeUploadModal();
-                    if (isLightboxOpen) window.closeLightbox();
-                    window.closeGuideModal();
-                    window.closeAdminModal();
+                    event.preventDefault();
+                    window.navigateBackOneStep();
                 } else if (isUploadModalOpen) {
                     return;
                 } else if (event.key === "Backspace" && !isTextInputTarget(event.target)) {
                     event.preventDefault();
-                    if (isLightboxOpen) window.closeLightbox();
-                    else if (window.selectedCategoryKey) window.goHome();
+                    window.navigateBackOneStep();
                 } else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && isTextInputTarget(event.target)) {
                     return;
                 } else if (event.key === "ArrowLeft") {
@@ -676,6 +699,50 @@
             document.getElementById("page-category").classList.add("hidden");
             document.getElementById("page-home").classList.remove("hidden");
             window.renderHeroSlider();
+        };
+
+        window.showSelectedCategoryPage = function() {
+            if (!window.selectedCategoryKey) return;
+            document.getElementById("page-home").classList.add("hidden");
+            document.getElementById("page-category").classList.remove("hidden");
+            const badgeNode = document.getElementById("cat-badge");
+            badgeNode.textContent = getCategoryLabel(window.selectedCategoryKey);
+            badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${getCategoryBadgeClass(window.selectedCategoryKey)}`;
+            document.getElementById("sort-select").value = window.currentSortMode;
+            window.renderCategoryGrid();
+        };
+
+        window.navigateBackOneStep = function() {
+            const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
+            const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
+            const isGuideOpen = !document.getElementById("guide-modal").classList.contains("hidden");
+            const isUploadGuideOpen = !document.getElementById("upload-guide-modal").classList.contains("hidden");
+            const isAdminOpen = !document.getElementById("admin-modal").classList.contains("hidden");
+
+            if (isUploadModalOpen) {
+                window.closeUploadModal();
+                return;
+            }
+            if (isGuideOpen) {
+                window.closeGuideModal();
+                return;
+            }
+            if (isUploadGuideOpen) {
+                window.closeUploadGuideModal();
+                return;
+            }
+            if (isAdminOpen) {
+                window.closeAdminModal();
+                return;
+            }
+            if (isLightboxOpen) {
+                window.closeLightbox();
+                window.showSelectedCategoryPage();
+                return;
+            }
+            if (window.selectedCategoryKey) {
+                window.goHome();
+            }
         };
 
         // 슬라이더 렌더링
@@ -1422,6 +1489,21 @@
 
         window.openGuideModal = function() { document.getElementById("guide-modal").classList.remove("hidden"); };
         window.closeGuideModal = function() { document.getElementById("guide-modal").classList.add("hidden"); };
+        window.openUploadGuideModal = function() {
+            const modal = document.getElementById("upload-guide-modal");
+            const video = modal.querySelector("video");
+            modal.classList.remove("hidden");
+            if (video) {
+                video.currentTime = 0;
+                video.play().catch(() => {});
+            }
+        };
+        window.closeUploadGuideModal = function() {
+            const modal = document.getElementById("upload-guide-modal");
+            const video = modal.querySelector("video");
+            if (video) video.pause();
+            modal.classList.add("hidden");
+        };
 
         function getSortedEvidences(items) {
             return [...(items || [])].sort((a, b) => {
