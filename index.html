@@ -436,7 +436,7 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, setDoc, getDoc, getDocs, getCountFromServer, query, where, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB2kFGyKrq2liuD3r0WDkN5lMZTN0va9Ik",
@@ -452,6 +452,33 @@
         
         const appId = 'k-voting';
         const collectionName = 'evidences';
+        const categoryKeys = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
+        const homeItemsPerCategory = 8;
+        const categoryPageLimit = 80;
+
+        function getEvidenceCollectionRef() {
+            return collection(db, 'artifacts', appId, 'public', 'data', collectionName);
+        }
+
+        function snapshotToEvidences(snapshot) {
+            const fetched = [];
+            snapshot.forEach((docSnap) => {
+                fetched.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            return fetched;
+        }
+
+        function mergeEvidenceItems(items) {
+            const byId = new Map((window.evidences || []).map(item => [item.id, item]));
+            (items || []).forEach(item => {
+                if (!item || item.deleted) {
+                    if (item && item.id) byId.delete(item.id);
+                    return;
+                }
+                byId.set(item.id, item);
+            });
+            return Array.from(byId.values());
+        }
 
         // 전역 스코프에 Firestore 저장 함수 주입
         window.saveEvidenceToFirestore = async function(evidenceId, dataObj) {
@@ -482,8 +509,55 @@
         };
 
         // 앱 구동 즉시 비동기 리스너 바인딩
+        window.loadHomeEvidenceBatch = async function() {
+            const colRef = getEvidenceCollectionRef();
+            const batches = await Promise.all(categoryKeys.map(async (category) => {
+                const snapshot = await getDocs(query(colRef, where("category", "==", category), limit(homeItemsPerCategory)));
+                return snapshotToEvidences(snapshot);
+            }));
+            return batches.flat();
+        };
+
+        window.loadCategoryEvidenceBatch = async function(category) {
+            const colRef = getEvidenceCollectionRef();
+            const snapshot = await getDocs(query(colRef, where("category", "==", category), limit(categoryPageLimit)));
+            const fetched = snapshotToEvidences(snapshot);
+            window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
+            return fetched;
+        };
+
+        window.loadEvidenceById = async function(evidenceId) {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) return null;
+            const item = { id: docSnap.id, ...docSnap.data() };
+            if (item.deleted) return null;
+            window.applyFetchedEvidences(mergeEvidenceItems([item]), { allowEmpty: true, cache: true });
+            return item;
+        };
+
+        window.loadCategoryCounts = async function() {
+            const colRef = getEvidenceCollectionRef();
+            const counts = {};
+            await Promise.all(categoryKeys.map(async (category) => {
+                const snapshot = await getCountFromServer(query(colRef, where("category", "==", category)));
+                counts[category] = snapshot.data().count || 0;
+            }));
+            window.categoryCounts = counts;
+            window.updateCategoryCounters();
+            return counts;
+        };
+
         async function startApp() {
             try {
+                window.setCategoryCountersLoading();
+                window.loadCategoryCounts().catch((error) => {
+                    console.error("Category count load failed:", error);
+                    window.showCategoryLoadError();
+                });
+                window.startEvidenceLoadRetries(window.loadHomeEvidenceBatch);
+                return;
+
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
                 onSnapshot(colRef, (snapshot) => {
                     const fetched = [];
@@ -689,7 +763,9 @@
         // 카운터 갱신
         window.updateCategoryCounters = function() {
             CATEGORY_KEYS.forEach(cat => {
-                const count = window.evidences.filter(item => item.category === cat).length;
+                const count = window.categoryCounts && Number.isFinite(window.categoryCounts[cat])
+                    ? window.categoryCounts[cat]
+                    : window.evidences.filter(item => item.category === cat).length;
                 const badge = document.getElementById(`count-${cat}`);
                 if (badge) {
                     badge.textContent = count;
@@ -817,6 +893,10 @@
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
+            window.loadCategoryEvidenceBatch(catKey).catch((error) => {
+                console.error("Category evidence load failed:", error);
+                showNotification("자료를 불러오지 못했습니다. 잠시 뒤 다시 시도해주세요.");
+            });
         };
 
         window.renderCategoryGrid = function() {
@@ -883,11 +963,17 @@
         };
 
         window.openLightboxFromGrid = function(index) { window.currentLightboxIndex = index; window.showLightbox(); };
-        window.openLightboxDirectly = function(itemId) {
-            const itemObj = window.evidences.find(i => i.id === itemId);
+        window.openLightboxDirectly = async function(itemId) {
+            let itemObj = window.evidences.find(i => i.id === itemId);
+            if (!itemObj && window.loadEvidenceById) {
+                itemObj = await window.loadEvidenceById(itemId);
+            }
             if (!itemObj) return;
             window.selectedCategoryKey = itemObj.category;
             window.currentGridEvidences = getSortedEvidences(window.evidences.filter(i => i.category === window.selectedCategoryKey));
+            if (!window.currentGridEvidences.some(i => i.id === itemId)) {
+                window.currentGridEvidences.unshift(itemObj);
+            }
             window.currentLightboxIndex = window.currentGridEvidences.findIndex(i => i.id === itemId);
             window.showLightbox();
         };
@@ -988,6 +1074,11 @@
             if (window.openedDeepLinkPostId === itemId) return;
             if (!window.evidences.some(item => item.id === itemId)) {
                 window.pendingDeepLinkPostId = itemId;
+                if (window.loadEvidenceById) {
+                    window.loadEvidenceById(itemId).then((item) => {
+                        if (item) openPostFromHashIfNeeded();
+                    }).catch((error) => console.error("Deep link post load failed:", error));
+                }
                 return;
             }
             window.pendingDeepLinkPostId = "";
@@ -1300,6 +1391,8 @@
             }
 
             if (success) {
+                if (window.loadCategoryCounts) window.loadCategoryCounts().catch(() => {});
+                if (window.loadCategoryEvidenceBatch) window.loadCategoryEvidenceBatch(category).catch(() => {});
                 window.closeUploadModal(); window.closeLightbox();
                 showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
             } else {
@@ -1434,6 +1527,10 @@
             if (confirm("정말 이 게시물을 삭제하시겠습니까?")) {
                 const deleted = await window.deleteEvidenceFromFirestore(id);
                 if (deleted) {
+                    window.evidences = window.evidences.filter(e => e.id !== id);
+                    window.currentGridEvidences = window.currentGridEvidences.filter(e => e.id !== id);
+                    if (window.loadCategoryCounts) window.loadCategoryCounts().catch(() => {});
+                    if (window.selectedCategoryKey) window.renderCategoryGrid(); else window.renderHeroSlider();
                     showNotification("삭제되었습니다.");
                     window.closeLightbox();
                 } else {
