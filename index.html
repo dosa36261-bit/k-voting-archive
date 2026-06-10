@@ -729,6 +729,7 @@
         };
         window.pendingDeepLinkPostId = "";
         window.openedDeepLinkPostId = "";
+        window.lastAppliedRouteKey = "";
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
         let isAdminLoggedIn = false;
@@ -944,6 +945,12 @@
 
         function handleAppRoute() {
             const route = getRouteFromLocation();
+            const routeKey = `${route.category}|${route.post}`;
+            const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
+            if (window.lastAppliedRouteKey === routeKey) {
+                if (!route.post || isLightboxOpen) return;
+            }
+            window.lastAppliedRouteKey = routeKey;
             if (route.post) {
                 window.openLightboxDirectly(route.post, { updateHistory: false });
                 return;
@@ -1090,7 +1097,10 @@
 
         window.selectCategory = function(catKey, options = {}) {
             if (!CATEGORY_KEYS.includes(catKey) && catKey !== FEEDBACK_CATEGORY_KEY) return;
-            if (options.updateHistory !== false) updateAppHistory({ category: catKey }, "push");
+            if (options.updateHistory !== false) {
+                updateAppHistory({ category: catKey }, "push");
+                window.lastAppliedRouteKey = `${catKey}|`;
+            }
             window.selectedCategoryKey = catKey;
             document.getElementById("page-home").classList.add("hidden");
             document.getElementById("page-category").classList.remove("hidden");
@@ -1155,7 +1165,7 @@
                 const card = document.createElement("div");
                 if (window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY) {
                     card.className = "group bg-white rounded-xl border-2 border-slate-200 p-4 shadow-xs hover:border-slate-300 transition-all cursor-pointer";
-                    card.onclick = () => window.openLightboxFromGrid(index);
+                    card.onclick = () => window.openLightboxDirectly(item.id);
                     const replyCount = getCommentCount(item);
                     const dateText = item.createdAt ? new Date(item.createdAt).toLocaleString("ko-KR") : "";
                     let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
@@ -1177,7 +1187,7 @@
                 }
 
                 card.className = "group bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col";
-                card.onclick = () => window.openLightboxFromGrid(index);
+                card.onclick = () => window.openLightboxDirectly(item.id);
 
                 const imageCount = getImageCount(item);
                 const mediaLinks = getMediaLinks(item);
@@ -1242,7 +1252,10 @@
             if (window.currentGridEvidences.length === 0) return;
 
             const item = window.currentGridEvidences[window.currentLightboxIndex];
-            if (options.updateHistory) updateAppHistory({ category: item.category, post: item.id }, "push");
+            if (options.updateHistory) {
+                updateAppHistory({ category: item.category, post: item.id }, "push");
+                window.lastAppliedRouteKey = `${item.category}|${item.id}`;
+            }
             document.getElementById("lightbox-item-id").textContent = item.id;
             document.getElementById("lightbox-title").innerHTML = `${escapeHtml(item.title)}${getCommentCount(item) > 0 ? ` <span class="text-blue-600">[${getCommentCount(item)}]</span>` : ""}`;
             document.getElementById("lightbox-likes-count").textContent = item.likes || 0;
@@ -1290,8 +1303,13 @@
             clearLightboxMedia();
             document.body.style.overflow = "auto";
             if (options.updateHistory !== false) {
-                if (window.selectedCategoryKey) updateAppHistory({ category: window.selectedCategoryKey }, "replace");
-                else updateAppHistory({}, "replace");
+                if (window.selectedCategoryKey) {
+                    updateAppHistory({ category: window.selectedCategoryKey }, "replace");
+                    window.lastAppliedRouteKey = `${window.selectedCategoryKey}|`;
+                } else {
+                    updateAppHistory({}, "replace");
+                    window.lastAppliedRouteKey = "|";
+                }
             }
         };
         window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };
