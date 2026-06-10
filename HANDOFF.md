@@ -16,7 +16,7 @@ Repository:
 
 This is a very small static site:
 
-- `index.html`: all UI, styles, Firebase client code, Cloudinary upload code, and app logic live here.
+- `index.html`: all UI, styles, Firebase client code, Firebase Storage upload code, and app logic live here.
 - `firestore.rules`: suggested Firestore rules for the Firebase console.
 - `vercel.json`: rewrites all routes to `index.html` so shared links do not show Vercel `Not Found`.
 - `QR.png`: QR image shown from the header QR button for public sharing.
@@ -54,27 +54,29 @@ const collectionName = 'evidences';
 
 Firebase config is embedded in `index.html`. This is normal for Firebase web client config. Real security depends on Firebase rules.
 
-### Cloudinary
+### Firebase Storage
 
-Images and GIFs are uploaded to Cloudinary, not Firebase Storage.
+Images and GIFs are uploaded to Firebase Storage.
 
 Current values in `index.html`:
 
 ```js
-const CLOUDINARY_CLOUD_NAME = "dz4iuka76";
-const CLOUDINARY_UPLOAD_PRESET = "kvoting_unsigned";
 const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
 ```
 
-The upload preset is unsigned. The site code limits uploads to:
+Storage path:
+
+```text
+evidence-images/{evidenceId}/{fileName}
+```
+
+The site code and `storage.rules` limit uploads to:
 
 - JPEG
 - PNG
 - GIF
 - WEBP
 - 25MB max
-
-Do not reintroduce Firebase Storage unless the operator explicitly accepts Blaze/pay-as-you-go billing risk.
 
 ## Data Model
 
@@ -85,7 +87,7 @@ Each post document roughly looks like:
   id: "ev-...",
   title: "...",
   category: "shape-memory" | "strange-ballot" | "bad-management" | "nec-admin" | "etc" | "free-board" | "feedback-board",
-  images: ["https://res.cloudinary.com/..."],
+  images: ["https://firebasestorage.googleapis.com/..."],
   mediaLinks: ["https://x.com/...", "https://youtube.com/..."],
   source: "...",
   desc: "...",
@@ -122,7 +124,7 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 - Main page hero shows recommended/random posts from top-liked candidates per category.
 - Post creation with title, category, password, images/GIFs or video/SNS links, source, and content.
 - Image upload by file picker, drag/drop, or Ctrl+V while the writing modal is open.
-- Cloudinary stores image/GIF files.
+- Firebase Storage stores image/GIF files.
 - YouTube links render as embedded players.
 - X/Twitter post links render with the official X/Twitter embed widget when possible.
 - X-only posts get a custom X thumbnail card, not a real video frame thumbnail.
@@ -160,6 +162,7 @@ Firebase:
 
 - `window.saveEvidenceToFirestore`
 - `window.deleteEvidenceFromFirestore`
+- `window.uploadImagesToFirebaseStorage`
 
 Rendering:
 
@@ -185,7 +188,6 @@ Uploads:
 
 - `processFiles`
 - `prepareImagesForSave`
-- `uploadImagesToCloudinary`
 
 Helpers:
 
@@ -207,7 +209,7 @@ Helpers:
 - Like limiting is localStorage-based, so another browser/device can like again.
 - Post/comment password hashes are stored client-side in Firestore. Better than plaintext, but not strong authentication.
 - Firestore rules have been kept permissive during development. Tighten them before serious public use.
-- Cloudinary unsigned upload preset can be abused if exposed. The code limits file size/type client-side, but server-side preset limits should also be configured if the UI allows it.
+- Firebase Storage writes are public client writes under `evidence-images/`, guarded by `storage.rules` for file size and image MIME type. This is still abuse-prone without Auth/App Check.
 - X/Twitter real video thumbnails cannot be extracted reliably from a static frontend. The app uses official embeds and a fallback X thumbnail card.
 - X embeds may fail for private/deleted/restricted posts or if X blocks embedding.
 
@@ -215,7 +217,6 @@ Helpers:
 
 - Move write/delete operations to serverless API routes to enforce passwords and admin authority server-side.
 - Add stricter Firestore rules once the data shape is stable.
-- Add Cloudinary upload preset restrictions in the Cloudinary console if available.
 - Add App Check or abuse protection if public usage grows.
 - Consider migrating from one-file HTML to a small framework only if the UI keeps growing.
 
@@ -231,13 +232,13 @@ Check:
 
 - File is 25MB or less.
 - File type is jpeg/png/gif/webp.
-- Cloudinary cloud name and unsigned preset are correct.
-- Cloudinary preset is enabled and unsigned.
-- Browser console for Cloudinary error text.
+- `storage.rules` is deployed.
+- Firebase Storage bucket exists and billing/quota are healthy.
+- Browser console for Firebase Storage error text.
 
 ### Post saves image but then says Firestore/network error
 
-Cloudinary upload succeeded but Firestore write failed. Check Firestore rules and console errors.
+Firebase Storage upload succeeded but Firestore write failed. Check Firestore rules and console errors.
 
 ### New code is on GitHub but not live
 
