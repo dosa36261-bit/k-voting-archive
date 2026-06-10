@@ -84,7 +84,7 @@
                 </div>
             </div>
             
-            <button onclick="openUploadModal()" aria-label="사례 제출" title="사례 제출" class="submit-button bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-base font-extrabold flex items-center gap-2 transition-colors shadow-md">
+            <button id="main-upload-button" onclick="openUploadModal()" aria-label="사례 제출" title="사례 제출" class="submit-button bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-base font-extrabold flex items-center gap-2 transition-colors shadow-md">
                 <i class="fa-solid fa-plus text-lg"></i> <span class="upload-button-text">사례 제출</span>
             </button>
         </div>
@@ -240,7 +240,7 @@
                         <option value="likes">추천순</option>
                     </select>
                     <input type="text" id="grid-search-input" oninput="filterGridData()" placeholder="제목, 출처, 내용 검색..." class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60">
-                    <button onclick="clearGridSearch()" class="p-2.5 border-2 border-slate-300 rounded-xl hover:bg-slate-50 text-slate-500" title="필터 리셋">
+                    <button id="grid-search-reset-button" onclick="clearGridSearch()" class="p-2.5 border-2 border-slate-300 rounded-xl hover:bg-slate-50 text-slate-500" title="필터 리셋">
                         <i class="fa-solid fa-rotate-left"></i>
                     </button>
                 </div>
@@ -360,7 +360,7 @@
             <form id="evidence-form" onsubmit="saveEvidence(event)" class="space-y-4">
                 <input type="hidden" id="edit-id" value="">
 
-                <div>
+                <div id="form-category-wrapper">
                     <label class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 <span class="text-red-600">*</span></label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="shape-memory">신비한 투표지</option>
@@ -369,7 +369,7 @@
                         <option value="nec-admin">선관위 행정</option>
                         <option value="etc">기타</option>
                         <option value="free-board">자유게시판</option>
-                        <option value="feedback-board">문의게시판</option>
+                        <option value="feedback-board" hidden>문의게시판</option>
                     </select>
                 </div>
 
@@ -384,7 +384,7 @@
                     <p class="text-[11px] text-slate-400 font-bold mt-1 text-right">4자 이상</p>
                 </div>
 
-                <div class="space-y-2">
+                <div id="form-media-wrapper" class="space-y-2">
                     <label class="block text-sm font-black text-slate-700 mb-0.5">사진/GIF 등록 or 영상/SNS 링크 <span class="text-red-600">*</span></label>
                     
                     <div id="drop-zone" tabindex="0" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 focus:bg-blue-50 focus:border-blue-300 focus:outline-none transition-colors cursor-pointer relative">
@@ -400,7 +400,7 @@
                     <textarea id="form-media-links" rows="3" placeholder="유튜브, X, 스레드 링크를 한 줄에 하나씩 입력해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
-                <div>
+                <div id="form-source-wrapper">
                     <label class="block text-sm font-black text-slate-700 mb-1">출처</label>
                     <input type="text" id="form-source" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
@@ -735,6 +735,7 @@
         let isAdminLoggedIn = false;
         let isDragAndDropReady = false;
         let isSavingEvidence = false;
+        let isFeedbackWriteMode = false;
         let evidenceLoadRetryTimer = null;
 
         const mockImgLinks = [
@@ -985,6 +986,8 @@
             window.selectedCategoryKey = "";
             document.getElementById("page-category").classList.add("hidden");
             document.getElementById("page-home").classList.remove("hidden");
+            const mainUploadButton = document.getElementById("main-upload-button");
+            if (mainUploadButton) mainUploadButton.classList.remove("hidden");
             window.renderHeroSlider();
         };
 
@@ -1124,9 +1127,17 @@
 
         function updateCategoryPageControls() {
             const feedbackWriteButton = document.getElementById("feedback-write-button");
+            const sortSelect = document.getElementById("sort-select");
+            const searchInput = document.getElementById("grid-search-input");
+            const resetButton = document.getElementById("grid-search-reset-button");
+            const mainUploadButton = document.getElementById("main-upload-button");
             const emptyText = document.querySelector("#gallery-empty-state p.text-sm");
             const isFeedbackBoard = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY;
             if (feedbackWriteButton) feedbackWriteButton.classList.toggle("hidden", !isFeedbackBoard);
+            if (sortSelect) sortSelect.classList.toggle("hidden", isFeedbackBoard);
+            if (searchInput) searchInput.classList.toggle("hidden", isFeedbackBoard);
+            if (resetButton) resetButton.classList.toggle("hidden", isFeedbackBoard);
+            if (mainUploadButton) mainUploadButton.classList.toggle("hidden", isFeedbackBoard);
             if (emptyText) {
                 emptyText.textContent = isFeedbackBoard
                     ? "글쓰기 버튼을 눌러 관리자에게 문의를 남겨주세요."
@@ -1599,6 +1610,22 @@
             localUploadedBase64List = [];
             localUploadedFileList = [];
             document.getElementById("upload-preview-container").innerHTML = "";
+            setFeedbackWriteMode(false);
+        }
+
+        function setFeedbackWriteMode(enabled) {
+            isFeedbackWriteMode = enabled;
+            document.getElementById("form-category-wrapper").classList.toggle("hidden", enabled);
+            document.getElementById("form-media-wrapper").classList.toggle("hidden", enabled);
+            document.getElementById("form-source-wrapper").classList.toggle("hidden", enabled);
+            document.getElementById("form-media-links").value = "";
+            document.getElementById("form-source").value = "";
+            if (enabled) {
+                localUploadedBase64List = [];
+                localUploadedFileList = [];
+                document.getElementById("upload-preview-container").innerHTML = "";
+                document.getElementById("file-status").textContent = "";
+            }
         }
 
         async function hashPassword(password) {
@@ -1817,9 +1844,13 @@
             document.getElementById("form-desc").value = item.desc || "";
             document.getElementById("form-post-password").value = "";
             if (isAdminLoggedIn) document.getElementById("form-post-password").removeAttribute("required");
+            if (item.category === FEEDBACK_CATEGORY_KEY) {
+                document.getElementById("form-category").disabled = true;
+                setFeedbackWriteMode(true);
+            }
             localUploadedBase64List = getImages(item);
             localUploadedFileList = localUploadedBase64List.map(() => null);
-            renderUploadPreviews();
+            if (item.category !== FEEDBACK_CATEGORY_KEY) renderUploadPreviews();
             document.getElementById("modal-form-title").textContent = "게시글 수정";
             document.getElementById("upload-modal").classList.remove("hidden");
             setupDragAndDrop();
@@ -1941,6 +1972,7 @@
             const categorySelect = document.getElementById("form-category");
             categorySelect.value = FEEDBACK_CATEGORY_KEY;
             categorySelect.disabled = true;
+            setFeedbackWriteMode(true);
             document.getElementById("upload-modal").classList.remove("hidden");
             setupDragAndDrop();
         };
