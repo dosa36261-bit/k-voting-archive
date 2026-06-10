@@ -732,7 +732,7 @@
         window.lastAppliedRouteKey = "";
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
-        let isAdminLoggedIn = false;
+        let isAdminLoggedIn = sessionStorage.getItem("kvoting:admin") === "1";
         let isDragAndDropReady = false;
         let isSavingEvidence = false;
         let isFeedbackWriteMode = false;
@@ -741,6 +741,10 @@
         const mockImgLinks = [
             "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
         ];
+
+        if (isAdminLoggedIn) {
+            document.getElementById("admin-indicator").classList.remove("hidden");
+        }
 
         // 키보드 네비게이션
         window.setupKeyboardNavigation = function() {
@@ -1861,6 +1865,7 @@
         window.tryAdminLogin = function() {
             if (document.getElementById("admin-pass-input").value === ADMIN_PASSWORD) {
                 isAdminLoggedIn = true;
+                sessionStorage.setItem("kvoting:admin", "1");
                 document.getElementById("admin-indicator").classList.remove("hidden");
                 updateCommentFormForAdminState();
                 window.closeAdminModal(); showNotification("관리자 인증 성공!");
@@ -1896,6 +1901,10 @@
 
             const comment = item.comments[commentIdx];
             if (!isAdminLoggedIn) {
+                if (comment.isAdmin === true) {
+                    alert("관리자 댓글은 관리자 로그인 후 삭제할 수 있습니다.");
+                    return;
+                }
                 if (!comment.passwordHash) {
                     alert("이전 댓글은 작성자 비밀번호 삭제를 지원하지 않습니다. 관리자에게 문의해주세요.");
                     return;
