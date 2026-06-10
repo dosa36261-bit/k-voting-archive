@@ -719,32 +719,6 @@
                     window.updateCategoryCounters();
                 });
                 window.startEvidenceLoadRetries(window.loadHomeEvidenceBatch);
-                return;
-
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
-                onSnapshot(colRef, (snapshot) => {
-                    const fetched = [];
-                    snapshot.forEach((doc) => {
-                        fetched.push({ id: doc.id, ...doc.data() });
-                    });
-                    if (window.shouldWaitForEvidenceLoad(fetched, snapshot.metadata.fromCache)) return;
-                    
-                    window.applyFetchedEvidences(fetched, { allowEmpty: true });
-                }, (error) => {
-                    window.hasReceivedEvidenceSnapshot = false;
-                    window.showCategoryLoadError();
-                    console.error("실시간 수신 에러 (보안 규칙 또는 경로 확인 필요):", error);
-                });
-
-                window.startEvidenceLoadRetries(async () => {
-                    const snapshot = await getDocs(colRef);
-                    const fetched = [];
-                    snapshot.forEach((doc) => {
-                        fetched.push({ id: doc.id, ...doc.data() });
-                    });
-                    return fetched;
-                });
-
             } catch (e) {
                 window.showCategoryLoadError();
                 console.error("초기 데이터 로딩 실패: ", e);
@@ -781,6 +755,7 @@
         window.lastAppliedRouteKey = "";
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
+        let uploadPreviewSessionId = 0;
         let isAdminLoggedIn = sessionStorage.getItem("kvoting:admin") === "1";
         let isDragAndDropReady = false;
         let isSavingEvidence = false;
@@ -1571,7 +1546,8 @@
         }
 
         function processFiles(files, sourceType = "file") {
-            let loaded = 0;
+            const sessionId = uploadPreviewSessionId;
+            let added = 0;
             const imageFiles = Array.from(files).filter(f => ALLOWED_IMAGE_TYPES.includes(f.type));
             if (imageFiles.length === 0) {
                 if (sourceType === "paste") showNotification("붙여넣은 내용에 이미지가 없습니다.");
@@ -1583,18 +1559,15 @@
                     alert(`${file.name} 파일이 25MB를 넘습니다. 25MB 이하 이미지만 등록해주세요.`);
                     return;
                 }
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    localUploadedBase64List.push(evt.target.result);
-                    localUploadedFileList.push(file);
-                    loaded++;
-                    if (loaded === imageFiles.length) {
-                        renderUploadPreviews();
-                        if (sourceType === "paste") showNotification("붙여넣은 이미지가 등록되었습니다.");
-                    }
-                };
-                reader.readAsDataURL(file);
+                if (sessionId !== uploadPreviewSessionId) return;
+                localUploadedBase64List.push(URL.createObjectURL(file));
+                localUploadedFileList.push(file);
+                added++;
             });
+            if (added > 0) {
+                renderUploadPreviews();
+                if (sourceType === "paste") showNotification("붙여넣은 이미지가 등록되었습니다.");
+            }
         }
 
         function renderUploadPreviews() {
@@ -1604,15 +1577,33 @@
             if (localUploadedBase64List.length === 0) { status.textContent = ""; return; }
             status.textContent = `대기열 이미지 ${localUploadedBase64List.length}장 등록 완료.`;
 
-            localUploadedBase64List.forEach((base64, index) => {
+            localUploadedBase64List.forEach((previewUrl, index) => {
+                const file = localUploadedFileList[index];
+                const isGifFile = file && file.type === "image/gif";
+                const previewMarkup = isGifFile
+                    ? `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-file-image text-lg"></i><span class="text-[10px] font-bold leading-none">GIF</span></div>`
+                    : `<img src="${escapeHtml(previewUrl)}" class="w-full h-full object-cover" alt="">`;
                 const div = document.createElement("div");
                 div.className = "relative w-16 h-16 border-2 border-slate-300 rounded-lg overflow-hidden";
-                div.innerHTML = `<img src="${base64}" class="w-full h-full object-cover"><button type="button" onclick="removeUploadedImage(${index})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] m-0.5"><i class="fa-solid fa-xmark"></i></button>`;
+                div.innerHTML = `${previewMarkup}<button type="button" onclick="removeUploadedImage(${index})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] m-0.5"><i class="fa-solid fa-xmark"></i></button>`;
                 container.appendChild(div);
             });
         }
 
+        function revokeLocalPreviewUrl(index) {
+            const previewUrl = localUploadedBase64List[index];
+            const file = localUploadedFileList[index];
+            if (file && typeof previewUrl === "string" && previewUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        }
+
+        function revokeAllLocalPreviewUrls() {
+            localUploadedBase64List.forEach((_, index) => revokeLocalPreviewUrl(index));
+        }
+
         window.removeUploadedImage = function(idx) {
+            revokeLocalPreviewUrl(idx);
             localUploadedBase64List.splice(idx, 1);
             localUploadedFileList.splice(idx, 1);
             renderUploadPreviews();
@@ -1667,6 +1658,8 @@
         window.closeUploadModal = function() { document.getElementById("upload-modal").classList.add("hidden"); resetUploadForm(); };
 
         function resetUploadForm() {
+            uploadPreviewSessionId++;
+            revokeAllLocalPreviewUrls();
             document.getElementById("evidence-form").reset();
             document.getElementById("edit-id").value = "";
             document.getElementById("form-category").disabled = false;
@@ -1686,6 +1679,8 @@
             document.getElementById("form-media-links").value = "";
             document.getElementById("form-source").value = "";
             if (enabled) {
+                uploadPreviewSessionId++;
+                revokeAllLocalPreviewUrls();
                 localUploadedBase64List = [];
                 localUploadedFileList = [];
                 document.getElementById("upload-preview-container").innerHTML = "";
