@@ -231,6 +231,9 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-2">
+                    <button id="feedback-write-button" onclick="openFeedbackUploadModal()" class="hidden bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-black">
+                        <i class="fa-solid fa-pen mr-1"></i> 글쓰기
+                    </button>
                     <select id="sort-select" onchange="setSortMode(this.value)" class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="updated">수정순</option>
                         <option value="created">생성순</option>
@@ -366,6 +369,7 @@
                         <option value="nec-admin">선관위 행정</option>
                         <option value="etc">기타</option>
                         <option value="free-board">자유게시판</option>
+                        <option value="feedback-board">문의게시판</option>
                     </select>
                 </div>
 
@@ -467,31 +471,6 @@
         </div>
     </div>
 
-    <div id="feedback-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleFeedbackOutsideClick(event)">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-5 md:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeFeedbackBoard()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="space-y-5 pr-6">
-                <div>
-                    <h3 class="text-xl font-black text-slate-955">버그제보 / 건의</h3>
-                    <p class="text-sm text-slate-500 font-bold mt-1">사이트 이용 중 불편한 점이나 관리자에게 전할 내용을 남겨주세요.</p>
-                </div>
-                <form onsubmit="submitFeedback(event)" class="space-y-3 bg-slate-50 border-2 border-slate-100 rounded-xl p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
-                        <input type="text" id="feedback-author" value="ㅇㅇ" placeholder="작성자" required class="md:col-span-1 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
-                        <input type="text" id="feedback-title" placeholder="제목" required class="md:col-span-3 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
-                    </div>
-                    <textarea id="feedback-text" rows="4" placeholder="내용을 입력해주세요." required class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300"></textarea>
-                    <div class="flex justify-end">
-                        <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-black">등록</button>
-                    </div>
-                </form>
-                <div id="feedback-list" class="space-y-3"></div>
-            </div>
-        </div>
-    </div>
-
     <div id="upload-guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleUploadGuideOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative">
             <button onclick="closeUploadGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
@@ -528,7 +507,6 @@
         
         const appId = 'k-voting';
         const collectionName = 'evidences';
-        const feedbackCollectionName = 'feedbacks';
         const statsCollectionName = 'stats';
         const categoryCountsDocId = 'categoryCounts';
         const fallbackCategoryCounts = {
@@ -549,10 +527,6 @@
 
         function getCategoryCountsDocRef() {
             return doc(db, 'artifacts', appId, 'public', 'data', statsCollectionName, categoryCountsDocId);
-        }
-
-        function getFeedbackCollectionRef() {
-            return collection(db, 'artifacts', appId, 'public', 'data', feedbackCollectionName);
         }
 
         function snapshotToEvidences(snapshot) {
@@ -661,30 +635,6 @@
             }
         };
 
-        window.saveFeedbackToFirestore = async function(feedbackId, dataObj) {
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', feedbackCollectionName, feedbackId);
-                await setDoc(docRef, dataObj, { merge: true });
-                return true;
-            } catch (err) {
-                console.error("Feedback save failed: ", err);
-                return false;
-            }
-        };
-
-        window.loadFeedbackItems = async function() {
-            const snapshot = await getDocs(getFeedbackCollectionRef());
-            const items = [];
-            snapshot.forEach((docSnap) => {
-                const item = { id: docSnap.id, ...docSnap.data() };
-                if (!item.deleted) items.push(item);
-            });
-            return items.sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || ""));
-        };
-        if (window.refreshFeedbackBoard) {
-            const feedbackModal = document.getElementById("feedback-modal");
-            if (feedbackModal && !feedbackModal.classList.contains("hidden")) window.refreshFeedbackBoard();
-        }
 
         window.adjustCategoryCountsForChange = async function(oldCategory, newCategory) {
             if (!oldCategory && newCategory) return window.adjustCategoryCount(newCategory, 1);
@@ -777,7 +727,6 @@
             "etc": 4,
             "free-board": 10
         };
-        window.feedbackItems = [];
         window.pendingDeepLinkPostId = "";
         window.openedDeepLinkPostId = "";
         let localUploadedBase64List = [];
@@ -851,6 +800,7 @@
         setupMobileHeaderScroll();
 
         const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
+        const FEEDBACK_CATEGORY_KEY = "feedback-board";
         const EVIDENCE_CACHE_KEY = "kvoting:evidences:v1";
 
         function setCategoryCounterText(text, title) {
@@ -882,7 +832,7 @@
 
         function hasAppRouteInUrl() {
             const route = getRouteFromLocation();
-            return !!(route.category || route.post || route.feedback || window.location.hash.match(/^#post=(.+)$/));
+            return !!(route.category || route.post || window.location.hash.match(/^#post=(.+)$/));
         }
 
         function cacheFetchedEvidences(items) {
@@ -989,20 +939,11 @@
             return {
                 category: params.get("category") || "",
                 post: params.get("post") || (hashMatch ? decodeURIComponent(hashMatch[1]) : ""),
-                feedback: params.get("feedback") === "1"
             };
         }
 
         function handleAppRoute() {
             const route = getRouteFromLocation();
-            if (route.feedback) {
-                window.closeLightbox({ updateHistory: false });
-                window.goHome({ updateHistory: false });
-                window.openFeedbackBoard({ updateHistory: false });
-                return;
-            }
-
-            window.closeFeedbackBoard({ updateHistory: false });
             if (route.post) {
                 window.openLightboxDirectly(route.post, { updateHistory: false });
                 return;
@@ -1048,6 +989,7 @@
             badgeNode.textContent = getCategoryLabel(window.selectedCategoryKey);
             badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${getCategoryBadgeClass(window.selectedCategoryKey)}`;
             document.getElementById("sort-select").value = window.currentSortMode;
+            updateCategoryPageControls();
             window.renderCategoryGrid();
         };
 
@@ -1056,7 +998,6 @@
             const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
             const isGuideOpen = !document.getElementById("guide-modal").classList.contains("hidden");
             const isQrOpen = !document.getElementById("qr-modal").classList.contains("hidden");
-            const isFeedbackOpen = !document.getElementById("feedback-modal").classList.contains("hidden");
             const isUploadGuideOpen = !document.getElementById("upload-guide-modal").classList.contains("hidden");
             const isAdminOpen = !document.getElementById("admin-modal").classList.contains("hidden");
 
@@ -1070,10 +1011,6 @@
             }
             if (isQrOpen) {
                 window.closeQrModal();
-                return;
-            }
-            if (isFeedbackOpen) {
-                window.closeFeedbackBoard();
                 return;
             }
             if (isUploadGuideOpen) {
@@ -1152,7 +1089,7 @@
         window.nextSlide = function() { window.currentSlideIndex++; window.renderHeroSlider(); };
 
         window.selectCategory = function(catKey, options = {}) {
-            if (!CATEGORY_KEYS.includes(catKey)) return;
+            if (!CATEGORY_KEYS.includes(catKey) && catKey !== FEEDBACK_CATEGORY_KEY) return;
             if (options.updateHistory !== false) updateAppHistory({ category: catKey }, "push");
             window.selectedCategoryKey = catKey;
             document.getElementById("page-home").classList.add("hidden");
@@ -1164,6 +1101,7 @@
             badgeNode.textContent = title;
             badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${badgeClass}`;
             document.getElementById("sort-select").value = window.currentSortMode;
+            updateCategoryPageControls();
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
@@ -1173,6 +1111,18 @@
                 showNotification("자료를 불러오지 못했습니다. 잠시 뒤 다시 시도해주세요.");
             });
         };
+
+        function updateCategoryPageControls() {
+            const feedbackWriteButton = document.getElementById("feedback-write-button");
+            const emptyText = document.querySelector("#gallery-empty-state p.text-sm");
+            const isFeedbackBoard = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY;
+            if (feedbackWriteButton) feedbackWriteButton.classList.toggle("hidden", !isFeedbackBoard);
+            if (emptyText) {
+                emptyText.textContent = isFeedbackBoard
+                    ? "글쓰기 버튼을 눌러 관리자에게 문의를 남겨주세요."
+                    : "상단 '+ 사례 제출' 버튼을 눌러 첫 정보를 기재해주세요.";
+            }
+        }
 
         window.renderCategoryGrid = function() {
             const gridContainer = document.getElementById("gallery-grid");
@@ -1188,6 +1138,9 @@
                 }
                 return true;
             }));
+            gridContainer.className = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY
+                ? "space-y-3"
+                : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6";
 
             if (window.currentGridEvidences.length === 0) {
                 gridContainer.innerHTML = "";
@@ -1200,6 +1153,29 @@
 
             window.currentGridEvidences.forEach((item, index) => {
                 const card = document.createElement("div");
+                if (window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY) {
+                    card.className = "group bg-white rounded-xl border-2 border-slate-200 p-4 shadow-xs hover:border-slate-300 transition-all cursor-pointer";
+                    card.onclick = () => window.openLightboxFromGrid(index);
+                    const replyCount = getCommentCount(item);
+                    const dateText = item.createdAt ? new Date(item.createdAt).toLocaleString("ko-KR") : "";
+                    let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-grow">
+                                <h4 class="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 break-words">${escapeHtml(item.title)}${replyCount > 0 ? ` <span class="text-blue-600">[${replyCount}]</span>` : ""}</h4>
+                                ${item.desc ? `<p class="text-sm text-slate-600 mt-1 line-clamp-2 break-words">${escapeHtml(item.desc)}</p>` : ""}
+                                <div class="text-xs text-slate-400 font-bold mt-2">${escapeHtml(dateText)}</div>
+                            </div>
+                            <div class="shrink-0 flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-black">답글 ${replyCount}</span>
+                                ${deleteBtn}
+                            </div>
+                        </div>
+                    `;
+                    gridContainer.appendChild(card);
+                    return;
+                }
+
                 card.className = "group bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col";
                 card.onclick = () => window.openLightboxFromGrid(index);
 
@@ -1403,10 +1379,11 @@
             const titleText = document.getElementById("comments-title-text");
             list.innerHTML = "";
             const comments = item.comments || [];
-            titleText.textContent = `댓글 (${comments.length})`;
+            const replyLabel = item.category === FEEDBACK_CATEGORY_KEY ? "답글" : "댓글";
+            titleText.textContent = `${replyLabel} (${comments.length})`;
 
             if (comments.length === 0) {
-                list.innerHTML = `<p class="text-slate-400 text-center py-2 text-xs">작성된 댓글이 없습니다.</p>`;
+                list.innerHTML = `<p class="text-slate-400 text-center py-2 text-xs">작성된 ${replyLabel}이 없습니다.</p>`;
             } else {
                 comments.forEach((c, idx) => {
                     const node = document.createElement("div");
@@ -1582,6 +1559,10 @@
         }
 
         window.openUploadModal = function() {
+            if (window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY) {
+                window.openFeedbackUploadModal();
+                return;
+            }
             resetUploadForm();
             document.getElementById("modal-form-title").textContent = "새로운 사례 제출";
             document.getElementById("form-category").value = window.selectedCategoryKey || "free-board";
@@ -1594,6 +1575,7 @@
         function resetUploadForm() {
             document.getElementById("evidence-form").reset();
             document.getElementById("edit-id").value = "";
+            document.getElementById("form-category").disabled = false;
             document.getElementById("form-post-password").setAttribute("required", "true");
             document.getElementById("file-status").textContent = "";
             localUploadedBase64List = [];
@@ -1648,7 +1630,7 @@
                 return;
             }
 
-            if (localUploadedBase64List.length === 0 && mediaLinks.length === 0) {
+            if (category !== FEEDBACK_CATEGORY_KEY && localUploadedBase64List.length === 0 && mediaLinks.length === 0) {
                 alert("사진 또는 영상/SNS 링크 중 하나는 등록해주세요.");
                 return;
             }
@@ -1920,7 +1902,6 @@
         window.openQrModal = function() {
             window.closeGuideModal();
             window.closeUploadGuideModal();
-            window.closeFeedbackBoard({ updateHistory: false });
             document.getElementById("qr-modal").classList.remove("hidden");
         };
         window.closeQrModal = function() { document.getElementById("qr-modal").classList.add("hidden"); };
@@ -1928,122 +1909,27 @@
             if (event.target.id === "qr-modal") window.closeQrModal();
         };
 
-        window.openFeedbackBoard = async function(options = {}) {
+        window.openFeedbackBoard = function(options = {}) {
             window.closeGuideModal();
             window.closeQrModal();
             window.closeUploadGuideModal();
             window.closeLightbox({ updateHistory: false });
-            document.getElementById("feedback-modal").classList.remove("hidden");
-            if (options.updateHistory !== false) updateAppHistory({ feedback: "1" }, "push");
-            await refreshFeedbackBoard();
+            window.selectCategory(FEEDBACK_CATEGORY_KEY, options);
         };
 
-        window.closeFeedbackBoard = function(options = {}) {
-            const modal = document.getElementById("feedback-modal");
-            if (!modal) return;
-            modal.classList.add("hidden");
-            if (options.updateHistory !== false) {
-                if (window.selectedCategoryKey) updateAppHistory({ category: window.selectedCategoryKey }, "replace");
-                else updateAppHistory({}, "replace");
-            }
-        };
-
-        window.handleFeedbackOutsideClick = function(event) {
-            if (event.target.id === "feedback-modal") window.closeFeedbackBoard();
-        };
-
-        async function refreshFeedbackBoard() {
-            const list = document.getElementById("feedback-list");
-            if (!list) return;
-            list.innerHTML = `<p class="text-slate-400 text-center py-4 text-sm font-bold">불러오는 중...</p>`;
-            try {
-                window.feedbackItems = window.loadFeedbackItems ? await window.loadFeedbackItems() : [];
-                renderFeedbackList();
-            } catch (error) {
-                console.error("Feedback load failed:", error);
-                list.innerHTML = `<p class="text-slate-400 text-center py-4 text-sm font-bold">게시판을 불러오지 못했습니다.</p>`;
-            }
-        }
-        window.refreshFeedbackBoard = refreshFeedbackBoard;
-
-        function renderFeedbackList() {
-            const list = document.getElementById("feedback-list");
-            if (!list) return;
-            const items = window.feedbackItems || [];
-            if (items.length === 0) {
-                list.innerHTML = `<p class="text-slate-400 text-center py-8 text-sm font-bold bg-slate-50 rounded-xl border border-slate-100">아직 등록된 글이 없습니다.</p>`;
-                return;
-            }
-
-            list.innerHTML = "";
-            items.forEach((item) => {
-                const node = document.createElement("div");
-                node.className = "bg-white border-2 border-slate-100 rounded-xl p-4 space-y-2";
-                const createdText = item.createdAt ? new Date(item.createdAt).toLocaleString("ko-KR") : "";
-                const deleteButton = isAdminLoggedIn ? `<button onclick="deleteFeedback('${item.id}')" class="text-slate-400 hover:text-red-600 text-xs font-black px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
-                node.innerHTML = `
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <h4 class="text-base font-black text-slate-900 break-words">${escapeHtml(item.title)}</h4>
-                            <div class="text-xs text-slate-400 font-bold mt-0.5">${escapeHtml(item.author || "ㅇㅇ")} · ${escapeHtml(createdText)}</div>
-                        </div>
-                        ${deleteButton}
-                    </div>
-                    <p class="text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap break-words">${escapeHtml(item.text)}</p>
-                `;
-                list.appendChild(node);
-            });
-        }
-
-        window.submitFeedback = async function(event) {
-            event.preventDefault();
-            const authorInput = document.getElementById("feedback-author");
-            const titleInput = document.getElementById("feedback-title");
-            const textInput = document.getElementById("feedback-text");
-            const author = authorInput.value.trim() || "ㅇㅇ";
-            const title = titleInput.value.trim();
-            const text = textInput.value.trim();
-            if (!title || !text) return;
-
-            const feedbackId = "fb-" + Date.now();
-            const saved = await window.saveFeedbackToFirestore(feedbackId, {
-                id: feedbackId,
-                author,
-                title,
-                text,
-                createdAt: new Date().toISOString()
-            });
-            if (!saved) {
-                alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
-                return;
-            }
-            authorInput.value = "ㅇㅇ";
-            titleInput.value = "";
-            textInput.value = "";
-            showNotification("등록되었습니다.");
-            await refreshFeedbackBoard();
-        };
-
-        window.deleteFeedback = async function(feedbackId) {
-            if (!isAdminLoggedIn) return;
-            if (!confirm("이 글을 삭제하시겠습니까?")) return;
-            const saved = await window.saveFeedbackToFirestore(feedbackId, {
-                deleted: true,
-                deletedAt: new Date().toISOString()
-            });
-            if (!saved) {
-                alert("삭제에 실패했습니다.");
-                return;
-            }
-            window.feedbackItems = (window.feedbackItems || []).filter(item => item.id !== feedbackId);
-            renderFeedbackList();
-            showNotification("삭제되었습니다.");
+        window.openFeedbackUploadModal = function() {
+            resetUploadForm();
+            document.getElementById("modal-form-title").textContent = "문의게시판 글쓰기";
+            const categorySelect = document.getElementById("form-category");
+            categorySelect.value = FEEDBACK_CATEGORY_KEY;
+            categorySelect.disabled = true;
+            document.getElementById("upload-modal").classList.remove("hidden");
+            setupDragAndDrop();
         };
 
         window.openUploadGuideModal = function() {
             window.closeGuideModal();
             window.closeQrModal();
-            window.closeFeedbackBoard({ updateHistory: false });
             const modal = document.getElementById("upload-guide-modal");
             const video = modal.querySelector("video");
             modal.classList.remove("hidden");
@@ -2292,6 +2178,7 @@
                 case "bad-management": return "관리 부실";
                 case "nec-admin": return "선관위 행정";
                 case "free-board": return "자유게시판";
+                case "feedback-board": return "문의게시판";
                 case "etc": return "기타";
                 default: return "미분류";
             }
@@ -2304,6 +2191,7 @@
                 case "bad-management": return "bg-rose-50 text-rose-700 border-rose-200";
                 case "nec-admin": return "bg-blue-50 text-blue-700 border-blue-200";
                 case "free-board": return "bg-indigo-50 text-indigo-700 border-indigo-200";
+                case "feedback-board": return "bg-slate-50 text-slate-700 border-slate-300";
                 case "etc": return "bg-purple-50 text-purple-700 border-purple-200";
                 default: return "bg-slate-100 text-slate-700 border-slate-200";
             }

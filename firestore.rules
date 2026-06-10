@@ -43,21 +43,5 @@ service cloud.firestore {
       ]);
       allow delete: if false;
     }
-
-    match /artifacts/k-voting/public/data/feedbacks/{feedbackId} {
-      function hasValidFeedbackFields(data) {
-        return data.id == feedbackId
-          && data.author is string
-          && data.title is string
-          && data.text is string;
-      }
-
-      allow read: if true;
-      allow create: if hasValidFeedbackFields(request.resource.data)
-        && !request.resource.data.keys().hasAny(['deleted', 'deletedAt']);
-      allow update: if hasValidFeedbackFields(request.resource.data)
-        && request.resource.data.id == resource.data.id;
-      allow delete: if false;
-    }
   }
 }
