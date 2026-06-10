@@ -542,7 +542,7 @@
         const categoryKeys = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const homeItemsPerCategory = 8;
         const categoryPageLimit = 24;
-        const allCategoryPageLimit = 6;
+        const allCategoryCursorKey = "__all";
 
         function getEvidenceCollectionRef() {
             return collection(db, 'artifacts', appId, 'public', 'data', collectionName);
@@ -611,7 +611,7 @@
         };
 
         function resetCategoryPagination(category) {
-            const keys = category === "all-posts" ? categoryKeys : [category];
+            const keys = category === "all-posts" ? [allCategoryCursorKey] : [category];
             window.categoryPagination = {
                 category,
                 cursors: Object.fromEntries(keys.map(key => [key, null])),
@@ -623,8 +623,16 @@
         window.resetCategoryPagination = resetCategoryPagination;
 
         function getPagedCategoryQuery(colRef, category, pageSize, cursor) {
-            const parts = [where("category", "==", category), orderBy(documentId(), "desc"), limit(pageSize)];
-            if (cursor) parts.splice(2, 0, startAfter(cursor));
+            const parts = category === "all-posts"
+                ? [where("category", "in", categoryKeys)]
+                : [where("category", "==", category)];
+            if (window.currentSortMode === "likes") {
+                parts.push(orderBy("likes", "desc"), orderBy(documentId(), "desc"));
+            } else {
+                parts.push(orderBy(documentId(), "desc"));
+            }
+            if (cursor) parts.push(startAfter(cursor));
+            parts.push(limit(pageSize));
             return query(colRef, ...parts);
         }
 
@@ -639,25 +647,11 @@
             if (window.updateLoadMoreControl) window.updateLoadMoreControl();
             const colRef = getEvidenceCollectionRef();
             try {
-                if (category === "all-posts") {
-                    const batches = await Promise.all(categoryKeys
-                        .filter(catKey => window.categoryPagination.hasMore[catKey] !== false)
-                        .map(async (catKey) => {
-                            const snapshot = await getDocs(getPagedCategoryQuery(colRef, catKey, allCategoryPageLimit, window.categoryPagination.cursors[catKey]));
-                            const docs = snapshot.docs;
-                            window.categoryPagination.cursors[catKey] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[catKey];
-                            window.categoryPagination.hasMore[catKey] = docs.length === allCategoryPageLimit;
-                            return snapshotToEvidences(snapshot);
-                        }));
-                    const fetched = batches.flat();
-                    window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
-                    return fetched;
-                }
-
-                const snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[category]));
+                const cursorKey = category === "all-posts" ? allCategoryCursorKey : category;
+                const snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[cursorKey]));
                 const docs = snapshot.docs;
-                window.categoryPagination.cursors[category] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[category];
-                window.categoryPagination.hasMore[category] = docs.length === categoryPageLimit;
+                window.categoryPagination.cursors[cursorKey] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[cursorKey];
+                window.categoryPagination.hasMore[cursorKey] = docs.length === categoryPageLimit;
                 const fetched = snapshotToEvidences(snapshot);
                 window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
                 return fetched;
@@ -1367,9 +1361,28 @@
         window.filterGridData = function() { window.renderCategoryGrid(); };
         window.clearGridSearch = function() { document.getElementById("grid-search-input").value = ""; window.renderCategoryGrid(); };
         window.setSortMode = function(mode) {
+            if (!["updated", "created", "likes"].includes(mode)) mode = "updated";
             window.currentSortMode = mode;
+            if (window.selectedCategoryKey && window.loadCategoryEvidenceBatch) {
+                clearLoadedCategoryItems(window.selectedCategoryKey);
+                window.resetCategoryPagination(window.selectedCategoryKey);
+                window.renderCategoryGrid();
+                window.loadCategoryEvidenceBatch(window.selectedCategoryKey, { reset: true }).catch((error) => {
+                    console.error("Sorted category load failed:", error);
+                    showNotification("정렬된 목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해주세요.");
+                });
+                return;
+            }
             window.renderCategoryGrid();
         };
+
+        function clearLoadedCategoryItems(category) {
+            if (category === ALL_CATEGORY_KEY) {
+                window.evidences = window.evidences.filter(item => !CATEGORY_KEYS.includes(item.category));
+                return;
+            }
+            window.evidences = window.evidences.filter(item => item.category !== category);
+        }
 
         window.openLightboxFromGrid = function(index) {
             window.currentLightboxIndex = index;
