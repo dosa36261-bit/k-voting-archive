@@ -3,10 +3,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /artifacts/k-voting/public/data/evidences/{evidenceId} {
+      function isValidCategory(category) {
+        return category in [
+          'shape-memory',
+          'strange-ballot',
+          'bad-management',
+          'nec-admin',
+          'etc',
+          'free-board',
+          'feedback-board'
+        ];
+      }
+
+      function hasOnlyEvidenceFields(data) {
+        return data.keys().hasOnly([
+          'id',
+          'title',
+          'category',
+          'images',
+          'mediaLinks',
+          'source',
+          'desc',
+          'likes',
+          'comments',
+          'passwordHash',
+          'createdAt',
+          'updatedAt',
+          'deleted',
+          'deletedAt'
+        ]);
+      }
+
       function hasValidCoreFields(data) {
         return data.id == evidenceId
           && data.title is string
-          && data.category is string;
+          && data.title.size() > 0
+          && data.title.size() <= 120
+          && data.category is string
+          && isValidCategory(data.category);
+      }
+
+      function hasValidOptionalFields(data) {
+        return (!data.keys().hasAny(['source']) || (data.source is string && data.source.size() <= 160))
+          && (!data.keys().hasAny(['desc']) || (data.desc is string && data.desc.size() <= 5000))
+          && (!data.keys().hasAny(['images']) || (data.images is list && data.images.size() <= 20))
+          && (!data.keys().hasAny(['mediaLinks']) || (data.mediaLinks is list && data.mediaLinks.size() <= 20))
+          && (!data.keys().hasAny(['comments']) || (data.comments is list && data.comments.size() <= 500))
+          && (!data.keys().hasAny(['likes']) || (data.likes is int && data.likes >= 0 && data.likes <= 1000000))
+          && (!data.keys().hasAny(['createdAt']) || data.createdAt is string)
+          && (!data.keys().hasAny(['updatedAt']) || data.updatedAt is string)
+          && (!data.keys().hasAny(['deleted']) || data.deleted is bool)
+          && (!data.keys().hasAny(['deletedAt']) || data.deletedAt is string);
       }
 
       function hasValidPasswordHash(data) {
@@ -21,16 +68,26 @@ service cloud.firestore {
       }
 
       allow read: if true;
-      allow create: if hasValidCoreFields(request.resource.data)
+      allow create: if hasOnlyEvidenceFields(request.resource.data)
+        && hasValidCoreFields(request.resource.data)
+        && hasValidOptionalFields(request.resource.data)
         && hasValidPasswordHash(request.resource.data)
         && !request.resource.data.keys().hasAny(['deleted', 'deletedAt']);
-      allow update: if hasValidCoreFields(request.resource.data)
+      allow update: if hasOnlyEvidenceFields(request.resource.data)
+        && hasValidCoreFields(request.resource.data)
+        && hasValidOptionalFields(request.resource.data)
         && request.resource.data.id == resource.data.id
+        && (!resource.data.keys().hasAny(['passwordHash']) || request.resource.data.passwordHash == resource.data.passwordHash)
+        && (!resource.data.keys().hasAny(['createdAt']) || request.resource.data.createdAt == resource.data.createdAt)
         && hasValidLegacyOrCurrentPasswordHash(request.resource.data);
       allow delete: if false;
     }
 
     match /artifacts/k-voting/public/data/stats/categoryCounts {
+      function validCount(value) {
+        return value is int && value >= 0 && value <= 1000000;
+      }
+
       allow read: if true;
       allow create, update: if request.resource.data.keys().hasOnly([
         'shape-memory',
@@ -40,7 +97,14 @@ service cloud.firestore {
         'etc',
         'free-board',
         'updatedAt'
-      ]);
+      ])
+        && (!request.resource.data.keys().hasAny(['shape-memory']) || validCount(request.resource.data['shape-memory']))
+        && (!request.resource.data.keys().hasAny(['strange-ballot']) || validCount(request.resource.data['strange-ballot']))
+        && (!request.resource.data.keys().hasAny(['bad-management']) || validCount(request.resource.data['bad-management']))
+        && (!request.resource.data.keys().hasAny(['nec-admin']) || validCount(request.resource.data['nec-admin']))
+        && (!request.resource.data.keys().hasAny(['etc']) || validCount(request.resource.data.etc))
+        && (!request.resource.data.keys().hasAny(['free-board']) || validCount(request.resource.data['free-board']))
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || request.resource.data.updatedAt is string);
       allow delete: if false;
     }
   }

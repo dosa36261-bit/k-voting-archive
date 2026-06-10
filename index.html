@@ -262,6 +262,11 @@
             </div>
 
             <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+            <div id="load-more-wrapper" class="hidden mt-8 flex justify-center">
+                <button id="load-more-button" onclick="loadMoreCategoryEvidence()" class="bg-white hover:bg-slate-50 text-slate-700 text-sm font-black px-5 py-3 rounded-xl border-2 border-slate-200 shadow-xs">
+                    더 보기
+                </button>
+            </div>
 
             <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-slate-400">
                 <i class="fa-regular fa-folder-open text-6xl mb-3 text-slate-300"></i>
@@ -506,7 +511,7 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, setDoc, getDoc, getDocs, increment, query, where, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, setDoc, getDoc, getDocs, increment, query, where, orderBy, limit, startAfter, documentId } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -536,7 +541,8 @@
         };
         const categoryKeys = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const homeItemsPerCategory = 8;
-        const categoryPageLimit = 80;
+        const categoryPageLimit = 24;
+        const allCategoryPageLimit = 6;
 
         function getEvidenceCollectionRef() {
             return collection(db, 'artifacts', appId, 'public', 'data', collectionName);
@@ -598,27 +604,78 @@
         window.loadHomeEvidenceBatch = async function() {
             const colRef = getEvidenceCollectionRef();
             const batches = await Promise.all(categoryKeys.map(async (category) => {
-                const snapshot = await getDocs(query(colRef, where("category", "==", category), limit(homeItemsPerCategory)));
+                const snapshot = await getDocs(query(colRef, where("category", "==", category), orderBy(documentId(), "desc"), limit(homeItemsPerCategory)));
                 return snapshotToEvidences(snapshot);
             }));
             return batches.flat();
         };
 
-        window.loadCategoryEvidenceBatch = async function(category) {
+        function resetCategoryPagination(category) {
+            const keys = category === "all-posts" ? categoryKeys : [category];
+            window.categoryPagination = {
+                category,
+                cursors: Object.fromEntries(keys.map(key => [key, null])),
+                hasMore: Object.fromEntries(keys.map(key => [key, true])),
+                isLoading: false,
+                initialized: true
+            };
+        }
+        window.resetCategoryPagination = resetCategoryPagination;
+
+        function getPagedCategoryQuery(colRef, category, pageSize, cursor) {
+            const parts = [where("category", "==", category), orderBy(documentId(), "desc"), limit(pageSize)];
+            if (cursor) parts.splice(2, 0, startAfter(cursor));
+            return query(colRef, ...parts);
+        }
+
+        window.loadCategoryEvidenceBatch = async function(category, options = {}) {
+            const reset = options.reset === true
+                || window.categoryPagination.category !== category
+                || !window.categoryPagination.initialized;
+            if (reset) resetCategoryPagination(category);
+            if (window.categoryPagination.isLoading) return [];
+
+            window.categoryPagination.isLoading = true;
+            if (window.updateLoadMoreControl) window.updateLoadMoreControl();
             const colRef = getEvidenceCollectionRef();
-            if (category === "all-posts") {
-                const batches = await Promise.all(categoryKeys.map(async (catKey) => {
-                    const snapshot = await getDocs(query(colRef, where("category", "==", catKey), limit(categoryPageLimit)));
-                    return snapshotToEvidences(snapshot);
-                }));
-                const fetched = batches.flat();
+            try {
+                if (category === "all-posts") {
+                    const batches = await Promise.all(categoryKeys
+                        .filter(catKey => window.categoryPagination.hasMore[catKey] !== false)
+                        .map(async (catKey) => {
+                            const snapshot = await getDocs(getPagedCategoryQuery(colRef, catKey, allCategoryPageLimit, window.categoryPagination.cursors[catKey]));
+                            const docs = snapshot.docs;
+                            window.categoryPagination.cursors[catKey] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[catKey];
+                            window.categoryPagination.hasMore[catKey] = docs.length === allCategoryPageLimit;
+                            return snapshotToEvidences(snapshot);
+                        }));
+                    const fetched = batches.flat();
+                    window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
+                    return fetched;
+                }
+
+                const snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[category]));
+                const docs = snapshot.docs;
+                window.categoryPagination.cursors[category] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[category];
+                window.categoryPagination.hasMore[category] = docs.length === categoryPageLimit;
+                const fetched = snapshotToEvidences(snapshot);
                 window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
                 return fetched;
+            } finally {
+                window.categoryPagination.isLoading = false;
+                if (window.updateLoadMoreControl) window.updateLoadMoreControl();
             }
-            const snapshot = await getDocs(query(colRef, where("category", "==", category), limit(categoryPageLimit)));
-            const fetched = snapshotToEvidences(snapshot);
-            window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
-            return fetched;
+        };
+
+        window.hasMoreCategoryEvidence = function() {
+            const state = window.categoryPagination;
+            if (!state || !state.initialized || !state.category) return false;
+            return Object.values(state.hasMore || {}).some(Boolean);
+        };
+
+        window.loadMoreCategoryEvidence = function() {
+            if (!window.selectedCategoryKey || !window.hasMoreCategoryEvidence() || window.categoryPagination.isLoading) return;
+            return window.loadCategoryEvidenceBatch(window.selectedCategoryKey);
         };
 
         window.loadEvidenceById = async function(evidenceId) {
@@ -740,6 +797,13 @@
         window.currentLightboxIndex = 0;
         window.currentGridEvidences = [];
         window.currentSortMode = "updated";
+        window.categoryPagination = {
+            category: "",
+            cursors: {},
+            hasMore: {},
+            isLoading: false,
+            initialized: false
+        };
         window.hasReceivedEvidenceSnapshot = false;
         window.hasVisibleEvidenceData = false;
         window.categoryCounts = {
@@ -1026,6 +1090,7 @@
             document.getElementById("page-home").classList.remove("hidden");
             const mainUploadButton = document.getElementById("main-upload-button");
             if (mainUploadButton) mainUploadButton.classList.remove("hidden");
+            window.updateLoadMoreControl();
             window.renderHeroSlider();
         };
 
@@ -1153,11 +1218,12 @@
             badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${badgeClass}`;
             document.getElementById("sort-select").value = window.currentSortMode;
             updateCategoryPageControls();
+            window.resetCategoryPagination(catKey);
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
             if (!window.loadCategoryEvidenceBatch) return;
-            window.loadCategoryEvidenceBatch(catKey).catch((error) => {
+            window.loadCategoryEvidenceBatch(catKey, { reset: true }).catch((error) => {
                 console.error("Category evidence load failed:", error);
                 showNotification("자료를 불러오지 못했습니다. 잠시 뒤 다시 시도해주세요.");
             });
@@ -1206,6 +1272,7 @@
             if (window.currentGridEvidences.length === 0) {
                 gridContainer.innerHTML = "";
                 emptyState.classList.remove("hidden");
+                window.updateLoadMoreControl();
                 return;
             }
 
@@ -1268,7 +1335,34 @@
                 `;
                 gridContainer.appendChild(card);
             });
+            window.updateLoadMoreControl();
         };
+
+        window.updateLoadMoreControl = function() {
+            const wrapper = document.getElementById("load-more-wrapper");
+            const button = document.getElementById("load-more-button");
+            if (!wrapper || !button) return;
+            const shouldShow = !!window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence();
+            wrapper.classList.toggle("hidden", !shouldShow);
+            button.disabled = !!(window.categoryPagination && window.categoryPagination.isLoading);
+            button.textContent = button.disabled ? "불러오는 중..." : "더 보기";
+        };
+
+        function setupInfiniteCategoryScroll() {
+            let ticking = false;
+            window.addEventListener("scroll", () => {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(() => {
+                    ticking = false;
+                    if (!window.selectedCategoryKey || !window.hasMoreCategoryEvidence || !window.hasMoreCategoryEvidence()) return;
+                    if (window.categoryPagination && window.categoryPagination.isLoading) return;
+                    const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
+                    if (nearBottom) window.loadMoreCategoryEvidence();
+                });
+            }, { passive: true });
+        }
+        setupInfiniteCategoryScroll();
 
         window.filterGridData = function() { window.renderCategoryGrid(); };
         window.clearGridSearch = function() { document.getElementById("grid-search-input").value = ""; window.renderCategoryGrid(); };
@@ -1332,7 +1426,7 @@
                 const wrap = document.createElement("div");
                 wrap.className = "w-full overflow-hidden rounded-xl bg-slate-955 flex justify-center items-start py-1";
                 wrap.innerHTML = `
-                    <img src="${src}" class="w-full h-auto object-contain" onerror="this.src='${mockImgLinks[0]}'">
+                    <img src="${escapeHtml(src)}" class="w-full h-auto object-contain" onerror="this.src='${mockImgLinks[0]}'" alt="">
                 `;
                 imagesStack.appendChild(wrap);
             });
@@ -1503,11 +1597,19 @@
 
             const author = isAdminLoggedIn ? "관리자" : authorInput.value.trim();
             if (!author || !textInput.value.trim()) return;
+            if (author.length > 40 || textInput.value.trim().length > 1000) {
+                alert("작성자는 40자 이하, 댓글은 1000자 이하로 입력해주세요.");
+                return;
+            }
             if (!isAdminLoggedIn && passwordInput.value.trim().length < 4) {
                 alert("댓글 비밀번호는 4자 이상으로 입력해주세요.");
                 return;
             }
             if (!item.comments) item.comments = [];
+            if (item.comments.length >= 500) {
+                alert("댓글이 너무 많아 더 이상 등록할 수 없습니다.");
+                return;
+            }
             
             const passwordHash = isAdminLoggedIn ? "" : await hashPassword(passwordInput.value.trim());
             item.comments.push({ author, text: textInput.value.trim(), passwordHash, isAdmin: isAdminLoggedIn });
@@ -1730,6 +1832,27 @@
             const desc = document.getElementById("form-desc").value.trim();
             const postPassword = document.getElementById("form-post-password").value.trim();
 
+            if (title.length === 0 || title.length > 120) {
+                alert("제목은 1자 이상 120자 이하로 입력해주세요.");
+                return;
+            }
+            if (![...CATEGORY_KEYS, FEEDBACK_CATEGORY_KEY].includes(category)) {
+                alert("올바른 게시판을 선택해주세요.");
+                return;
+            }
+            if (source.length > 160) {
+                alert("출처는 160자 이하로 입력해주세요.");
+                return;
+            }
+            if (desc.length > 5000) {
+                alert("내용은 5000자 이하로 입력해주세요.");
+                return;
+            }
+            if (localUploadedBase64List.length > 20 || mediaLinks.length > 20) {
+                alert("이미지와 링크는 각각 20개 이하로 등록해주세요.");
+                return;
+            }
+
             if (!isAdminLoggedIn && postPassword.length < 4) {
                 alert("게시글 비밀번호는 4자 이상으로 입력해주세요.");
                 return;
@@ -1856,7 +1979,7 @@
             const extension = getImageExtensionFromFile(file);
             const safeName = (file.name || `image-${index + 1}`)
                 .replace(/\.[^.]+$/, "")
-                .replace(/[\\/:*?"<>|#%&{}$!'@+=`~]/g, " ")
+                .replace(/[^A-Za-z0-9._-]/g, " ")
                 .replace(/\s+/g, "-")
                 .replace(/^-+|-+$/g, "")
                 .slice(0, 80) || `image-${index + 1}`;
@@ -1973,6 +2096,10 @@
             if (!item) return;
             const newSource = prompt("추가할 출처를 입력해주세요.");
             if (!newSource || !newSource.trim()) return;
+            if (newSource.trim().length > 160) {
+                alert("출처는 160자 이하로 입력해주세요.");
+                return;
+            }
             const saved = await window.saveEvidenceToFirestore(item.id, {
                 source: newSource.trim(),
                 updatedAt: new Date().toISOString()
@@ -2084,8 +2211,8 @@
         }
 
         function getImages(item) {
-            if (item.images && item.images.length > 0) return item.images;
-            if (item.image) return [item.image];
+            if (Array.isArray(item.images) && item.images.length > 0) return item.images.filter(isSafeImageUrl);
+            if (item.image && isSafeImageUrl(item.image)) return [item.image];
             return [];
         }
 
@@ -2108,6 +2235,12 @@
             } catch (e) {
                 return false;
             }
+        }
+
+        function isSafeImageUrl(url) {
+            if (typeof url !== "string") return false;
+            if (url.startsWith("data:image/")) return /^data:image\/(jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(url);
+            return isSafeHttpUrl(url);
         }
 
         function getMediaLinks(item) {
@@ -2159,13 +2292,14 @@
         function parseYouTubeId(url) {
             try {
                 const parsed = new URL(url);
-                if (parsed.hostname.includes("youtu.be")) return parsed.pathname.replace("/", "").split(/[?&]/)[0];
+                const normalizeId = (value) => /^[A-Za-z0-9_-]{6,20}$/.test(value || "") ? value : "";
+                if (parsed.hostname.includes("youtu.be")) return normalizeId(parsed.pathname.replace("/", "").split(/[?&]/)[0]);
                 if (parsed.hostname.includes("youtube.com")) {
-                    if (parsed.searchParams.get("v")) return parsed.searchParams.get("v");
+                    if (parsed.searchParams.get("v")) return normalizeId(parsed.searchParams.get("v"));
                     const shorts = parsed.pathname.match(/\/shorts\/([^/?]+)/);
-                    if (shorts) return shorts[1];
+                    if (shorts) return normalizeId(shorts[1]);
                     const embed = parsed.pathname.match(/\/embed\/([^/?]+)/);
-                    if (embed) return embed[1];
+                    if (embed) return normalizeId(embed[1]);
                 }
             } catch (e) {}
             return "";
@@ -2308,7 +2442,7 @@
             return escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
                 const cleanUrl = url.replace(/[.,!?)]$/, "");
                 const trailing = url.slice(cleanUrl.length);
-                return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-800 underline underline-offset-2 font-bold">${cleanUrl}</a>${trailing}`;
+                return `<a href="${escapeHtml(cleanUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-800 underline underline-offset-2 font-bold">${cleanUrl}</a>${trailing}`;
             });
         }
 
@@ -2316,7 +2450,7 @@
             document.querySelectorAll(".toast-alert").forEach(el => el.remove());
             const toast = document.createElement("div");
             toast.className = "toast-alert fixed bottom-5 right-5 bg-slate-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2 z-55 fade-in font-bold";
-            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>${msg}</span>`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>${escapeHtml(msg)}</span>`;
             document.body.appendChild(toast);
             setTimeout(() => { toast.classList.add("opacity-0", "transition-opacity", "duration-500"); setTimeout(() => toast.remove(), 500); }, 2500);
         }
