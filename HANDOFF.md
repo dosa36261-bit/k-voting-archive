@@ -84,7 +84,7 @@ Each post document roughly looks like:
 {
   id: "ev-...",
   title: "...",
-  category: "shape-memory" | "strange-ballot" | "bad-management" | "nec-admin" | "etc" | "free-board" | "bug-report",
+  category: "shape-memory" | "strange-ballot" | "bad-management" | "nec-admin" | "etc" | "free-board",
   images: ["https://res.cloudinary.com/..."],
   mediaLinks: ["https://x.com/...", "https://youtube.com/..."],
   source: "...",
@@ -113,6 +113,19 @@ Some older posts may still have older shapes:
 
 The UI has compatibility helpers for these cases. Be careful not to break old data.
 
+Feedback/bug report documents live separately from evidence posts:
+
+```js
+{
+  id: "fb-...",
+  author: "...",
+  title: "...",
+  text: "...",
+  createdAt: "ISO date",
+  deleted: false
+}
+```
+
 ## Current Feature Summary
 
 - Category browsing.
@@ -131,8 +144,9 @@ The UI has compatibility helpers for these cases. Be careful not to break old da
 - Comments use author, text, and comment password. Comments can be deleted by admin or by matching comment password.
 - Admin comments are stored with `isAdmin: true` and render as bold `관리자`.
 - Old comments without passwords can only be deleted by admin.
-- The footer has a `bug-report` category for bug reports and suggestions. It allows text-only posts without requiring an image or media link.
+- The footer has an independent bug report/suggestion board backed by `feedbacks`, not the evidence writing form.
 - The header QR button opens `QR.png` with sharing copy.
+- Category and post navigation update browser history so mobile back/forward stays inside the app before leaving the page.
 
 ## Admin Behavior
 

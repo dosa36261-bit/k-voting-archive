@@ -257,9 +257,8 @@
         <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
             <p>시민들이 자발적으로 사진 자료와 제보를 모으는 오픈 아카이브입니다.</p>
             <div class="flex items-center gap-3 flex-wrap justify-center">
-                <button onclick="selectCategory('bug-report')" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-xs transition-colors">
+                <button onclick="openFeedbackBoard()" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-xs transition-colors">
                     <i class="fa-regular fa-message mr-1"></i> 버그제보 / 건의
-                    <span id="count-bug-report" class="ml-1 text-blue-700">0</span>
                 </button>
                 <button onclick="openAdminModal()" class="text-slate-400 hover:text-blue-600 font-bold transition-colors">
                     <i class="fa-solid fa-lock mr-1"></i> 관리자 로그인
@@ -367,7 +366,6 @@
                         <option value="nec-admin">선관위 행정</option>
                         <option value="etc">기타</option>
                         <option value="free-board">자유게시판</option>
-                        <option value="bug-report">버그제보 / 건의</option>
                     </select>
                 </div>
 
@@ -469,6 +467,31 @@
         </div>
     </div>
 
+    <div id="feedback-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleFeedbackOutsideClick(event)">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-5 md:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeFeedbackBoard()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="space-y-5 pr-6">
+                <div>
+                    <h3 class="text-xl font-black text-slate-955">버그제보 / 건의</h3>
+                    <p class="text-sm text-slate-500 font-bold mt-1">사이트 이용 중 불편한 점이나 관리자에게 전할 내용을 남겨주세요.</p>
+                </div>
+                <form onsubmit="submitFeedback(event)" class="space-y-3 bg-slate-50 border-2 border-slate-100 rounded-xl p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                        <input type="text" id="feedback-author" value="ㅇㅇ" placeholder="작성자" required class="md:col-span-1 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
+                        <input type="text" id="feedback-title" placeholder="제목" required class="md:col-span-3 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
+                    </div>
+                    <textarea id="feedback-text" rows="4" placeholder="내용을 입력해주세요." required class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300"></textarea>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-black">등록</button>
+                    </div>
+                </form>
+                <div id="feedback-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="upload-guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleUploadGuideOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative">
             <button onclick="closeUploadGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
@@ -505,6 +528,7 @@
         
         const appId = 'k-voting';
         const collectionName = 'evidences';
+        const feedbackCollectionName = 'feedbacks';
         const statsCollectionName = 'stats';
         const categoryCountsDocId = 'categoryCounts';
         const fallbackCategoryCounts = {
@@ -513,10 +537,9 @@
             "bad-management": 13,
             "nec-admin": 5,
             "etc": 4,
-            "free-board": 10,
-            "bug-report": 0
+            "free-board": 10
         };
-        const categoryKeys = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board", "bug-report"];
+        const categoryKeys = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const homeItemsPerCategory = 8;
         const categoryPageLimit = 80;
 
@@ -526,6 +549,10 @@
 
         function getCategoryCountsDocRef() {
             return doc(db, 'artifacts', appId, 'public', 'data', statsCollectionName, categoryCountsDocId);
+        }
+
+        function getFeedbackCollectionRef() {
+            return collection(db, 'artifacts', appId, 'public', 'data', feedbackCollectionName);
         }
 
         function snapshotToEvidences(snapshot) {
@@ -634,6 +661,31 @@
             }
         };
 
+        window.saveFeedbackToFirestore = async function(feedbackId, dataObj) {
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', feedbackCollectionName, feedbackId);
+                await setDoc(docRef, dataObj, { merge: true });
+                return true;
+            } catch (err) {
+                console.error("Feedback save failed: ", err);
+                return false;
+            }
+        };
+
+        window.loadFeedbackItems = async function() {
+            const snapshot = await getDocs(getFeedbackCollectionRef());
+            const items = [];
+            snapshot.forEach((docSnap) => {
+                const item = { id: docSnap.id, ...docSnap.data() };
+                if (!item.deleted) items.push(item);
+            });
+            return items.sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || ""));
+        };
+        if (window.refreshFeedbackBoard) {
+            const feedbackModal = document.getElementById("feedback-modal");
+            if (feedbackModal && !feedbackModal.classList.contains("hidden")) window.refreshFeedbackBoard();
+        }
+
         window.adjustCategoryCountsForChange = async function(oldCategory, newCategory) {
             if (!oldCategory && newCategory) return window.adjustCategoryCount(newCategory, 1);
             if (oldCategory && !newCategory) return window.adjustCategoryCount(oldCategory, -1);
@@ -723,9 +775,9 @@
             "bad-management": 13,
             "nec-admin": 5,
             "etc": 4,
-            "free-board": 10,
-            "bug-report": 0
+            "free-board": 10
         };
+        window.feedbackItems = [];
         window.pendingDeepLinkPostId = "";
         window.openedDeepLinkPostId = "";
         let localUploadedBase64List = [];
@@ -798,7 +850,7 @@
         }
         setupMobileHeaderScroll();
 
-        const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board", "bug-report"];
+        const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const EVIDENCE_CACHE_KEY = "kvoting:evidences:v1";
 
         function setCategoryCounterText(text, title) {
@@ -824,7 +876,13 @@
             if (window.selectedCategoryKey) {
                 window.renderCategoryGrid();
             }
-            openPostFromHashIfNeeded();
+            if (hasAppRouteInUrl()) handleAppRoute();
+            else openPostFromHashIfNeeded();
+        }
+
+        function hasAppRouteInUrl() {
+            const route = getRouteFromLocation();
+            return !!(route.category || route.post || route.feedback || window.location.hash.match(/^#post=(.+)$/));
         }
 
         function cacheFetchedEvidences(items) {
@@ -907,6 +965,59 @@
 
         window.setCategoryCountersLoading();
 
+        function buildAppUrl(params = {}) {
+            const url = new URL(window.location.href);
+            url.search = "";
+            url.hash = "";
+            Object.entries(params).forEach(([key, value]) => {
+                if (value) url.searchParams.set(key, value);
+            });
+            return url;
+        }
+
+        function updateAppHistory(params = {}, mode = "push") {
+            const nextUrl = buildAppUrl(params);
+            if (nextUrl.href === window.location.href) return;
+            const state = { appRoute: true, ...params };
+            if (mode === "replace") window.history.replaceState(state, "", nextUrl);
+            else window.history.pushState(state, "", nextUrl);
+        }
+
+        function getRouteFromLocation() {
+            const params = new URLSearchParams(window.location.search);
+            const hashMatch = window.location.hash.match(/^#post=(.+)$/);
+            return {
+                category: params.get("category") || "",
+                post: params.get("post") || (hashMatch ? decodeURIComponent(hashMatch[1]) : ""),
+                feedback: params.get("feedback") === "1"
+            };
+        }
+
+        function handleAppRoute() {
+            const route = getRouteFromLocation();
+            if (route.feedback) {
+                window.closeLightbox({ updateHistory: false });
+                window.goHome({ updateHistory: false });
+                window.openFeedbackBoard({ updateHistory: false });
+                return;
+            }
+
+            window.closeFeedbackBoard({ updateHistory: false });
+            if (route.post) {
+                window.openLightboxDirectly(route.post, { updateHistory: false });
+                return;
+            }
+
+            window.closeLightbox({ updateHistory: false });
+            if (route.category) {
+                window.selectCategory(route.category, { updateHistory: false });
+                return;
+            }
+            window.goHome({ updateHistory: false });
+        }
+
+        window.addEventListener("popstate", handleAppRoute);
+
         // 카운터 갱신
         window.updateCategoryCounters = function() {
             CATEGORY_KEYS.forEach(cat => {
@@ -921,7 +1032,8 @@
             });
         };
 
-        window.goHome = function() {
+        window.goHome = function(options = {}) {
+            if (options.updateHistory !== false) updateAppHistory({}, "push");
             window.selectedCategoryKey = "";
             document.getElementById("page-category").classList.add("hidden");
             document.getElementById("page-home").classList.remove("hidden");
@@ -944,6 +1056,7 @@
             const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
             const isGuideOpen = !document.getElementById("guide-modal").classList.contains("hidden");
             const isQrOpen = !document.getElementById("qr-modal").classList.contains("hidden");
+            const isFeedbackOpen = !document.getElementById("feedback-modal").classList.contains("hidden");
             const isUploadGuideOpen = !document.getElementById("upload-guide-modal").classList.contains("hidden");
             const isAdminOpen = !document.getElementById("admin-modal").classList.contains("hidden");
 
@@ -957,6 +1070,10 @@
             }
             if (isQrOpen) {
                 window.closeQrModal();
+                return;
+            }
+            if (isFeedbackOpen) {
+                window.closeFeedbackBoard();
                 return;
             }
             if (isUploadGuideOpen) {
@@ -1034,7 +1151,9 @@
         window.prevSlide = function() { window.currentSlideIndex--; window.renderHeroSlider(); };
         window.nextSlide = function() { window.currentSlideIndex++; window.renderHeroSlider(); };
 
-        window.selectCategory = function(catKey) {
+        window.selectCategory = function(catKey, options = {}) {
+            if (!CATEGORY_KEYS.includes(catKey)) return;
+            if (options.updateHistory !== false) updateAppHistory({ category: catKey }, "push");
             window.selectedCategoryKey = catKey;
             document.getElementById("page-home").classList.add("hidden");
             document.getElementById("page-category").classList.remove("hidden");
@@ -1048,6 +1167,7 @@
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
+            if (!window.loadCategoryEvidenceBatch) return;
             window.loadCategoryEvidenceBatch(catKey).catch((error) => {
                 console.error("Category evidence load failed:", error);
                 showNotification("자료를 불러오지 못했습니다. 잠시 뒤 다시 시도해주세요.");
@@ -1120,8 +1240,11 @@
             window.renderCategoryGrid();
         };
 
-        window.openLightboxFromGrid = function(index) { window.currentLightboxIndex = index; window.showLightbox(); };
-        window.openLightboxDirectly = async function(itemId) {
+        window.openLightboxFromGrid = function(index) {
+            window.currentLightboxIndex = index;
+            window.showLightbox({ updateHistory: true });
+        };
+        window.openLightboxDirectly = async function(itemId, options = {}) {
             let itemObj = window.evidences.find(i => i.id === itemId);
             if (!itemObj && window.loadEvidenceById) {
                 itemObj = await window.loadEvidenceById(itemId);
@@ -1133,16 +1256,17 @@
                 window.currentGridEvidences.unshift(itemObj);
             }
             window.currentLightboxIndex = window.currentGridEvidences.findIndex(i => i.id === itemId);
-            window.showLightbox();
+            window.showLightbox({ updateHistory: options.updateHistory !== false });
         };
 
         window.handleOutsideClick = function(e) { if (e.target.id === "lightbox-modal") window.closeLightbox(); };
 
-        window.showLightbox = function() {
+        window.showLightbox = function(options = {}) {
             const modal = document.getElementById("lightbox-modal");
             if (window.currentGridEvidences.length === 0) return;
 
             const item = window.currentGridEvidences[window.currentLightboxIndex];
+            if (options.updateHistory) updateAppHistory({ category: item.category, post: item.id }, "push");
             document.getElementById("lightbox-item-id").textContent = item.id;
             document.getElementById("lightbox-title").innerHTML = `${escapeHtml(item.title)}${getCommentCount(item) > 0 ? ` <span class="text-blue-600">[${getCommentCount(item)}]</span>` : ""}`;
             document.getElementById("lightbox-likes-count").textContent = item.likes || 0;
@@ -1185,13 +1309,17 @@
             document.body.style.overflow = "hidden";
         };
 
-        window.closeLightbox = function() {
+        window.closeLightbox = function(options = {}) {
             document.getElementById("lightbox-modal").classList.add("hidden");
             clearLightboxMedia();
             document.body.style.overflow = "auto";
+            if (options.updateHistory !== false) {
+                if (window.selectedCategoryKey) updateAppHistory({ category: window.selectedCategoryKey }, "replace");
+                else updateAppHistory({}, "replace");
+            }
         };
-        window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox(); };
-        window.nextLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex + 1) % window.currentGridEvidences.length; window.showLightbox(); };
+        window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };
+        window.nextLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex + 1) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };
 
         function clearLightboxMedia() {
             const mediaStack = document.getElementById("lightbox-media-stack");
@@ -1242,10 +1370,8 @@
             }
             window.pendingDeepLinkPostId = "";
             window.openedDeepLinkPostId = itemId;
-            window.openLightboxDirectly(itemId);
+            window.openLightboxDirectly(itemId, { updateHistory: false });
         }
-
-        window.restoreCachedEvidences();
 
         window.likeCurrentPost = async function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
@@ -1522,7 +1648,7 @@
                 return;
             }
 
-            if (category !== "bug-report" && localUploadedBase64List.length === 0 && mediaLinks.length === 0) {
+            if (localUploadedBase64List.length === 0 && mediaLinks.length === 0) {
                 alert("사진 또는 영상/SNS 링크 중 하나는 등록해주세요.");
                 return;
             }
@@ -1794,15 +1920,130 @@
         window.openQrModal = function() {
             window.closeGuideModal();
             window.closeUploadGuideModal();
+            window.closeFeedbackBoard({ updateHistory: false });
             document.getElementById("qr-modal").classList.remove("hidden");
         };
         window.closeQrModal = function() { document.getElementById("qr-modal").classList.add("hidden"); };
         window.handleQrOutsideClick = function(event) {
             if (event.target.id === "qr-modal") window.closeQrModal();
         };
+
+        window.openFeedbackBoard = async function(options = {}) {
+            window.closeGuideModal();
+            window.closeQrModal();
+            window.closeUploadGuideModal();
+            window.closeLightbox({ updateHistory: false });
+            document.getElementById("feedback-modal").classList.remove("hidden");
+            if (options.updateHistory !== false) updateAppHistory({ feedback: "1" }, "push");
+            await refreshFeedbackBoard();
+        };
+
+        window.closeFeedbackBoard = function(options = {}) {
+            const modal = document.getElementById("feedback-modal");
+            if (!modal) return;
+            modal.classList.add("hidden");
+            if (options.updateHistory !== false) {
+                if (window.selectedCategoryKey) updateAppHistory({ category: window.selectedCategoryKey }, "replace");
+                else updateAppHistory({}, "replace");
+            }
+        };
+
+        window.handleFeedbackOutsideClick = function(event) {
+            if (event.target.id === "feedback-modal") window.closeFeedbackBoard();
+        };
+
+        async function refreshFeedbackBoard() {
+            const list = document.getElementById("feedback-list");
+            if (!list) return;
+            list.innerHTML = `<p class="text-slate-400 text-center py-4 text-sm font-bold">불러오는 중...</p>`;
+            try {
+                window.feedbackItems = window.loadFeedbackItems ? await window.loadFeedbackItems() : [];
+                renderFeedbackList();
+            } catch (error) {
+                console.error("Feedback load failed:", error);
+                list.innerHTML = `<p class="text-slate-400 text-center py-4 text-sm font-bold">게시판을 불러오지 못했습니다.</p>`;
+            }
+        }
+        window.refreshFeedbackBoard = refreshFeedbackBoard;
+
+        function renderFeedbackList() {
+            const list = document.getElementById("feedback-list");
+            if (!list) return;
+            const items = window.feedbackItems || [];
+            if (items.length === 0) {
+                list.innerHTML = `<p class="text-slate-400 text-center py-8 text-sm font-bold bg-slate-50 rounded-xl border border-slate-100">아직 등록된 글이 없습니다.</p>`;
+                return;
+            }
+
+            list.innerHTML = "";
+            items.forEach((item) => {
+                const node = document.createElement("div");
+                node.className = "bg-white border-2 border-slate-100 rounded-xl p-4 space-y-2";
+                const createdText = item.createdAt ? new Date(item.createdAt).toLocaleString("ko-KR") : "";
+                const deleteButton = isAdminLoggedIn ? `<button onclick="deleteFeedback('${item.id}')" class="text-slate-400 hover:text-red-600 text-xs font-black px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
+                node.innerHTML = `
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h4 class="text-base font-black text-slate-900 break-words">${escapeHtml(item.title)}</h4>
+                            <div class="text-xs text-slate-400 font-bold mt-0.5">${escapeHtml(item.author || "ㅇㅇ")} · ${escapeHtml(createdText)}</div>
+                        </div>
+                        ${deleteButton}
+                    </div>
+                    <p class="text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap break-words">${escapeHtml(item.text)}</p>
+                `;
+                list.appendChild(node);
+            });
+        }
+
+        window.submitFeedback = async function(event) {
+            event.preventDefault();
+            const authorInput = document.getElementById("feedback-author");
+            const titleInput = document.getElementById("feedback-title");
+            const textInput = document.getElementById("feedback-text");
+            const author = authorInput.value.trim() || "ㅇㅇ";
+            const title = titleInput.value.trim();
+            const text = textInput.value.trim();
+            if (!title || !text) return;
+
+            const feedbackId = "fb-" + Date.now();
+            const saved = await window.saveFeedbackToFirestore(feedbackId, {
+                id: feedbackId,
+                author,
+                title,
+                text,
+                createdAt: new Date().toISOString()
+            });
+            if (!saved) {
+                alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
+            authorInput.value = "ㅇㅇ";
+            titleInput.value = "";
+            textInput.value = "";
+            showNotification("등록되었습니다.");
+            await refreshFeedbackBoard();
+        };
+
+        window.deleteFeedback = async function(feedbackId) {
+            if (!isAdminLoggedIn) return;
+            if (!confirm("이 글을 삭제하시겠습니까?")) return;
+            const saved = await window.saveFeedbackToFirestore(feedbackId, {
+                deleted: true,
+                deletedAt: new Date().toISOString()
+            });
+            if (!saved) {
+                alert("삭제에 실패했습니다.");
+                return;
+            }
+            window.feedbackItems = (window.feedbackItems || []).filter(item => item.id !== feedbackId);
+            renderFeedbackList();
+            showNotification("삭제되었습니다.");
+        };
+
         window.openUploadGuideModal = function() {
             window.closeGuideModal();
             window.closeQrModal();
+            window.closeFeedbackBoard({ updateHistory: false });
             const modal = document.getElementById("upload-guide-modal");
             const video = modal.querySelector("video");
             modal.classList.remove("hidden");
@@ -2051,7 +2292,6 @@
                 case "bad-management": return "관리 부실";
                 case "nec-admin": return "선관위 행정";
                 case "free-board": return "자유게시판";
-                case "bug-report": return "버그제보 / 건의";
                 case "etc": return "기타";
                 default: return "미분류";
             }
@@ -2064,7 +2304,6 @@
                 case "bad-management": return "bg-rose-50 text-rose-700 border-rose-200";
                 case "nec-admin": return "bg-blue-50 text-blue-700 border-blue-200";
                 case "free-board": return "bg-indigo-50 text-indigo-700 border-indigo-200";
-                case "bug-report": return "bg-slate-50 text-slate-700 border-slate-300";
                 case "etc": return "bg-purple-50 text-purple-700 border-purple-200";
                 default: return "bg-slate-100 text-slate-700 border-slate-200";
             }
@@ -2092,6 +2331,10 @@
             document.body.appendChild(toast);
             setTimeout(() => { toast.classList.add("opacity-0", "transition-opacity", "duration-500"); setTimeout(() => toast.remove(), 500); }, 2500);
         }
+
+        window.history.replaceState({ appRoute: true, ...getRouteFromLocation() }, "", window.location.href);
+        window.restoreCachedEvidences();
+        if (hasAppRouteInUrl()) handleAppRoute();
     </script>
 </body>
 </html>
