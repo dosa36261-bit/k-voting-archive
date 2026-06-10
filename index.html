@@ -126,6 +126,21 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div onclick="selectCategory('all-posts')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-10 h-10 bg-slate-100 text-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-200/70 transition-colors">
+                                        <i class="fa-solid fa-layer-group text-lg"></i>
+                                    </div>
+                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">전체 글 보기</span>
+                                </div>
+                                <span class="bg-slate-100 text-slate-800 font-bold text-sm px-3 py-1 rounded-full border border-slate-200 group-hover:bg-white group-hover:text-slate-800 group-hover:border-transparent" id="count-all-posts">0</span>
+                            </div>
+                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">모든 카테고리에 등록된 글을 한 번에 모아 봅니다.</p>
+                        </div>
+                    </div>
+
                     <div onclick="selectCategory('shape-memory')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
                         <div>
                             <div class="flex items-center justify-between mb-4">
@@ -391,7 +406,7 @@
                         <input type="file" id="form-files" accept="image/*,.gif" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
-                            <p class="text-xs font-bold text-slate-500">사진/GIF를 드래그, 클릭, 또는 글쓰기 창에서 Ctrl+V로 붙여넣으세요. (~10MB)</p>
+                            <p class="text-xs font-bold text-slate-500">사진/GIF를 드래그, 클릭, 또는 글쓰기 창에서 Ctrl+V로 붙여넣으세요. (~25MB)</p>
                             <p id="file-status" class="text-[11px] text-blue-600 font-extrabold"></p>
                         </div>
                     </div>
@@ -589,6 +604,15 @@
 
         window.loadCategoryEvidenceBatch = async function(category) {
             const colRef = getEvidenceCollectionRef();
+            if (category === "all-posts") {
+                const batches = await Promise.all(categoryKeys.map(async (catKey) => {
+                    const snapshot = await getDocs(query(colRef, where("category", "==", catKey), limit(categoryPageLimit)));
+                    return snapshotToEvidences(snapshot);
+                }));
+                const fetched = batches.flat();
+                window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
+                return fetched;
+            }
             const snapshot = await getDocs(query(colRef, where("category", "==", category), limit(categoryPageLimit)));
             const fetched = snapshotToEvidences(snapshot);
             window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
@@ -708,7 +732,7 @@
         const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
         const CLOUDINARY_CLOUD_NAME = "dz4iuka76";
         const CLOUDINARY_UPLOAD_PRESET = "kvoting_unsigned";
-        const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+        const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
         window.evidences = [];
@@ -805,12 +829,13 @@
         }
         setupMobileHeaderScroll();
 
+        const ALL_CATEGORY_KEY = "all-posts";
         const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const FEEDBACK_CATEGORY_KEY = "feedback-board";
         const EVIDENCE_CACHE_KEY = "kvoting:evidences:v1";
 
         function setCategoryCounterText(text, title) {
-            CATEGORY_KEYS.forEach(cat => {
+            [ALL_CATEGORY_KEY, ...CATEGORY_KEYS].forEach(cat => {
                 const badge = document.getElementById(`count-${cat}`);
                 if (!badge) return;
                 badge.textContent = text;
@@ -973,6 +998,15 @@
 
         // 카운터 갱신
         window.updateCategoryCounters = function() {
+            const allBadge = document.getElementById("count-all-posts");
+            if (allBadge) {
+                const allCount = window.categoryCounts
+                    ? CATEGORY_KEYS.reduce((sum, cat) => sum + Number(window.categoryCounts[cat] || 0), 0)
+                    : window.evidences.filter(item => CATEGORY_KEYS.includes(item.category)).length;
+                allBadge.textContent = allCount;
+                allBadge.title = "";
+            }
+
             CATEGORY_KEYS.forEach(cat => {
                 const count = window.categoryCounts && Number.isFinite(window.categoryCounts[cat])
                     ? window.categoryCounts[cat]
@@ -1103,7 +1137,7 @@
         window.nextSlide = function() { window.currentSlideIndex++; window.renderHeroSlider(); };
 
         window.selectCategory = function(catKey, options = {}) {
-            if (!CATEGORY_KEYS.includes(catKey) && catKey !== FEEDBACK_CATEGORY_KEY) return;
+            if (catKey !== ALL_CATEGORY_KEY && !CATEGORY_KEYS.includes(catKey) && catKey !== FEEDBACK_CATEGORY_KEY) return;
             if (options.updateHistory !== false) {
                 updateAppHistory({ category: catKey }, "push");
                 window.lastAppliedRouteKey = `${catKey}|`;
@@ -1155,7 +1189,9 @@
             const searchVal = document.getElementById("grid-search-input").value.toLowerCase().trim();
 
             window.currentGridEvidences = getSortedEvidences(window.evidences.filter(item => {
-                if (item.category !== window.selectedCategoryKey) return false;
+                if (window.selectedCategoryKey === ALL_CATEGORY_KEY) {
+                    if (!CATEGORY_KEYS.includes(item.category)) return false;
+                } else if (item.category !== window.selectedCategoryKey) return false;
                 if (searchVal) {
                     const srcMatch = item.source ? item.source.toLowerCase().includes(searchVal) : false;
                     const descMatch = item.desc ? item.desc.toLowerCase().includes(searchVal) : false;
@@ -1519,7 +1555,7 @@
 
             imageFiles.forEach(file => {
                 if (file.size > MAX_IMAGE_FILE_SIZE) {
-                    alert(`${file.name} 파일이 10MB를 넘습니다. 10MB 이하 이미지만 등록해주세요.`);
+                    alert(`${file.name} 파일이 25MB를 넘습니다. 25MB 이하 이미지만 등록해주세요.`);
                     return;
                 }
                 const reader = new FileReader();
@@ -1598,7 +1634,7 @@
             }
             resetUploadForm();
             document.getElementById("modal-form-title").textContent = "새로운 사례 제출";
-            document.getElementById("form-category").value = window.selectedCategoryKey || "free-board";
+            document.getElementById("form-category").value = CATEGORY_KEYS.includes(window.selectedCategoryKey) ? window.selectedCategoryKey : "free-board";
             document.getElementById("upload-modal").classList.remove("hidden");
             setupDragAndDrop();
         };
@@ -2232,6 +2268,7 @@
 
         function getCategoryLabel(catKey) {
             switch(catKey) {
+                case "all-posts": return "전체 글 보기";
                 case "shape-memory": return "신비한 투표지";
                 case "strange-ballot": return "이상 현상";
                 case "bad-management": return "관리 부실";
@@ -2245,6 +2282,7 @@
 
         function getCategoryBadgeClass(catKey) {
             switch(catKey) {
+                case "all-posts": return "bg-slate-50 text-slate-700 border-slate-300";
                 case "shape-memory": return "bg-emerald-50 text-emerald-700 border-emerald-200";
                 case "strange-ballot": return "bg-amber-50 text-amber-700 border-amber-200";
                 case "bad-management": return "bg-rose-50 text-rose-700 border-rose-200";

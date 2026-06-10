@@ -63,7 +63,7 @@ Current values in `index.html`:
 ```js
 const CLOUDINARY_CLOUD_NAME = "dz4iuka76";
 const CLOUDINARY_UPLOAD_PRESET = "kvoting_unsigned";
-const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
 ```
 
 The upload preset is unsigned. The site code limits uploads to:
@@ -72,7 +72,7 @@ The upload preset is unsigned. The site code limits uploads to:
 - PNG
 - GIF
 - WEBP
-- 10MB max
+- 25MB max
 
 Do not reintroduce Firebase Storage unless the operator explicitly accepts Blaze/pay-as-you-go billing risk.
 
@@ -118,6 +118,7 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 ## Current Feature Summary
 
 - Category browsing.
+- Main page has an `all-posts` virtual category for viewing posts from all main categories together.
 - Main page hero shows recommended/random posts from top-liked candidates per category.
 - Post creation with title, category, password, images/GIFs or video/SNS links, source, and content.
 - Image upload by file picker, drag/drop, or Ctrl+V while the writing modal is open.
@@ -228,7 +229,7 @@ Check that `vercel.json` is deployed and Vercel production deployment uses the l
 
 Check:
 
-- File is 10MB or less.
+- File is 25MB or less.
 - File type is jpeg/png/gif/webp.
 - Cloudinary cloud name and unsigned preset are correct.
 - Cloudinary preset is enabled and unsigned.
