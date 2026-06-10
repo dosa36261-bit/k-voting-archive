@@ -39,6 +39,7 @@ service cloud.firestore {
         'nec-admin',
         'etc',
         'free-board',
+        'bug-report',
         'updatedAt'
       ]);
       allow delete: if false;

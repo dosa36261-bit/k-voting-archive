@@ -19,7 +19,13 @@ This is a very small static site:
 - `index.html`: all UI, styles, Firebase client code, Cloudinary upload code, and app logic live here.
 - `firestore.rules`: suggested Firestore rules for the Firebase console.
 - `vercel.json`: rewrites all routes to `index.html` so shared links do not show Vercel `Not Found`.
+- `QR.png`: QR image shown from the header QR button for public sharing.
 - `HANDOFF.md`: this file.
+
+## Operating Notes For Future Agents
+
+- When the operator asks for code/content changes, make the change, run feasible checks, review the diff, and create a git commit unless the operator explicitly says not to commit.
+- Keep changes scoped to this static app unless the operator specifically asks for a larger restructure.
 
 There is no build step, package manager, framework, backend server, or bundler. Vercel deploys the static files directly from GitHub.
 
@@ -78,7 +84,7 @@ Each post document roughly looks like:
 {
   id: "ev-...",
   title: "...",
-  category: "shape-memory" | "strange-ballot" | "bad-management" | "nec-admin" | "etc" | "free-board",
+  category: "shape-memory" | "strange-ballot" | "bad-management" | "nec-admin" | "etc" | "free-board" | "bug-report",
   images: ["https://res.cloudinary.com/..."],
   mediaLinks: ["https://x.com/...", "https://youtube.com/..."],
   source: "...",
@@ -88,7 +94,8 @@ Each post document roughly looks like:
     {
       author: "...",
       text: "...",
-      passwordHash: "sha256..."
+      passwordHash: "sha256...",
+      isAdmin: false
     }
   ],
   passwordHash: "sha256...",
@@ -122,7 +129,10 @@ The UI has compatibility helpers for these cases. Be careful not to break old da
 - Likes are limited to one per browser using `localStorage`, not true account-based identity.
 - Post edit/delete uses the post password; admin can edit/delete without post password.
 - Comments use author, text, and comment password. Comments can be deleted by admin or by matching comment password.
+- Admin comments are stored with `isAdmin: true` and render as bold `관리자`.
 - Old comments without passwords can only be deleted by admin.
+- The footer has a `bug-report` category for bug reports and suggestions. It allows text-only posts without requiring an image or media link.
+- The header QR button opens `QR.png` with sharing copy.
 
 ## Admin Behavior
 

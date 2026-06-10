@@ -3,7 +3,7 @@ const DATABASE_ID = process.env.FIRESTORE_DATABASE_ID || "(default)";
 const API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyB2kFGyKrq2liuD3r0WDkN5lMZTN0va9Ik";
 const EVIDENCE_COLLECTION_PATH = "artifacts/k-voting/public/data/evidences";
 const STATS_DOC_PATH = "artifacts/k-voting/public/data/stats/categoryCounts";
-const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
+const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board", "bug-report"];
 
 const counts = Object.fromEntries(CATEGORY_KEYS.map(category => [category, 0]));
 let pageToken = "";
