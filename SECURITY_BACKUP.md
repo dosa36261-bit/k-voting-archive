@@ -58,15 +58,15 @@ Video/SNS links are saved in `evidences.json`, but external videos from YouTube/
 - Firestore `delete` is denied in `firestore.rules`.
 - The site now uses soft delete: deleted posts are marked with `deleted: true` and hidden from the UI.
 - New posts must include a valid 64-character password hash.
-- Public updates are limited to +1 likes or append-only non-admin comments.
+- Public updates are broad enough to support browser-side post edit/delete and comment deletion while preserving document IDs and password hashes.
 - Public writes to category count stats are denied.
-- Firebase Storage uploads are capped at 5MB and cannot overwrite existing files.
+- Firebase Storage uploads are capped at 25MB and cannot overwrite existing files.
 
 ## Remaining Risks
 
 These are not fully solved while the site is a browser-only public app:
 
-- A determined attacker can still send direct Firestore create, like, or append-comment requests within the public rules.
+- A determined attacker can still send direct Firestore update requests within the public rules. Browser-side post/comment password checks are not a trusted server-side boundary.
 - The plaintext admin password is no longer in frontend source code, but the frontend still exposes a verifier hash and should not be treated as real security.
 - Post password checks happen in the browser, not on a trusted server.
 - Firebase Storage public uploads can still be abused without App Check, server-side rate limits, or authenticated upload mediation.

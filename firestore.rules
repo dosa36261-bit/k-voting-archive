@@ -46,10 +46,10 @@ service cloud.firestore {
       function hasValidOptionalFields(data) {
         return (!data.keys().hasAny(['source']) || (data.source is string && data.source.size() <= 160))
           && (!data.keys().hasAny(['desc']) || (data.desc is string && data.desc.size() <= 5000))
-          && (!data.keys().hasAny(['images']) || (data.images is list && data.images.size() <= 6))
-          && (!data.keys().hasAny(['mediaLinks']) || (data.mediaLinks is list && data.mediaLinks.size() <= 10))
-          && (!data.keys().hasAny(['comments']) || (data.comments is list && data.comments.size() <= 100))
-          && (!data.keys().hasAny(['likes']) || (data.likes is int && data.likes >= 0 && data.likes <= 100000))
+          && (!data.keys().hasAny(['images']) || (data.images is list && data.images.size() <= 20))
+          && (!data.keys().hasAny(['mediaLinks']) || (data.mediaLinks is list && data.mediaLinks.size() <= 20))
+          && (!data.keys().hasAny(['comments']) || (data.comments is list && data.comments.size() <= 500))
+          && (!data.keys().hasAny(['likes']) || (data.likes is int && data.likes >= 0 && data.likes <= 1000000))
           && (!data.keys().hasAny(['createdAt']) || data.createdAt is string)
           && (!data.keys().hasAny(['updatedAt']) || data.updatedAt is string)
           && (!data.keys().hasAny(['deleted']) || data.deleted is bool)
@@ -75,47 +75,6 @@ service cloud.firestore {
           && !data.keys().hasAny(['deleted', 'deletedAt']);
       }
 
-      function changedOnly(fields) {
-        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
-      }
-
-      function currentCommentCount() {
-        return resource.data.keys().hasAny(['comments']) && resource.data.comments is list
-          ? resource.data.comments.size()
-          : 0;
-      }
-
-      function validPublicComment(comment) {
-        return comment is map
-          && comment.keys().hasOnly(['author', 'text', 'passwordHash', 'isAdmin'])
-          && comment.author is string
-          && comment.author.size() > 0
-          && comment.author.size() <= 40
-          && comment.text is string
-          && comment.text.size() > 0
-          && comment.text.size() <= 1000
-          && comment.passwordHash is string
-          && comment.passwordHash.size() == 64
-          && comment.isAdmin == false;
-      }
-
-      function isLikeIncrement() {
-        return changedOnly(['likes', 'updatedAt'])
-          && resource.data.likes is int
-          && request.resource.data.likes == resource.data.likes + 1
-          && request.resource.data.likes <= 100000
-          && request.resource.data.updatedAt is string;
-      }
-
-      function isPublicCommentAppend() {
-        return changedOnly(['comments', 'updatedAt'])
-          && request.resource.data.comments is list
-          && request.resource.data.comments.size() == currentCommentCount() + 1
-          && request.resource.data.comments.size() <= 100
-          && validPublicComment(request.resource.data.comments[currentCommentCount()])
-          && request.resource.data.updatedAt is string;
-      }
-
       allow read: if true;
       allow create: if hasOnlyEvidenceFields(request.resource.data)
         && hasValidCoreFields(request.resource.data)
@@ -128,14 +87,32 @@ service cloud.firestore {
         && request.resource.data.id == resource.data.id
         && (!resource.data.keys().hasAny(['passwordHash']) || request.resource.data.passwordHash == resource.data.passwordHash)
         && (!resource.data.keys().hasAny(['createdAt']) || request.resource.data.createdAt == resource.data.createdAt)
-        && hasValidLegacyOrCurrentPasswordHash(request.resource.data)
-        && (isLikeIncrement() || isPublicCommentAppend());
+        && hasValidLegacyOrCurrentPasswordHash(request.resource.data);
       allow delete: if false;
     }
 
     match /artifacts/k-voting/public/data/stats/categoryCounts {
+      function validCount(value) {
+        return value is int && value >= 0 && value <= 1000000;
+      }
+
       allow read: if true;
-      allow create, update: if false;
+      allow create, update: if request.resource.data.keys().hasOnly([
+        'shape-memory',
+        'strange-ballot',
+        'bad-management',
+        'nec-admin',
+        'etc',
+        'free-board',
+        'updatedAt'
+      ])
+        && (!request.resource.data.keys().hasAny(['shape-memory']) || validCount(request.resource.data['shape-memory']))
+        && (!request.resource.data.keys().hasAny(['strange-ballot']) || validCount(request.resource.data['strange-ballot']))
+        && (!request.resource.data.keys().hasAny(['bad-management']) || validCount(request.resource.data['bad-management']))
+        && (!request.resource.data.keys().hasAny(['nec-admin']) || validCount(request.resource.data['nec-admin']))
+        && (!request.resource.data.keys().hasAny(['etc']) || validCount(request.resource.data.etc))
+        && (!request.resource.data.keys().hasAny(['free-board']) || validCount(request.resource.data['free-board']))
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || request.resource.data.updatedAt is string);
       allow delete: if false;
     }
   }

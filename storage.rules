@@ -6,7 +6,7 @@ service firebase.storage {
       allow read: if true;
       allow write: if request.resource != null
         && resource == null
-        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.size <= 25 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|gif|webp)')
         && request.resource.metadata.evidenceId == evidenceId
         && fileName.matches('[0-9]+-[0-9]+-[A-Za-z0-9._-]{1,100}\\.(jpg|jpeg|png|gif|webp)');
