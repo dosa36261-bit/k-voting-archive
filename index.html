@@ -25,6 +25,10 @@
             border-color: #2563eb !important;
             background-color: #eff6ff !important;
         }
+        #site-header {
+            transition: transform 0.22s ease;
+            will-change: transform;
+        }
         .mobile-header-hidden {
             transform: translateY(-100%);
         }
@@ -32,10 +36,6 @@
             -webkit-text-security: disc;
         }
         @media (max-width: 767px) {
-            #site-header {
-                transition: transform 0.22s ease;
-                will-change: transform;
-            }
             .site-tagline,
             .upload-button-text {
                 display: none;
@@ -608,7 +608,13 @@
         window.loadHomeEvidenceBatch = async function() {
             const colRef = getEvidenceCollectionRef();
             const batches = await Promise.all(categoryKeys.map(async (category) => {
-                const snapshot = await getDocs(query(colRef, where("category", "==", category), orderBy(documentId(), "desc"), limit(homeItemsPerCategory)));
+                let snapshot;
+                try {
+                    snapshot = await getDocs(query(colRef, where("category", "==", category), orderBy(documentId(), "desc"), limit(homeItemsPerCategory)));
+                } catch (error) {
+                    console.warn("Home category ordered query failed, falling back:", category, error);
+                    snapshot = await getDocs(query(colRef, where("category", "==", category), limit(homeItemsPerCategory)));
+                }
                 return snapshotToEvidences(snapshot);
             }));
             return batches.flat();
@@ -640,6 +646,15 @@
             return query(colRef, ...parts);
         }
 
+        function getFallbackCategoryQuery(colRef, category, pageSize, cursor) {
+            const parts = category === "all-posts"
+                ? [where("category", "in", categoryKeys)]
+                : [where("category", "==", category)];
+            if (cursor) parts.push(startAfter(cursor));
+            parts.push(limit(pageSize));
+            return query(colRef, ...parts);
+        }
+
         window.loadCategoryEvidenceBatch = async function(category, options = {}) {
             const reset = options.reset === true
                 || window.categoryPagination.category !== category
@@ -652,7 +667,13 @@
             const colRef = getEvidenceCollectionRef();
             try {
                 const cursorKey = category === "all-posts" ? allCategoryCursorKey : category;
-                const snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[cursorKey]));
+                let snapshot;
+                try {
+                    snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[cursorKey]));
+                } catch (error) {
+                    console.warn("Category ordered query failed, falling back:", category, error);
+                    snapshot = await getDocs(getFallbackCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[cursorKey]));
+                }
                 const docs = snapshot.docs;
                 window.categoryPagination.cursors[cursorKey] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[cursorKey];
                 window.categoryPagination.hasMore[cursorKey] = docs.length === categoryPageLimit;
@@ -871,12 +892,6 @@
 
             let lastScrollY = window.scrollY;
             const updateHeader = () => {
-                if (window.innerWidth >= 768) {
-                    header.classList.remove("mobile-header-hidden");
-                    lastScrollY = window.scrollY;
-                    return;
-                }
-
                 const currentScrollY = window.scrollY;
                 const isScrollingDown = currentScrollY > lastScrollY;
                 if (isScrollingDown && currentScrollY > 72) {
@@ -908,11 +923,11 @@
         }
 
         window.setCategoryCountersLoading = function() {
-            setCategoryCounterText("로딩중", "자료를 불러오는 중입니다.");
+            setCategoryCounterText("...", "자료를 불러오는 중입니다.");
         };
 
         window.showCategoryLoadError = function() {
-            setCategoryCounterText("재시도", "자료를 불러오는 중입니다. 잠시 뒤 다시 시도합니다.");
+            setCategoryCounterText("...", "자료를 불러오는 중입니다. 잠시 뒤 다시 시도합니다.");
         };
 
         function refreshEvidenceViews() {
@@ -1350,7 +1365,14 @@
             const shouldShow = !!window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence();
             wrapper.classList.toggle("hidden", !shouldShow);
             button.disabled = !!(window.categoryPagination && window.categoryPagination.isLoading);
-            button.textContent = button.disabled ? "불러오는 중..." : "더 보기";
+            button.textContent = button.disabled ? "..." : "더 보기";
+            if (shouldShow && !button.disabled && document.documentElement.scrollHeight <= window.innerHeight + 300) {
+                setTimeout(() => {
+                    if (window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence()) {
+                        window.loadMoreCategoryEvidence();
+                    }
+                }, 120);
+            }
         };
 
         function setupInfiniteCategoryScroll() {
@@ -1910,6 +1932,7 @@
             let success = false;
             const evidenceId = editId || "ev-" + Date.now();
             let previousCategory = "";
+            let savedEvidence = null;
 
             if (editId) {
                 const original = window.evidences.find(item => item.id === editId);
@@ -1928,6 +1951,17 @@
                     alert("이미지 업로드에 실패했습니다. Firebase Storage 설정 또는 네트워크 상태를 확인해주세요.");
                     return;
                 }
+                const updatedAt = new Date().toISOString();
+                savedEvidence = {
+                    ...original,
+                    title,
+                    category,
+                    images: finalImages,
+                    mediaLinks,
+                    source,
+                    desc,
+                    updatedAt
+                };
                 success = await window.saveEvidenceToFirestore(evidenceId, {
                     title,
                     category,
@@ -1935,7 +1969,7 @@
                     mediaLinks,
                     source,
                     desc,
-                    updatedAt: new Date().toISOString()
+                    updatedAt
                 });
             } else {
                 const finalImages = await prepareImagesForSave(evidenceId, title, source);
@@ -1943,7 +1977,8 @@
                     alert("이미지 업로드에 실패했습니다. Firebase Storage 설정 또는 네트워크 상태를 확인해주세요.");
                     return;
                 }
-                success = await window.saveEvidenceToFirestore(evidenceId, {
+                const createdAt = new Date().toISOString();
+                savedEvidence = {
                     id: evidenceId,
                     title,
                     category,
@@ -1954,17 +1989,21 @@
                     likes: 0,
                     comments: [],
                     passwordHash,
-                    createdAt: new Date().toISOString()
-                });
+                    createdAt
+                };
+                success = await window.saveEvidenceToFirestore(evidenceId, savedEvidence);
             }
 
             if (success) {
+                if (savedEvidence) {
+                    window.applyFetchedEvidences([savedEvidence], { allowEmpty: true, cache: true });
+                }
                 if (editId) {
                     window.adjustCategoryCountsForChange(previousCategory, category).catch(() => {});
                 } else {
                     window.adjustCategoryCount(category, 1).catch(() => {});
                 }
-                if (window.loadCategoryEvidenceBatch) window.loadCategoryEvidenceBatch(category).catch(() => {});
+                if (window.loadCategoryEvidenceBatch) window.loadCategoryEvidenceBatch(category).catch((error) => console.warn("Post-save reload failed:", error));
                 window.closeUploadModal(); window.closeLightbox();
                 showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
             } else {
