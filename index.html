@@ -969,7 +969,7 @@
                 return false;
             }
 
-            window.evidences = (fetched || []).filter(item => !item.deleted);
+            window.evidences = mergeEvidenceItems(fetched || []).filter(item => !item.deleted);
             window.hasReceivedEvidenceSnapshot = true;
             window.hasVisibleEvidenceData = window.evidences.length > 0;
             cacheFetchedEvidences(window.evidences);
@@ -1031,22 +1031,27 @@
         function getRouteFromLocation() {
             const params = new URLSearchParams(window.location.search);
             const hashMatch = window.location.hash.match(/^#post=(.+)$/);
+            const state = window.history.state || {};
             return {
                 category: params.get("category") || "",
                 post: params.get("post") || (hashMatch ? decodeURIComponent(hashMatch[1]) : ""),
+                modalPost: state.lightboxPost || "",
             };
         }
 
         function handleAppRoute() {
             const route = getRouteFromLocation();
-            const routeKey = `${route.category}|${route.post}`;
+            const routeKey = `${route.category}|${route.post || route.modalPost}`;
             const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
+            if (!route.post && !route.modalPost && isLightboxOpen) {
+                window.closeLightbox({ updateHistory: false });
+            }
             if (window.lastAppliedRouteKey === routeKey) {
-                if (!route.post || isLightboxOpen) return;
+                if (!(route.post || route.modalPost) || isLightboxOpen) return;
             }
             window.lastAppliedRouteKey = routeKey;
-            if (route.post) {
-                window.openLightboxDirectly(route.post, { updateHistory: false });
+            if (route.post || route.modalPost) {
+                window.openLightboxDirectly(route.post || route.modalPost, { updateHistory: false, category: route.category });
                 return;
             }
 
@@ -1400,8 +1405,15 @@
                 itemObj = await window.loadEvidenceById(itemId);
             }
             if (!itemObj) return;
-            window.selectedCategoryKey = itemObj.category;
-            window.currentGridEvidences = getSortedEvidences(window.evidences.filter(i => i.category === window.selectedCategoryKey));
+            const contextCategory = options.category
+                || (window.selectedCategoryKey === ALL_CATEGORY_KEY ? ALL_CATEGORY_KEY : "")
+                || (CATEGORY_KEYS.includes(window.selectedCategoryKey) || window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY ? window.selectedCategoryKey : "")
+                || itemObj.category;
+            window.selectedCategoryKey = contextCategory;
+            window.currentGridEvidences = getSortedEvidences(window.evidences.filter(i => {
+                if (contextCategory === ALL_CATEGORY_KEY) return CATEGORY_KEYS.includes(i.category);
+                return i.category === contextCategory;
+            }));
             if (!window.currentGridEvidences.some(i => i.id === itemId)) {
                 window.currentGridEvidences.unshift(itemObj);
             }
@@ -1417,8 +1429,11 @@
 
             const item = window.currentGridEvidences[window.currentLightboxIndex];
             if (options.updateHistory) {
-                updateAppHistory({ category: item.category, post: item.id }, "push");
-                window.lastAppliedRouteKey = `${item.category}|${item.id}`;
+                const routeCategory = window.selectedCategoryKey || item.category;
+                const nextUrl = buildAppUrl({ category: routeCategory });
+                const state = { appRoute: true, category: routeCategory, lightboxPost: item.id };
+                window.history.pushState(state, "", nextUrl);
+                window.lastAppliedRouteKey = `${routeCategory}|${item.id}`;
             }
             document.getElementById("lightbox-item-id").textContent = item.id;
             document.getElementById("lightbox-title").innerHTML = `${escapeHtml(item.title)}${getCommentCount(item) > 0 ? ` <span class="text-blue-600">[${getCommentCount(item)}]</span>` : ""}`;
@@ -1474,6 +1489,9 @@
                     updateAppHistory({}, "replace");
                     window.lastAppliedRouteKey = "|";
                 }
+            }
+            if (window.selectedCategoryKey && options.showCategoryOnClose !== false) {
+                window.showSelectedCategoryPage();
             }
         };
         window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };

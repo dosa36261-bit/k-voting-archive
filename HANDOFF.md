@@ -133,7 +133,7 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 - X/Twitter post links render with the official X/Twitter embed widget when possible.
 - X-only posts get a custom X thumbnail card, not a real video frame thumbnail.
 - Content URLs are linkified.
-- Post links use `/?post=ev-...` and old `#post=ev-...` links are still understood.
+- Copied/shared post links use `/?post=ev-...` and old `#post=ev-...` links are still understood. Normal in-site post opening keeps the category URL and uses history state so mobile Back closes the post modal before leaving the category.
 - `vercel.json` prevents shared links from showing Vercel `Not Found`.
 - Likes are limited to one per browser using `localStorage`, not true account-based identity.
 - Post edit/delete uses the post password; admin can edit/delete without post password.
