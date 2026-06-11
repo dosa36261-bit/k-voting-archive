@@ -395,12 +395,12 @@
 
                 <div>
                     <label class="block text-sm font-black text-slate-700 mb-1">제목 <span class="text-red-600">*</span></label>
-                    <input type="text" id="form-title" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="form-title" name="post-title" autocomplete="on" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div class="max-w-56 ml-auto">
                     <label class="block text-xs font-black text-slate-700 mb-1 text-right">게시글 비밀번호 <span class="text-red-600">*</span></label>
-                    <input type="password" id="form-post-password" required minlength="4" placeholder="비밀번호" class="placeholder-slate-300 w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="password" id="form-post-password" name="post-password" autocomplete="off" data-lpignore="true" data-1p-ignore="true" required minlength="4" placeholder="비밀번호" class="placeholder-slate-300 w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="text-[11px] text-slate-400 font-bold mt-1 text-right">4자 이상</p>
                 </div>
 
