@@ -447,13 +447,13 @@
                 <h3 class="text-lg font-black text-slate-955">관리자 본인 인증</h3>
                 <p class="text-xs text-slate-500 mt-1">임의 도배성 게시물을 정화하기 위해 로그인합니다.</p>
             </div>
-            <div class="space-y-4">
-                <input type="password" id="admin-pass-input" placeholder="비밀번호 입력" class="placeholder-slate-300 w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none">
+            <form class="space-y-4" onsubmit="tryAdminLogin(); return false;">
+                <input type="password" id="admin-pass-input" name="admin-password" autocomplete="current-password" placeholder="비밀번호 입력" class="placeholder-slate-300 w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none">
                 <div class="flex justify-end gap-2">
-                    <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">취소</button>
-                    <button onclick="tryAdminLogin()" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">로그인</button>
+                    <button type="button" onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">취소</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">로그인</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -781,7 +781,7 @@
     </script>
 
     <script>
-        const ADMIN_PASSWORD_HASH = "39374b39ab681208197fae9962fa22ce79b1db839c245f36d28534563a7a2527";
+        const ADMIN_PASSWORD_HASH = "6e74b0e24cc5de672103e711e8239771d00fdbf012b2633e09f25de74014a6b0";
         const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 

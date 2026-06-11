@@ -145,7 +145,7 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 Admin login is client-side only and compares the SHA-256 hash of the typed password:
 
 ```js
-const ADMIN_PASSWORD_HASH = "39374b39ab681208197fae9962fa22ce79b1db839c245f36d28534563a7a2527";
+const ADMIN_PASSWORD_HASH = "6e74b0e24cc5de672103e711e8239771d00fdbf012b2633e09f25de74014a6b0";
 ```
 
 This removes the plaintext admin password from the frontend source, but it is still not real security. Anyone inspecting the source can see the verifier hash, and the app still relies on client-side checks. It is only a convenience UI gate. Actual destructive operations are possible if Firestore rules allow them.
