@@ -971,7 +971,6 @@
         window.shouldWaitForEvidenceLoad = function(fetched, fromCache) {
             if (fetched.length > 0) return false;
             if (!window.hasReceivedEvidenceSnapshot) {
-                window.setCategoryCountersLoading();
                 return true;
             }
             return false;
@@ -980,7 +979,6 @@
         window.applyFetchedEvidences = function(fetched, options = {}) {
             const allowEmpty = options.allowEmpty === true;
             if ((!fetched || fetched.length === 0) && !allowEmpty) {
-                window.setCategoryCountersLoading();
                 return false;
             }
 
@@ -1000,7 +998,6 @@
             const run = async () => {
                 if (window.hasReceivedEvidenceSnapshot && window.evidences.length > 0) return;
                 attempts++;
-                window.setCategoryCountersLoading();
 
                 try {
                     const fetched = await loadFn();
@@ -1013,7 +1010,6 @@
                 }
 
                 if (attempts >= maxAttempts) {
-                    if (!window.hasVisibleEvidenceData) window.showCategoryLoadError();
                     return;
                 }
 
@@ -1022,8 +1018,6 @@
 
             evidenceLoadRetryTimer = setTimeout(run, 1200);
         };
-
-        window.setCategoryCountersLoading();
 
         function buildAppUrl(params = {}) {
             const url = new URL(window.location.href);
