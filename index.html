@@ -575,6 +575,7 @@
             });
             return Array.from(byId.values());
         }
+        window.mergeEvidenceItems = mergeEvidenceItems;
 
         // 전역 스코프에 Firestore 저장 함수 주입
         window.saveEvidenceToFirestore = async function(evidenceId, dataObj) {
@@ -982,7 +983,7 @@
                 return false;
             }
 
-            window.evidences = mergeEvidenceItems(fetched || []).filter(item => !item.deleted);
+            window.evidences = window.mergeEvidenceItems(fetched || []).filter(item => !item.deleted);
             window.hasReceivedEvidenceSnapshot = true;
             window.hasVisibleEvidenceData = window.evidences.length > 0;
             cacheFetchedEvidences(window.evidences);
