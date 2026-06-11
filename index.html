@@ -345,10 +345,10 @@
                         </button>
                         
                         <div class="flex gap-2">
-                            <button onclick="editCurrentPost()" class="text-slate-600 hover:text-blue-700 font-bold flex items-center gap-1 bg-white hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
+                            <button onclick="editCurrentPost()" class="hidden text-slate-600 hover:text-blue-700 font-bold items-center gap-1 bg-white hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
                                 <i class="fa-solid fa-pen"></i> 수정
                             </button>
-                            <button onclick="deleteEvidence(getCurrentLightboxItemId())" class="text-slate-500 hover:text-red-600 font-bold flex items-center gap-1 bg-white hover:bg-red-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
+                            <button onclick="deleteEvidence(getCurrentLightboxItemId())" class="hidden text-slate-500 hover:text-red-600 font-bold items-center gap-1 bg-white hover:bg-red-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
                                 <i class="fa-solid fa-trash-can"></i> 삭제
                             </button>
                         </div>
@@ -414,7 +414,7 @@
                         <input type="file" id="form-files" accept="image/*,.gif" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
-                            <p class="text-xs font-bold text-slate-500">사진/GIF를 드래그, 클릭, 또는 글쓰기 창에서 Ctrl+V로 붙여넣으세요. (~25MB)</p>
+                            <p class="text-xs font-bold text-slate-500">사진/GIF를 드래그, 클릭, 또는 글쓰기 창에서 Ctrl+V로 붙여넣으세요. (~5MB)</p>
                             <p id="file-status" class="text-[11px] text-blue-600 font-extrabold"></p>
                         </div>
                     </div>
@@ -786,7 +786,9 @@
 
     <script>
         const ADMIN_PASSWORD_HASH = "6e74b0e24cc5de672103e711e8239771d00fdbf012b2633e09f25de74014a6b0";
-        const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
+        const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+        const MAX_IMAGE_UPLOAD_COUNT = 6;
+        const MAX_MEDIA_LINK_COUNT = 10;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
         window.evidences = [];
@@ -1167,7 +1169,7 @@
 
             let sourceHtml = item.source ? `<div class="text-sm text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 font-bold border border-slate-200"><span class="font-black text-slate-800">출처:</span> ${escapeHtml(item.source)}</div>` : "";
             let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-white whitespace-pre-wrap">${linkifyText(item.desc)}</p>` : "";
-            let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-200"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>` : "";
+            let deleteBtn = "";
 
             container.innerHTML = `
                 <div class="w-full cursor-pointer" onclick="openLightboxDirectly('${item.id}')">
@@ -1284,7 +1286,7 @@
                     card.onclick = () => window.openLightboxDirectly(item.id);
                     const replyCount = getCommentCount(item);
                     const dateText = item.createdAt ? new Date(item.createdAt).toLocaleString("ko-KR") : "";
-                    let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
+                    let deleteBtn = "";
                     card.innerHTML = `
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-grow">
@@ -1310,7 +1312,7 @@
                 const thumb = getThumbnail(item);
                 const commentCount = getCommentCount(item);
                 let sourceTag = item.source ? `<span class="truncate text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${escapeHtml(item.source)}</span>` : `<span class="text-xs text-slate-300">출처 미상</span>`;
-                let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
+                let deleteBtn = "";
 
                 card.innerHTML = `
                     <div class="aspect-square bg-slate-900 overflow-hidden relative">
@@ -1536,7 +1538,10 @@
                 return;
             }
             item.likes = (item.likes || 0) + 1;
-            const updated = await window.saveEvidenceToFirestore(item.id, { likes: item.likes });
+            const updated = await window.saveEvidenceToFirestore(item.id, {
+                likes: item.likes,
+                updatedAt: new Date().toISOString()
+            });
             if (updated) {
                 markPostLiked(item.id);
                 document.getElementById("lightbox-likes-count").textContent = item.likes;
@@ -1576,7 +1581,6 @@
                             <span class="${authorClass}">${escapeHtml(authorName)}</span>
                             <p class="text-slate-700 text-sm mt-0.5 font-medium break-words">${escapeHtml(c.text)}</p>
                         </div>
-                        <button onclick="deleteComment('${item.id}', ${idx})" class="shrink-0 text-slate-400 hover:text-red-600 text-[11px] ml-2 bg-white hover:bg-red-50 px-2 py-0.5 rounded border border-slate-200">삭제</button>
                     `;
                     list.appendChild(node);
                 });
@@ -1630,7 +1634,10 @@
             
             const passwordHash = isAdminLoggedIn ? "" : await hashPassword(passwordInput.value.trim());
             item.comments.push({ author, text: textInput.value.trim(), passwordHash, isAdmin: isAdminLoggedIn });
-            const saved = await window.saveEvidenceToFirestore(item.id, { comments: item.comments });
+            const saved = await window.saveEvidenceToFirestore(item.id, {
+                comments: item.comments,
+                updatedAt: new Date().toISOString()
+            });
             if (saved) {
                 renderPostComments(item);
                 authorInput.value = isAdminLoggedIn ? "관리자" : "ㅇㅇ";
@@ -1675,7 +1682,7 @@
 
             imageFiles.forEach(file => {
                 if (file.size > MAX_IMAGE_FILE_SIZE) {
-                    alert(`${file.name} 파일이 25MB를 넘습니다. 25MB 이하 이미지만 등록해주세요.`);
+                    alert(`${file.name} 파일이 5MB를 넘습니다. 5MB 이하 이미지만 등록해주세요.`);
                     return;
                 }
                 if (sessionId !== uploadPreviewSessionId) return;
@@ -1865,8 +1872,8 @@
                 alert("내용은 5000자 이하로 입력해주세요.");
                 return;
             }
-            if (localUploadedBase64List.length > 20 || mediaLinks.length > 20) {
-                alert("이미지와 링크는 각각 20개 이하로 등록해주세요.");
+            if (localUploadedBase64List.length > MAX_IMAGE_UPLOAD_COUNT || mediaLinks.length > MAX_MEDIA_LINK_COUNT) {
+                alert(`이미지는 ${MAX_IMAGE_UPLOAD_COUNT}개 이하, 링크는 ${MAX_MEDIA_LINK_COUNT}개 이하로 등록해주세요.`);
                 return;
             }
 

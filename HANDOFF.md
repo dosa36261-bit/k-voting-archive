@@ -61,7 +61,9 @@ Images and GIFs are uploaded to Firebase Storage.
 Current values in `index.html`:
 
 ```js
-const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_UPLOAD_COUNT = 6;
+const MAX_MEDIA_LINK_COUNT = 10;
 ```
 
 Storage path:
@@ -76,7 +78,9 @@ The site code and `storage.rules` limit uploads to:
 - PNG
 - GIF
 - WEBP
-- 25MB max
+- 5MB max per file
+- 6 images/GIFs max per post
+- 10 media links max per post
 
 ## Data Model
 
@@ -132,8 +136,8 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 - Post links use `/?post=ev-...` and old `#post=ev-...` links are still understood.
 - `vercel.json` prevents shared links from showing Vercel `Not Found`.
 - Likes are limited to one per browser using `localStorage`, not true account-based identity.
-- Post edit/delete uses the post password; admin can edit/delete without post password.
-- Comments use author, text, and comment password. Comments can be deleted by admin or by matching comment password.
+- Public post edit/delete is disabled in the current archive-preservation mode.
+- Comments use author, text, and comment password. Public comment writes are append-only in Firestore rules; comment deletion is disabled in the UI.
 - Admin comments are stored with `isAdmin: true` and render as bold `관리자`.
 - Old comments without passwords can only be deleted by admin.
 - The footer has an independent inquiry board view. Inquiry posts use category `feedback-board` and the normal comment system as replies.
@@ -150,11 +154,7 @@ const ADMIN_PASSWORD_HASH = "6e74b0e24cc5de672103e711e8239771d00fdbf012b2633e09f
 
 This removes the plaintext admin password from the frontend source, but it is still not real security. Anyone inspecting the source can see the verifier hash, and the app still relies on client-side checks. It is only a convenience UI gate. Actual destructive operations are possible if Firestore rules allow them.
 
-Admin can:
-
-- Delete posts.
-- Edit posts without entering post password.
-- Delete comments without comment password.
+Admin UI is still client-side convenience only. Public Firestore rules no longer trust this client-side admin state for destructive operations.
 
 ## Important Functions In `index.html`
 
@@ -208,16 +208,15 @@ Helpers:
 - No real user accounts.
 - Like limiting is localStorage-based, so another browser/device can like again.
 - Post/comment password hashes are stored client-side in Firestore. Better than plaintext, but not strong authentication.
-- Firestore rules have been kept permissive during development. Tighten them before serious public use.
-- Firebase Storage writes are public client writes under `evidence-images/`, guarded by `storage.rules` for file size and image MIME type. This is still abuse-prone without Auth/App Check.
+- Firestore rules are in archive-preservation mode: public create is allowed, public updates are limited to +1 likes or append-only non-admin comments, and public deletes are denied.
+- Firebase Storage writes are public client writes under `evidence-images/`, guarded by `storage.rules` for file size, image MIME type, metadata, filename, and no-overwrite checks. This is still abuse-prone without Auth/App Check.
 - X/Twitter real video thumbnails cannot be extracted reliably from a static frontend. The app uses official embeds and a fallback X thumbnail card.
 - X embeds may fail for private/deleted/restricted posts or if X blocks embedding.
 
 ## Recommended Next Improvements
 
-- Move write/delete operations to serverless API routes or Firebase Auth plus Cloud Functions to enforce passwords and admin authority server-side.
-- Add stricter Firestore rules once the data shape is stable.
-- Add App Check or abuse protection if public usage grows.
+- Move admin edit/delete/moderation operations to serverless API routes or Firebase Auth plus Cloud Functions.
+- Enable App Check and billing/budget alerts before heavier public traffic.
 - Consider migrating from one-file HTML to a small framework only if the UI keeps growing.
 
 ## Common Troubleshooting
@@ -230,7 +229,7 @@ Check that `vercel.json` is deployed and Vercel production deployment uses the l
 
 Check:
 
-- File is 25MB or less.
+- File is 5MB or less.
 - File type is jpeg/png/gif/webp.
 - `storage.rules` is deployed.
 - Firebase Storage bucket exists and billing/quota are healthy.

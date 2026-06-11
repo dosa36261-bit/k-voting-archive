@@ -1,6 +1,6 @@
 # Security And Backup Notes
 
-This project is a public, browser-only archive. Users write directly to Firestore from `index.html`, and image/GIF files are uploaded to Cloudinary.
+This project is a public, browser-only archive. Users write directly to Firestore from `index.html`, and image/GIF files are uploaded to Firebase Storage.
 
 ## Current Backup Command
 
@@ -58,21 +58,23 @@ Video/SNS links are saved in `evidences.json`, but external videos from YouTube/
 - Firestore `delete` is denied in `firestore.rules`.
 - The site now uses soft delete: deleted posts are marked with `deleted: true` and hidden from the UI.
 - New posts must include a valid 64-character password hash.
-- Updates must preserve the document ID and core fields.
+- Public updates are limited to +1 likes or append-only non-admin comments.
+- Public writes to category count stats are denied.
+- Firebase Storage uploads are capped at 5MB and cannot overwrite existing files.
 
 ## Remaining Risks
 
 These are not fully solved while the site is a browser-only public app:
 
-- A determined attacker can still send direct Firestore update requests if rules allow public updates.
+- A determined attacker can still send direct Firestore create, like, or append-comment requests within the public rules.
 - The plaintext admin password is no longer in frontend source code, but the frontend still exposes a verifier hash and should not be treated as real security.
 - Post password checks happen in the browser, not on a trusted server.
-- Cloudinary unsigned uploads are convenient but can be abused unless the preset is restricted in the Cloudinary dashboard.
+- Firebase Storage public uploads can still be abused without App Check, server-side rate limits, or authenticated upload mediation.
 
 ## Recommended Next Steps
 
 1. Enable a budget alert/limit in Google Cloud before turning on paid Firebase features.
 2. Use Firebase scheduled export to Cloud Storage for managed Firestore backups if Blaze billing is enabled.
-3. Enable Cloudinary backups or keep running the local backup script.
+3. Keep running the local backup script or enable managed Firebase backups.
 4. Move admin/delete/edit operations to Firebase Auth plus Cloud Functions.
 5. Keep CAPTCHA off unless abuse becomes severe; prefer rate limits and server-side checks first.
