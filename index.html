@@ -781,7 +781,7 @@
     </script>
 
     <script>
-        const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
+        const ADMIN_PASSWORD_HASH = "06900b3a9e6a1c68fa973bda5c4af801202bec1a5dd4a9121a6e12a6c843cb0c";
         const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -814,7 +814,7 @@
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
         let uploadPreviewSessionId = 0;
-        let isAdminLoggedIn = sessionStorage.getItem("kvoting:admin") === "1";
+        let isAdminLoggedIn = false;
         let isDragAndDropReady = false;
         let isSavingEvidence = false;
         let isFeedbackWriteMode = false;
@@ -2038,10 +2038,10 @@
 
         window.openAdminModal = function() { document.getElementById("admin-pass-input").value = ""; document.getElementById("admin-modal").classList.remove("hidden"); };
         window.closeAdminModal = function() { document.getElementById("admin-modal").classList.add("hidden"); };
-        window.tryAdminLogin = function() {
-            if (document.getElementById("admin-pass-input").value === ADMIN_PASSWORD) {
+        window.tryAdminLogin = async function() {
+            const inputHash = await hashPassword(document.getElementById("admin-pass-input").value);
+            if (inputHash === ADMIN_PASSWORD_HASH) {
                 isAdminLoggedIn = true;
-                sessionStorage.setItem("kvoting:admin", "1");
                 document.getElementById("admin-indicator").classList.remove("hidden");
                 updateCommentFormForAdminState();
                 window.closeAdminModal(); showNotification("관리자 인증 성공!");

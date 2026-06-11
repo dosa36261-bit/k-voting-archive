@@ -65,7 +65,7 @@ Video/SNS links are saved in `evidences.json`, but external videos from YouTube/
 These are not fully solved while the site is a browser-only public app:
 
 - A determined attacker can still send direct Firestore update requests if rules allow public updates.
-- The admin password is visible in frontend source code and should not be treated as real security.
+- The plaintext admin password is no longer in frontend source code, but the frontend still exposes a verifier hash and should not be treated as real security.
 - Post password checks happen in the browser, not on a trusted server.
 - Cloudinary unsigned uploads are convenient but can be abused unless the preset is restricted in the Cloudinary dashboard.
 

@@ -142,13 +142,13 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 
 ## Admin Behavior
 
-Admin login is client-side only:
+Admin login is client-side only and compares the SHA-256 hash of the typed password:
 
 ```js
-const ADMIN_PASSWORD = "KVote_Secure_Admin_#9982_Pass";
+const ADMIN_PASSWORD_HASH = "06900b3a9e6a1c68fa973bda5c4af801202bec1a5dd4a9121a6e12a6c843cb0c";
 ```
 
-This is not real security. Anyone inspecting the source can see it. It is only a convenience UI gate. Actual destructive operations are possible if Firestore rules allow them.
+This removes the plaintext admin password from the frontend source, but it is still not real security. Anyone inspecting the source can see the verifier hash, and the app still relies on client-side checks. It is only a convenience UI gate. Actual destructive operations are possible if Firestore rules allow them.
 
 Admin can:
 
@@ -215,7 +215,7 @@ Helpers:
 
 ## Recommended Next Improvements
 
-- Move write/delete operations to serverless API routes to enforce passwords and admin authority server-side.
+- Move write/delete operations to serverless API routes or Firebase Auth plus Cloud Functions to enforce passwords and admin authority server-side.
 - Add stricter Firestore rules once the data shape is stable.
 - Add App Check or abuse protection if public usage grows.
 - Consider migrating from one-file HTML to a small framework only if the UI keeps growing.
