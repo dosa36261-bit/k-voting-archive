@@ -24,9 +24,9 @@ This is a very small static site:
 
 ## Operating Notes For Future Agents
 
-- When the operator asks for code/content changes, make the change, run feasible checks, review the diff, and create a git commit unless the operator explicitly says not to commit.
+- When the operator asks for code/content changes, make the change, run feasible checks, review the diff, create a git commit, and push that commit to the configured Git remote unless the operator explicitly says not to commit or not to push.
 - The operator has granted Git, Firebase, and browser/devtools automation permissions for this project. Use the available local credentials/session and tooling as needed to finish the task end to end.
-- After a code change, commit the relevant files. Push to the configured Git remote when the operator asks for deployment, live-site update, or GitHub sync.
+- Treat GitHub push as part of normal task completion, not a separate optional step. For this repo, push finished work to `origin main` after committing unless the task is intentionally local-only.
 - Do not commit unrelated local artifacts such as `node_modules/` unless the operator explicitly asks. If the worktree has unrelated changes, leave them alone and stage only the files needed for the task.
 - Keep changes scoped to this static app unless the operator specifically asks for a larger restructure.
 
