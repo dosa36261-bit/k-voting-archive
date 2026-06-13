@@ -842,6 +842,7 @@
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
         let uploadPreviewSessionId = 0;
+        let draggedUploadPreviewIndex = null;
         let isAdminLoggedIn = false;
         let isDragAndDropReady = false;
         let isSavingEvidence = false;
@@ -1746,10 +1747,56 @@
                     ? `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-file-image text-lg"></i><span class="text-[10px] font-bold leading-none">GIF</span></div>`
                     : `<img src="${escapeHtml(previewUrl)}" class="w-full h-full object-cover" alt="">`;
                 const div = document.createElement("div");
-                div.className = "relative w-16 h-16 border-2 border-slate-300 rounded-lg overflow-hidden";
-                div.innerHTML = `${previewMarkup}<button type="button" onclick="removeUploadedImage(${index})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] m-0.5"><i class="fa-solid fa-xmark"></i></button>`;
+                div.className = "relative w-16 h-16 border-2 border-slate-300 rounded-lg overflow-hidden cursor-grab transition-transform";
+                div.draggable = true;
+                div.dataset.index = String(index);
+                div.title = "드래그해서 순서 변경";
+                div.addEventListener("dragstart", handleUploadPreviewDragStart);
+                div.addEventListener("dragover", handleUploadPreviewDragOver);
+                div.addEventListener("drop", handleUploadPreviewDrop);
+                div.addEventListener("dragend", handleUploadPreviewDragEnd);
+                div.innerHTML = `${previewMarkup}<div class="absolute bottom-0 left-0 bg-slate-900/80 text-white rounded-tr-md px-1 text-[10px] font-black leading-4">${index + 1}</div><button type="button" onclick="removeUploadedImage(${index})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] m-0.5"><i class="fa-solid fa-xmark"></i></button>`;
                 container.appendChild(div);
             });
+        }
+
+        function handleUploadPreviewDragStart(event) {
+            draggedUploadPreviewIndex = Number(event.currentTarget.dataset.index);
+            event.currentTarget.classList.add("opacity-50", "scale-95");
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", String(draggedUploadPreviewIndex));
+        }
+
+        function handleUploadPreviewDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.dataTransfer.dropEffect = "move";
+        }
+
+        function handleUploadPreviewDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const targetIndex = Number(event.currentTarget.dataset.index);
+            const sourceIndex = Number.isInteger(draggedUploadPreviewIndex)
+                ? draggedUploadPreviewIndex
+                : Number(event.dataTransfer.getData("text/plain"));
+            moveUploadedImage(sourceIndex, targetIndex);
+        }
+
+        function handleUploadPreviewDragEnd(event) {
+            event.currentTarget.classList.remove("opacity-50", "scale-95");
+            draggedUploadPreviewIndex = null;
+        }
+
+        function moveUploadedImage(sourceIndex, targetIndex) {
+            const lastIndex = localUploadedBase64List.length - 1;
+            if (sourceIndex === targetIndex || sourceIndex < 0 || targetIndex < 0 || sourceIndex > lastIndex || targetIndex > lastIndex) return;
+
+            const [previewUrl] = localUploadedBase64List.splice(sourceIndex, 1);
+            const [file] = localUploadedFileList.splice(sourceIndex, 1);
+            localUploadedBase64List.splice(targetIndex, 0, previewUrl);
+            localUploadedFileList.splice(targetIndex, 0, file);
+            renderUploadPreviews();
         }
 
         function revokeLocalPreviewUrl(index) {
@@ -1821,6 +1868,7 @@
 
         function resetUploadForm() {
             uploadPreviewSessionId++;
+            draggedUploadPreviewIndex = null;
             revokeAllLocalPreviewUrls();
             document.getElementById("evidence-form").reset();
             document.getElementById("edit-id").value = "";
@@ -1842,6 +1890,7 @@
             document.getElementById("form-source").value = "";
             if (enabled) {
                 uploadPreviewSessionId++;
+                draggedUploadPreviewIndex = null;
                 revokeAllLocalPreviewUrls();
                 localUploadedBase64List = [];
                 localUploadedFileList = [];
@@ -2515,12 +2564,22 @@
         }
 
         function linkifyText(text) {
-            const escaped = escapeHtml(text);
-            return escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
+            if (!text) return "";
+            const source = String(text);
+            const urlRegex = /https?:\/\/[^\s<]+/g;
+            let html = "";
+            let lastIndex = 0;
+
+            source.replace(urlRegex, (url, offset) => {
                 const cleanUrl = url.replace(/[.,!?)]$/, "");
                 const trailing = url.slice(cleanUrl.length);
-                return `<a href="${escapeHtml(cleanUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-800 underline underline-offset-2 font-bold">${cleanUrl}</a>${trailing}`;
+                html += escapeHtml(source.slice(lastIndex, offset));
+                html += `<a href="${escapeHtml(cleanUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-800 underline underline-offset-2 font-bold">${escapeHtml(cleanUrl)}</a>${escapeHtml(trailing)}`;
+                lastIndex = offset + url.length;
+                return url;
             });
+            html += escapeHtml(source.slice(lastIndex));
+            return html;
         }
 
         function showNotification(msg) {
