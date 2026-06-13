@@ -20,11 +20,14 @@ This is a very small static site:
 - `firestore.rules`: suggested Firestore rules for the Firebase console.
 - `vercel.json`: rewrites all routes to `index.html` so shared links do not show Vercel `Not Found`.
 - `QR.png`: QR image shown from the header QR button for public sharing.
-- `HANDOFF.md`: this file.
+- `AGENT.md`: this file.
 
 ## Operating Notes For Future Agents
 
 - When the operator asks for code/content changes, make the change, run feasible checks, review the diff, and create a git commit unless the operator explicitly says not to commit.
+- The operator has granted Git, Firebase, and browser/devtools automation permissions for this project. Use the available local credentials/session and tooling as needed to finish the task end to end.
+- After a code change, commit the relevant files. Push to the configured Git remote when the operator asks for deployment, live-site update, or GitHub sync.
+- Do not commit unrelated local artifacts such as `node_modules/` unless the operator explicitly asks. If the worktree has unrelated changes, leave them alone and stage only the files needed for the task.
 - Keep changes scoped to this static app unless the operator specifically asks for a larger restructure.
 
 There is no build step, package manager, framework, backend server, or bundler. Vercel deploys the static files directly from GitHub.
@@ -246,3 +249,8 @@ Firebase Storage upload succeeded but Firestore write failed. Check Firestore ru
 ### New code is on GitHub but not live
 
 Open Vercel Deployments and redeploy latest `main` commit.
+
+## Recent Implementation Notes
+
+- Upload previews in the writing form can be reordered by dragging thumbnails. The save flow preserves that preview order in the stored `images` array.
+- Body text URL linkification must avoid double-escaping query strings. In particular, links like `https://gall.dcinside.com/mgallery/board/view?id=uspolitics&no=3225244` should open with the real `&no=` query parameter, not a literal `&amp;no=`.
