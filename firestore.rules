@@ -45,7 +45,7 @@ service cloud.firestore {
 
       function hasValidOptionalFields(data) {
         return (!data.keys().hasAny(['source']) || (data.source is string && data.source.size() <= 160))
-          && (!data.keys().hasAny(['desc']) || (data.desc is string && data.desc.size() <= 5000))
+          && (!data.keys().hasAny(['desc']) || (data.desc is string && data.desc.size() <= 20000))
           && (!data.keys().hasAny(['images']) || (data.images is list && data.images.size() <= 20))
           && (!data.keys().hasAny(['mediaLinks']) || (data.mediaLinks is list && data.mediaLinks.size() <= 20))
           && (!data.keys().hasAny(['comments']) || (data.comments is list && data.comments.size() <= 500))

@@ -695,7 +695,9 @@
 
         window.loadMoreCategoryEvidence = function() {
             if (!window.selectedCategoryKey || !window.hasMoreCategoryEvidence() || window.categoryPagination.isLoading) return;
-            return window.loadCategoryEvidenceBatch(window.selectedCategoryKey);
+            return window.loadCategoryEvidenceBatch(window.selectedCategoryKey).catch((error) => {
+                console.warn("Load more category evidence failed:", error);
+            });
         };
 
         window.loadEvidenceById = async function(evidenceId) {
@@ -811,6 +813,7 @@
         const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
         const MAX_IMAGE_UPLOAD_COUNT = 20;
         const MAX_MEDIA_LINK_COUNT = 20;
+        const MAX_DESC_LENGTH = 20000;
         const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
         window.evidences = [];
@@ -839,6 +842,8 @@
         window.pendingDeepLinkPostId = "";
         window.openedDeepLinkPostId = "";
         window.lastAppliedRouteKey = "";
+        window.appScrollPositions = { home: 0, categories: {} };
+        window.scrollRestorationTarget = null;
         let localUploadedBase64List = [];
         let localUploadedFileList = [];
         let uploadPreviewSessionId = 0;
@@ -855,6 +860,43 @@
 
         if (isAdminLoggedIn) {
             document.getElementById("admin-indicator").classList.remove("hidden");
+        }
+
+        if ("scrollRestoration" in window.history) {
+            window.history.scrollRestoration = "manual";
+        }
+
+        function getCurrentScrollKey() {
+            return window.selectedCategoryKey ? `category:${window.selectedCategoryKey}` : "home";
+        }
+
+        function getStoredScrollPosition(key) {
+            if (!key || key === "home") return window.appScrollPositions.home || 0;
+            if (key.startsWith("category:")) {
+                const category = key.slice("category:".length);
+                return window.appScrollPositions.categories[category] || 0;
+            }
+            return 0;
+        }
+
+        function saveCurrentScrollPosition() {
+            const key = getCurrentScrollKey();
+            if (key === "home") {
+                window.appScrollPositions.home = window.scrollY || 0;
+                return;
+            }
+            const category = key.slice("category:".length);
+            window.appScrollPositions.categories[category] = window.scrollY || 0;
+        }
+
+        function restoreScrollPosition(key, fallback = 0) {
+            const stored = getStoredScrollPosition(key);
+            const target = Math.max(0, Number.isFinite(stored) ? stored : fallback);
+            window.scrollRestorationTarget = target;
+            requestAnimationFrame(() => {
+                window.scrollTo({ top: target, left: 0, behavior: "auto" });
+                window.scrollRestorationTarget = null;
+            });
         }
 
         // 키보드 네비게이션
@@ -1100,6 +1142,7 @@
         };
 
         window.goHome = function(options = {}) {
+            saveCurrentScrollPosition();
             if (options.updateHistory !== false) updateAppHistory({}, "push");
             window.selectedCategoryKey = "";
             document.getElementById("page-category").classList.add("hidden");
@@ -1108,6 +1151,7 @@
             if (mainUploadButton) mainUploadButton.classList.remove("hidden");
             window.updateLoadMoreControl();
             window.renderHeroSlider();
+            restoreScrollPosition("home");
         };
 
         window.showSelectedCategoryPage = function() {
@@ -1219,6 +1263,8 @@
 
         window.selectCategory = function(catKey, options = {}) {
             if (catKey !== ALL_CATEGORY_KEY && !CATEGORY_KEYS.includes(catKey) && catKey !== FEEDBACK_CATEGORY_KEY) return;
+            const isSameCategory = window.selectedCategoryKey === catKey;
+            if (!isSameCategory) saveCurrentScrollPosition();
             if (options.updateHistory !== false) {
                 updateAppHistory({ category: catKey }, "push");
                 window.lastAppliedRouteKey = `${catKey}|`;
@@ -1238,6 +1284,7 @@
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
+            restoreScrollPosition(`category:${catKey}`);
             if (!window.loadCategoryEvidenceBatch) return;
             window.loadCategoryEvidenceBatch(catKey, { reset: true }).catch((error) => {
                 console.error("Category evidence load failed:", error);
@@ -1360,6 +1407,8 @@
             if (!wrapper || !button) return;
             const shouldShow = !!window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence();
             wrapper.classList.toggle("hidden", !shouldShow);
+            button.classList.toggle("hidden", !shouldShow);
+            button.setAttribute("aria-hidden", shouldShow ? "false" : "true");
             button.disabled = !!(window.categoryPagination && window.categoryPagination.isLoading);
             button.textContent = button.disabled ? "..." : "더 보기";
             if (shouldShow && !button.disabled && document.documentElement.scrollHeight <= window.innerHeight + 300) {
@@ -1414,10 +1463,13 @@
         }
 
         window.openLightboxFromGrid = function(index) {
+            saveCurrentScrollPosition();
             window.currentLightboxIndex = index;
             window.showLightbox({ updateHistory: true });
         };
         window.openLightboxDirectly = async function(itemId, options = {}) {
+            const wasLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
+            if (!wasLightboxOpen) saveCurrentScrollPosition();
             let itemObj = window.evidences.find(i => i.id === itemId);
             if (!itemObj && window.loadEvidenceById) {
                 itemObj = await window.loadEvidenceById(itemId);
@@ -1510,6 +1562,7 @@
             }
             if (window.selectedCategoryKey && options.showCategoryOnClose !== false) {
                 window.showSelectedCategoryPage();
+                restoreScrollPosition(`category:${window.selectedCategoryKey}`);
             }
         };
         window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };
@@ -1953,8 +2006,8 @@
                 alert("출처는 160자 이하로 입력해주세요.");
                 return;
             }
-            if (desc.length > 5000) {
-                alert("내용은 5000자 이하로 입력해주세요.");
+            if (desc.length > MAX_DESC_LENGTH) {
+                alert(`내용은 ${MAX_DESC_LENGTH}자 이하로 입력해주세요.`);
                 return;
             }
             if (localUploadedBase64List.length > MAX_IMAGE_UPLOAD_COUNT || mediaLinks.length > MAX_MEDIA_LINK_COUNT) {
@@ -2047,8 +2100,13 @@
                 } else {
                     window.adjustCategoryCount(category, 1).catch(() => {});
                 }
-                if (window.loadCategoryEvidenceBatch) window.loadCategoryEvidenceBatch(category).catch((error) => console.warn("Post-save reload failed:", error));
-                window.closeUploadModal(); window.closeLightbox();
+                if (window.loadCategoryEvidenceBatch) window.loadCategoryEvidenceBatch(category, { reset: true }).catch((error) => console.warn("Post-save reload failed:", error));
+                window.closeUploadModal();
+                const wasLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
+                if (wasLightboxOpen) window.closeLightbox({ updateHistory: false, showCategoryOnClose: false });
+                window.selectedCategoryKey = category;
+                window.showSelectedCategoryPage();
+                await window.openLightboxDirectly(evidenceId, { updateHistory: true, category });
                 showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
             } else {
                 alert("저장되지 않았습니다. Firebase 규칙 또는 네트워크 상태를 확인해주세요.");
