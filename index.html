@@ -1249,9 +1249,8 @@
                         </div>
                         ${deleteBtn}
                     </div>
-                    <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600 flex items-start gap-1.5 min-w-0" onclick="openLightboxDirectly('${item.id}')">
-                        <span class="min-w-0">${escapeHtml(item.title)}</span>
-                        ${commentCount > 0 ? `<span class="shrink-0 text-blue-600">[${commentCount}]</span>` : ""}
+                    <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600 line-clamp-3 break-words" onclick="openLightboxDirectly('${item.id}')">
+                        ${escapeHtml(item.title)}${commentCount > 0 ? ` <span class="text-blue-600 whitespace-nowrap">[${commentCount}]</span>` : ""}
                     </h3>
                     ${sourceHtml} ${descHtml}
                 </div>
@@ -1353,7 +1352,7 @@
                     card.innerHTML = `
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-grow">
-                                <h4 class="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 break-words">${escapeHtml(item.title)}${replyCount > 0 ? ` <span class="text-blue-600">[${replyCount}]</span>` : ""}</h4>
+                                <h4 class="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 line-clamp-3 break-words">${escapeHtml(item.title)}${replyCount > 0 ? ` <span class="text-blue-600 whitespace-nowrap">[${replyCount}]</span>` : ""}</h4>
                                 ${item.desc ? `<p class="text-sm text-slate-600 mt-1 line-clamp-2 break-words">${escapeHtml(item.desc)}</p>` : ""}
                                 <div class="text-xs text-slate-400 font-bold mt-2">${escapeHtml(dateText)}</div>
                             </div>
@@ -1383,9 +1382,8 @@
                         <div class="absolute bottom-2 right-2 bg-slate-955/80 text-white text-[11px] px-2 py-0.5 rounded font-black">${getMediaBadgeText(imageCount, mediaLinks.length)}</div>
                     </div>
                     <div class="p-4 flex-grow flex flex-col justify-between space-y-4">
-                        <h4 class="font-bold text-slate-955 text-base group-hover:text-blue-600 leading-snug flex items-start gap-1 min-w-0">
-                            <span class="line-clamp-2 min-w-0">${escapeHtml(item.title)}</span>
-                            ${commentCount > 0 ? `<span class="shrink-0 text-blue-600">[${commentCount}]</span>` : ""}
+                        <h4 class="font-bold text-slate-955 text-base group-hover:text-blue-600 leading-snug line-clamp-3 break-words">
+                            ${escapeHtml(item.title)}${commentCount > 0 ? ` <span class="text-blue-600 whitespace-nowrap">[${commentCount}]</span>` : ""}
                         </h4>
                         <div class="pt-2 border-t border-slate-155 flex items-center justify-between gap-2">
                             ${sourceTag}
@@ -2105,8 +2103,9 @@
                 const wasLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
                 if (wasLightboxOpen) window.closeLightbox({ updateHistory: false, showCategoryOnClose: false });
                 window.selectedCategoryKey = category;
+                updateAppHistory({ category }, "push");
+                window.lastAppliedRouteKey = `${category}|`;
                 window.showSelectedCategoryPage();
-                await window.openLightboxDirectly(evidenceId, { updateHistory: true, category });
                 showNotification(editId ? "수정 완료되었습니다." : "제출 완료되었습니다.");
             } else {
                 alert("저장되지 않았습니다. Firebase 규칙 또는 네트워크 상태를 확인해주세요.");
@@ -2122,26 +2121,36 @@
         };
 
         async function prepareImagesForSave(evidenceId, title, source) {
-            const finalImages = [];
+            const finalImages = new Array(localUploadedBase64List.length);
             const filesToUpload = [];
 
             localUploadedBase64List.forEach((imageValue, index) => {
                 const pickedFile = localUploadedFileList[index];
                 if (pickedFile) {
+                    finalImages[index] = null;
                     filesToUpload.push(pickedFile);
                     return;
                 }
                 if (isDataUrl(imageValue)) {
+                    finalImages[index] = null;
                     filesToUpload.push(dataUrlToFile(imageValue, `existing-${index + 1}`));
                     return;
                 }
-                finalImages.push(imageValue);
+                finalImages[index] = imageValue;
             });
 
-            if (filesToUpload.length === 0) return finalImages;
-            const uploadedUrls = await window.uploadImagesToFirebaseStorage(evidenceId, title, source, filesToUpload);
-            if (!uploadedUrls) return null;
-            return [...finalImages, ...uploadedUrls];
+            if (filesToUpload.length > 0) {
+                const uploadedUrls = await window.uploadImagesToFirebaseStorage(evidenceId, title, source, filesToUpload);
+                if (!uploadedUrls) return null;
+                let uploadIndex = 0;
+                for (let i = 0; i < finalImages.length; i++) {
+                    if (finalImages[i] === null) {
+                        finalImages[i] = uploadedUrls[uploadIndex];
+                        uploadIndex++;
+                    }
+                }
+            }
+            return finalImages.filter(Boolean);
         }
 
         function isDataUrl(value) {
