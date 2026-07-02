@@ -1288,7 +1288,7 @@
             badgeNode.className = `px-5 py-2.5 rounded-2xl text-xl font-black border-2 ${badgeClass}`;
             document.getElementById("sort-select").value = window.currentSortMode;
             updateCategoryPageControls();
-            window.resetCategoryPagination(catKey);
+            if (window.resetCategoryPagination) window.resetCategoryPagination(catKey);
 
             document.getElementById("grid-search-input").value = "";
             window.renderCategoryGrid();
