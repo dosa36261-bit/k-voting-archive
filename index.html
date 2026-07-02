@@ -955,7 +955,16 @@
         const ALL_CATEGORY_KEY = "all-posts";
         const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
         const FEEDBACK_CATEGORY_KEY = "feedback-board";
-        const EVIDENCE_CACHE_KEY = "kvoting:evidences:v1";
+        const EVIDENCE_CACHE_KEY = "kvoting:evidences:v2";
+        const LEGACY_EVIDENCE_CACHE_KEYS = ["kvoting:evidences:v1"];
+
+        LEGACY_EVIDENCE_CACHE_KEYS.forEach(key => {
+            try {
+                localStorage.removeItem(key);
+            } catch (error) {
+                console.warn("Legacy evidence cache cleanup failed:", error);
+            }
+        });
 
         function setCategoryCounterText(text, title) {
             [ALL_CATEGORY_KEY, ...CATEGORY_KEYS].forEach(cat => {
