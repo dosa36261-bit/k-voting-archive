@@ -53,6 +53,10 @@ firebase deploy --only firestore:rules
 
 Video/SNS links are saved in `evidences.json`, but external videos from YouTube/X/Threads are not downloaded.
 
+## Restore Log
+
+- 2026-07-02: Restored 136 legacy Cloudinary image files from local backups to Firebase Storage and replaced the affected Firestore image URLs. Verification afterwards found 0 remaining Cloudinary URLs and 0 broken image URLs.
+
 ## Current Safety Improvements
 
 - Firestore `delete` is denied in `firestore.rules`.
