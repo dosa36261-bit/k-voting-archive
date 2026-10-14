@@ -258,7 +258,7 @@ Open Vercel Deployments and redeploy latest `main` commit.
 
 ## Image-first redesign and admin drafts (2026-10-14)
 
-- The home page starts with a centered carousel with square thumbnails, fading side cards, manual arrows and reduced-motion support. Category links contain only the name and count.
+- The home page starts with a larger centered card and smaller fading neighbors, square thumbnails, excerpts, likes/comments, manual arrows, keycap-style keyboard hints and reduced-motion support. Category links retain their original descriptions and individual colors. The header tagline is restored.
 - Gallery thumbnails are square; title-adjacent blue numbers are comment counts, and likes use 👍 plus the count. A missing source renders no placeholder.
 - Pagination reads 25 documents, renders 24 and retains the 25th as look-ahead evidence for the next request. IntersectionObserver preloads near the end. Only errors show a retry button.
 - Never replay routing on every data refresh. Closing a modal must replace history state even when the URL does not change, clearing `lightboxPost`. Async post fetches carry a request sequence so navigation cancels stale opens.
@@ -274,7 +274,9 @@ Use `node scripts/import-drafts.mjs <file.json>` to validate. `--apply` imports 
 
 Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows the 100 most recently updated drafts/publications. Automated research scheduling or an LLM service is not wired in this scaffold.
 
-Validation: `npm test --prefix functions` (14 security/concurrency cases) and `node scripts/check-ui.mjs` (6 responsive widths, navigation/scroll regression, header behavior, admin draft workflow). Use `UI_AXE_PATH` for 14-state axe coverage.
+Validation: `npm test --prefix functions` (14 security/concurrency cases) and `node scripts/check-ui.mjs` (6 responsive widths, navigation/scroll regression, header behavior, admin draft workflow and image preview). Use `UI_AXE_PATH` for 16-state axe coverage.
 
 
-The user-requested redesign example is published at `/?post=ev-draft-246bb565-a373-47ff-8f3e-9c18eb528ec9`, titled `[테스트] 새 게시판 화면 확인`. Preserve this one post; temporary QA feedback and sessions were removed. Its square illustration is `assets/archive-test.svg`. See `UI_REVIEW.md` for deployment checks.
+The operator subsequently requested removal of the redesign example `ev-draft-246bb565-a373-47ff-8f3e-9c18eb528ec9` and its private published draft `246bb565-a373-47ff-8f3e-9c18eb528ec9`. Do not recreate or republish it. The ignored historical `backups/check-admin-ui.mjs` script would recreate that old example; do not run it unchanged.
+
+`admin.js` renders private draft images with contain-fit thumbnails, an isolated review dialog, original-size zoom and a new-window source link. Only HTTP(S) image URLs without credentials are previewed; failed loads remain visible as errors. The preview never invokes public post routing. Published drafts can still be inspected, and logout clears private previews. The review draft `21c8a90f-8099-406e-98cc-bb7f907daa27` uses one photograph from a 2022-02-09 Herald Economy report on disputed Paju-eul ballots. It must remain private until the administrator explicitly publishes it. Its content distinguishes the allegation, the reported NEC response and outstanding verification.

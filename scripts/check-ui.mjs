@@ -108,7 +108,7 @@ async function screenshot(name) {
     await page.waitForTimeout(80);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(50);
-    await page.screenshot({ path: path.join(output, name + '.png'), fullPage: !/^(post|upload)-/.test(name) });
+    await page.screenshot({ path: path.join(output, name + '.png'), fullPage: !/^(post|upload|draft-image)-/.test(name) });
 }
 async function noOverflow(name) {
     const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth,
@@ -137,6 +137,13 @@ try {
     assert.equal(await page.locator('.hero-card:not(.is-current)').first().evaluate(el => el.inert), true);
     const square = await page.locator('.hero-card.is-current .hero-image-link').boundingBox();
     assert.ok(Math.abs(square.width - square.height) < 1);
+    await page.waitForFunction(() => {
+        const active = document.querySelector('.hero-card.is-current');
+        const neighbor = [...document.querySelectorAll('.hero-card')].find(card => card.style.opacity === '0.52');
+        return active.getBoundingClientRect().width > neighbor.getBoundingClientRect().width * 1.2;
+    });
+    assert.ok((await page.locator('.hero-card.is-current .hero-excerpt').innerText()).includes('자료 내용'));
+    assert.ok((await page.locator('.hero-card.is-current .hero-meta').innerText()).includes('댓글 0'));
     await audit('home');
     await page.locator('[data-category="all-posts"]').focus();
     await page.keyboard.press('Enter');
@@ -340,6 +347,26 @@ try {
     await page.locator('#page-admin:not(.hidden)').waitFor();
     await page.locator('#draft-import-file').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ drafts: [{ title: 'AI 초안 검토', category: 'free-board', desc: '내용', source: '', images: [base + '/fixture.svg'], mediaLinks: [], reviewNotes: '검토 메모' }] })) });
     await page.locator('#admin-draft-form:not(.hidden)').waitFor();
+    await page.waitForFunction(() => document.querySelector('.draft-image-preview img')?.naturalWidth > 0);
+    await page.locator('.draft-image-preview').click();
+    await page.waitForFunction(() => document.getElementById('draft-viewer-image').naturalWidth > 0);
+    await audit('draft-image-viewer');
+    await page.locator('#draft-image-zoom').click();
+    assert.equal(await page.locator('#draft-image-zoom').getAttribute('aria-pressed'), 'true');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement?.classList.contains('draft-image-preview'));
+    assert.equal(await page.locator('#lightbox-modal').isVisible(), false);
+    // Reject unsafe preview URLs and keep failed loads reviewable without breaking the editor.
+    await page.locator('#draft-images').fill('javascript:alert(1)\n' + base + '/missing-image.png');
+    await page.waitForFunction(() => document.querySelector('.draft-image-preview.image-failed'));
+    assert.equal(await page.locator('.draft-image-preview').count(), 1);
+    assert.ok((await page.locator('#draft-image-status').innerText()).includes('주소를 확인'));
+    await page.locator('.draft-image-preview').click();
+    await page.locator('#draft-viewer-error:not(.hidden)').waitFor();
+    assert.equal(await page.locator('#draft-image-zoom').isDisabled(), true);
+    await page.keyboard.press('Escape');
+    await page.locator('#draft-images').fill(base + '/fixture.svg');
+    await page.waitForFunction(() => document.querySelector('.draft-image-preview img')?.naturalWidth > 0);
     await page.locator('#draft-title').fill('검토를 마친 제목');
     await page.locator('#draft-save-button').click();
     assert.equal(await page.locator('#admin-draft-list strong').innerText(), '검토를 마친 제목');
@@ -352,12 +379,25 @@ try {
     await noOverflow('admin mobile');
     await audit('admin-workspace-mobile');
     await screenshot('admin-390');
+    for (const width of [320, 390, 768, 1024, 1440, 1920]) {
+        await page.setViewportSize({ width, height: 950 });
+        await page.locator('.draft-image-preview').click();
+        await noOverflow(`draft image ${width}`);
+        if (width === 390) { await audit('draft-image-viewer-mobile'); await screenshot('draft-image-390'); }
+        await page.keyboard.press('Escape');
+    }
     await page.evaluate(() => window.setAdminFeedback([{ id: 'pending-feedback', comments: [{ isAdmin: true }] }]));
     assert.equal(await page.locator('#feedback-alert-dot').isVisible(), false);
     page.removeAllListeners('dialog'); page.on('dialog', dialog => dialog.accept());
     await page.locator('#draft-publish-button').click();
     await page.locator('#draft-published-link:not(.hidden)').waitFor();
     assert.equal(await page.locator('#draft-title').isDisabled(), true);
+    assert.equal(await page.locator('.draft-image-preview').isEnabled(), true);
+    await page.locator('.draft-image-preview').click();
+    await page.locator('#draft-image-modal:not(.hidden)').waitFor();
+    await page.evaluate(() => window.clearAdminSession());
+    assert.equal(await page.locator('#draft-image-modal').isVisible(), false);
+    assert.equal(await page.locator('.draft-image-preview').count(), 0);
 
     // Direct URLs must resolve after the deferred Firebase module becomes available.
     await page.goto(base + '/?post=initial-deep-link', { waitUntil: 'domcontentloaded' });

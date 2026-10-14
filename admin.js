@@ -8,6 +8,69 @@ const draftForm = document.getElementById('admin-draft-form');
 const draftStatus = document.getElementById('draft-status');
 document.getElementById('draft-category').innerHTML = CATEGORY_KEYS.map(key => `<option value="${key}">${getCategoryLabel(key)}</option>`).join('');
 draftForm.addEventListener('input', () => { draftDirty = true; });
+let draftPreviewTimer;
+let draftPreviewUrls = [];
+let draftImageIndex = 0;
+document.getElementById('draft-images').addEventListener('input', () => {
+    clearTimeout(draftPreviewTimer);
+    draftPreviewTimer = setTimeout(renderDraftImages, 350);
+});
+
+function renderDraftImages() {
+    clearTimeout(draftPreviewTimer);
+    const lines = document.getElementById('draft-images').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+    const valid = lines.filter(value => { try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password; } catch { return false; } });
+    draftPreviewUrls = valid.slice(0, 20);
+    const list = document.getElementById('draft-image-previews');
+    list.replaceChildren();
+    document.getElementById('draft-image-count').textContent = draftPreviewUrls.length ? `${draftPreviewUrls.length}장` : '';
+    document.getElementById('draft-image-status').textContent = lines.length !== valid.length ? '일부 이미지 주소를 확인해주세요. http 또는 https 주소만 표시할 수 있습니다.' : valid.length > 20 ? '이미지는 최대 20장까지 표시합니다.' : valid.length ? '사진을 누르면 확대해서 확인할 수 있습니다.' : '이미지 주소를 입력하면 여기에 표시됩니다.';
+    draftPreviewUrls.forEach((url, index) => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'draft-image-preview';
+        button.setAttribute('aria-label', `초안 이미지 ${index + 1} 확대`);
+        const img = document.createElement('img');
+        img.alt = `검토용 이미지 ${index + 1}`; img.referrerPolicy = 'no-referrer'; img.loading = 'lazy';
+        const caption = document.createElement('span'); caption.textContent = `이미지 ${index + 1} · 확대 보기`;
+        img.onerror = () => { img.classList.add('hidden'); caption.textContent = `이미지 ${index + 1} · 불러오기 실패`; button.classList.add('image-failed'); };
+        img.src = url;
+        button.append(img, caption); button.onclick = () => openDraftImage(index); list.appendChild(button);
+    });
+}
+window.openDraftImage = function(index) {
+    if (!isAdminLoggedIn || !draftPreviewUrls[index]) return;
+    draftImageIndex = index;
+    const img = document.getElementById('draft-viewer-image');
+    const error = document.getElementById('draft-viewer-error');
+    const zoom = document.getElementById('draft-image-zoom');
+    img.classList.remove('hidden'); error.classList.add('hidden');
+    document.getElementById('draft-viewer-stage').classList.remove('actual-size');
+    zoom.setAttribute('aria-pressed', 'false'); zoom.textContent = '원본 크기'; zoom.disabled = false;
+    img.alt = `초안 검토용 이미지 ${index + 1}`;
+    img.onerror = () => { img.classList.add('hidden'); error.classList.remove('hidden'); zoom.disabled = true; };
+    img.src = draftPreviewUrls[index];
+    document.getElementById('draft-image-original').href = draftPreviewUrls[index];
+    document.getElementById('draft-viewer-position').textContent = `${index + 1} / ${draftPreviewUrls.length}`;
+    document.getElementById('draft-image-prev').disabled = document.getElementById('draft-image-next').disabled = draftPreviewUrls.length < 2;
+    setModalOpen('draft-image-modal', true);
+};
+window.closeDraftImage = function() { setModalOpen('draft-image-modal', false); document.getElementById('draft-viewer-image').removeAttribute('src'); };
+window.stepDraftImage = function(step) { if (draftPreviewUrls.length > 1) openDraftImage((draftImageIndex + step + draftPreviewUrls.length) % draftPreviewUrls.length); };
+window.toggleDraftImageZoom = function() {
+    const actual = document.getElementById('draft-viewer-stage').classList.toggle('actual-size');
+    const button = document.getElementById('draft-image-zoom');
+    button.textContent = actual ? '화면에 맞추기' : '원본 크기'; button.setAttribute('aria-pressed', String(actual));
+};
+document.addEventListener('keydown', event => {
+    if (document.getElementById('draft-image-modal').classList.contains('hidden') || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault(); stepDraftImage(event.key === 'ArrowLeft' ? -1 : 1);
+});
+window.resetDraftWorkspace = function() {
+    ++draftLoadRequest; clearTimeout(draftPreviewTimer); closeDraftImage();
+    adminDrafts = []; selectedDraft = null; draftDirty = false; draftPreviewUrls = [];
+    draftForm.reset(); document.getElementById('draft-image-previews').replaceChildren();
+    draftForm.classList.add('hidden'); document.getElementById('admin-draft-list').replaceChildren();
+};
 
 function hasAdminReply(item) { return (item.comments || []).some(comment => comment.isAdmin === true); }
 window.setAdminFeedback = function(items) {
@@ -73,6 +136,7 @@ function selectAdminDraft(draft) {
         for (const [id, key] of [['title','title'],['category','category'],['desc','desc'],['source','source'],['notes','reviewNotes']]) document.getElementById(`draft-${id}`).value = draft[key] || '';
         document.getElementById('draft-images').value = (draft.images || []).join('\n');
         document.getElementById('draft-media').value = (draft.mediaLinks || []).join('\n');
+        renderDraftImages();
         const published = draft.status === 'published';
         document.getElementById('draft-fields').disabled = published;
         document.querySelector('.draft-actions').classList.toggle('hidden', published);

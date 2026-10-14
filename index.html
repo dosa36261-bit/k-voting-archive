@@ -19,6 +19,7 @@
                 <span class="site-logo"><i class="fa-solid fa-square-poll-horizontal text-xl" aria-hidden="true"></i></span>
                 <div>
                     <h1 class="site-title">선거 이슈 아카이브</h1>
+                    <p class="site-tagline">선거 무결성을 위한 시민 참여형 아카이브</p>
                 </div>
             </a>
             <nav class="header-nav" aria-label="이용 도움말">
@@ -41,7 +42,7 @@
                 <button id="home-retry-button" type="button" class="hidden" onclick="retryHomeLoad()">다시 불러오기</button>
             </div>
             <section id="hero-section" class="hidden" aria-labelledby="hero-heading">
-                <div class="section-heading"><h2 id="hero-heading">주목받는 자료</h2><span id="hero-position" aria-live="polite"></span></div>
+                <div class="section-heading hero-heading-row"><h2 id="hero-heading">주목받는 자료</h2><div class="hero-heading-tools"><p class="keyboard-hint"><span><kbd aria-label="왼쪽 화살표">←</kbd> <kbd aria-label="오른쪽 화살표">→</kbd> 넘기기</span><span><kbd>Esc</kbd> 뒤로가기</span></p><span id="hero-position" aria-live="polite"></span></div></div>
                 <div class="hero-stage">
                     <div id="hero-slide-container" class="hero-track"></div>
                     <button class="hero-arrow hero-arrow-prev" type="button" onclick="prevSlide(event)" aria-label="이전 추천 자료"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
@@ -51,32 +52,87 @@
             <section id="categories" aria-label="게시판 카테고리">
                 <div class="category-grid">
                     <a href="?category=all-posts" data-category="all-posts" class="category-card category-all">
-                        <span class="category-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
-                        <h3>전체 글</h3><span class="category-count" id="count-all-posts">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-slate-100 text-slate-800"><i class="fa-solid fa-layer-group text-lg" aria-hidden="true"></i></span>
+                                <h3>전체 글 보기</h3>
+                            </div>
+                            <span class="category-count" id="count-all-posts">…</span>
+                        </div>
+                        <p>모든 카테고리의 기록을 한 번에 확인하세요.</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
+
                     <a href="?category=shape-memory" data-category="shape-memory" class="category-card">
-                        <span class="category-icon"><i class="fa-solid fa-scroll" aria-hidden="true"></i></span>
-                        <h3>신비한 투표지</h3><span class="category-count" id="count-shape-memory">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-emerald-100 text-emerald-800"><i class="fa-solid fa-scroll text-lg" aria-hidden="true"></i></span>
+                                <h3>신비한 투표지</h3>
+                            </div>
+                            <span class="category-count" id="count-shape-memory">…</span>
+                        </div>
+                        <p>형상기억 종이, 비정상적 투표지 등 개표장에서 발견되는 마법의 종이 사례집</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
+
                     <a href="?category=strange-ballot" data-category="strange-ballot" class="category-card">
-                        <span class="category-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
-                        <h3>이상 현상</h3><span class="category-count" id="count-strange-ballot">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-amber-100 text-amber-800"><i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i></span>
+                                <h3>이상 현상</h3>
+                            </div>
+                            <span class="category-count" id="count-strange-ballot">…</span>
+                        </div>
+                        <p>통계 이상, 비정상적 전자 개표 등 지금까지의 상식이 박살나는 기묘한 현상 모음집</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
+
                     <a href="?category=bad-management" data-category="bad-management" class="category-card">
-                        <span class="category-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
-                        <h3>관리 부실</h3><span class="category-count" id="count-bad-management">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-rose-100 text-rose-800"><i class="fa-solid fa-shield-halved text-lg" aria-hidden="true"></i></span>
+                                <h3>관리 부실</h3>
+                            </div>
+                            <span class="category-count" id="count-bad-management">…</span>
+                        </div>
+                        <p>투표함의 봉인지 훼손, 무단 개봉, 운송 중 통제 미흡 등 상식 이하의 관리 사례.</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
+
                     <a href="?category=nec-admin" data-category="nec-admin" class="category-card">
-                        <span class="category-icon"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
-                        <h3>선관위 행정</h3><span class="category-count" id="count-nec-admin">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-blue-100 text-blue-800"><i class="fa-solid fa-building-columns text-lg" aria-hidden="true"></i></span>
+                                <h3>선관위 행정</h3>
+                            </div>
+                            <span class="category-count" id="count-nec-admin">…</span>
+                        </div>
+                        <p>어디서도 볼 수 없었던 참신하고 놀라운 선관위의 일처리를 칭찬합니다.</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
+
                     <a href="?category=etc" data-category="etc" class="category-card">
-                        <span class="category-icon"><i class="fa-solid fa-asterisk" aria-hidden="true"></i></span>
-                        <h3>기타</h3><span class="category-count" id="count-etc">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-purple-100 text-purple-800"><i class="fa-solid fa-asterisk text-lg" aria-hidden="true"></i></span>
+                                <h3>기타</h3>
+                            </div>
+                            <span class="category-count" id="count-etc">…</span>
+                        </div>
+                        <p>그 외 분류항목에 한정되지 않는 못말리는 실수들</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
+
                     <a href="?category=free-board" data-category="free-board" class="category-card">
-                        <span class="category-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
-                        <h3>자유게시판</h3><span class="category-count" id="count-free-board">…</span>
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-indigo-100 text-indigo-800"><i class="fa-solid fa-comments text-lg" aria-hidden="true"></i></span>
+                                <h3>자유게시판</h3>
+                            </div>
+                            <span class="category-count" id="count-free-board">…</span>
+                        </div>
+                        <p>선거 제도나 자유로운 의견, 제보 분석을 나누는 시민 소통 게시판</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
                     </a>
                 </div>
             </section>
@@ -145,6 +201,7 @@
                 <section class="admin-panel">
                     <p id="draft-empty" class="admin-muted">초안을 선택하거나 AI가 만든 JSON 파일을 가져오세요.<br>초안은 관리자만 볼 수 있습니다.</p>
                     <form id="admin-draft-form" class="draft-form hidden" onsubmit="saveAdminDraft(event)">
+                        <section class="draft-preview-section" aria-labelledby="draft-preview-heading"><div class="draft-preview-heading"><h3 id="draft-preview-heading">이미지 확인</h3><span id="draft-image-count"></span></div><p id="draft-image-status" class="admin-muted" role="status">이미지 주소를 입력하면 여기에 표시됩니다.</p><div id="draft-image-previews" class="draft-image-previews"></div></section>
                         <fieldset id="draft-fields"><legend class="sr-only">초안 편집</legend>
                             <div class="form-row"><div><label for="draft-category">게시판</label><select id="draft-category"></select></div><div><label for="draft-source">출처 <span class="admin-muted">(선택)</span></label><input id="draft-source" maxlength="160"></div></div>
                             <label for="draft-title">제목</label><input id="draft-title" required maxlength="120">
@@ -175,6 +232,10 @@
             </div>
         </div>
     </footer>
+
+    <div id="draft-image-modal" role="dialog" aria-modal="true" aria-label="초안 이미지 확인" tabindex="-1" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="if(event.target === this) closeDraftImage()">
+        <div class="draft-viewer-shell"><div class="draft-viewer-toolbar"><strong id="draft-viewer-title">이미지 확인</strong><button type="button" class="icon-button" aria-label="초안 이미지 닫기" onclick="closeDraftImage()"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div><div id="draft-viewer-stage" class="draft-viewer-stage"><img id="draft-viewer-image" alt="초안에 첨부된 검토용 이미지" referrerpolicy="no-referrer"><p id="draft-viewer-error" class="hidden" role="status">이미지를 불러오지 못했습니다. 원본 주소를 확인해주세요.</p></div><div class="draft-viewer-footer"><div class="draft-viewer-navigation"><button type="button" class="icon-button" id="draft-image-prev" aria-label="이전 초안 이미지" onclick="stepDraftImage(-1)">←</button><span id="draft-viewer-position"></span><button type="button" class="icon-button" id="draft-image-next" aria-label="다음 초안 이미지" onclick="stepDraftImage(1)">→</button></div><button type="button" id="draft-image-zoom" class="secondary-button" aria-pressed="false" onclick="toggleDraftImageZoom()">원본 크기</button><a id="draft-image-original" class="secondary-button" target="_blank" rel="noopener noreferrer">새 창에서 보기 ↗</a></div></div>
+    </div>
 
     <div id="lightbox-modal" role="dialog" aria-modal="true" aria-label="게시글 상세" tabindex="-1" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="handleOutsideClick(event)">
         <button class="reader-arrow reader-prev" type="button" onclick="prevLightboxSlide()" aria-label="이전 게시글"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
@@ -253,6 +314,7 @@
                 <input type="hidden" id="edit-id" value="">
                 <div class="editor-fields">
                     <section id="form-media-wrapper" class="editor-media">
+                        <p class="media-requirement"><span class="required-star" aria-hidden="true">*</span> 사진 또는 링크 중 하나 필수</p>
                         <label for="form-files">사진 / GIF</label>
                         <div id="drop-zone">
                             <input type="file" id="form-files" accept="image/jpeg,image/png,image/gif,image/webp" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
@@ -264,7 +326,7 @@
                         <textarea id="form-media-links" rows="3" placeholder="링크를 한 줄에 하나씩 입력하세요."></textarea>
                     </section>
                     <section class="editor-details" aria-label="게시글 내용">
-                        <div id="form-category-wrapper" class="form-field"><label for="form-category">게시판</label>
+                        <div id="form-category-wrapper" class="form-field"><label for="form-category">게시판 <span class="required-star" aria-hidden="true">*</span><span class="sr-only"> (필수)</span></label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="shape-memory">신비한 투표지</option>
                         <option value="strange-ballot">이상 현상</option>
@@ -275,10 +337,10 @@
                         <option value="feedback-board" hidden>문의게시판</option>
                     </select>
                         </div>
-                        <div class="form-field"><label for="form-title">제목</label><input type="text" id="form-title" maxlength="120" name="post-title" autocomplete="on" required placeholder="자료의 핵심을 적어주세요."></div>
+                        <div class="form-field"><label for="form-title">제목 <span class="required-star" aria-hidden="true">*</span><span class="sr-only"> (필수)</span></label><input type="text" id="form-title" maxlength="120" name="post-title" autocomplete="on" required placeholder="자료의 핵심을 적어주세요."></div>
                         <div class="form-field"><label for="form-desc">내용</label><textarea id="form-desc" maxlength="20000" rows="6" placeholder="언제, 어디서 있었던 일인지 적어주세요."></textarea></div>
                         <div id="form-source-wrapper" class="form-field"><label for="form-source">출처 <span class="field-optional">선택</span></label><input type="text" id="form-source" maxlength="160" placeholder="원문 링크 또는 자료 제공자"></div>
-                        <div class="form-field editor-password"><label for="form-post-password">게시글 비밀번호</label><input type="password" id="form-post-password" name="post-code" autocomplete="new-password" required minlength="4" maxlength="128" aria-describedby="post-password-hint" placeholder="4자 이상"><small id="post-password-hint">수정·삭제할 때 사용합니다.</small></div>
+                        <div class="form-field editor-password"><label for="form-post-password">게시글 비밀번호 <span class="required-star" aria-hidden="true">*</span><span class="sr-only"> (필수)</span></label><input type="password" id="form-post-password" name="post-code" autocomplete="new-password" required minlength="4" maxlength="128" aria-describedby="post-password-hint" placeholder="4자 이상"><small id="post-password-hint">수정·삭제할 때 사용합니다.</small></div>
                     </section>
                 </div>
                 <footer class="editor-actions"><button type="button" onclick="closeUploadModal()" class="secondary-button">취소</button><button type="submit" class="primary-button">게시글 등록</button></footer>
@@ -1114,7 +1176,8 @@
             const closeActions = {
                 'upload-modal': window.closeUploadModal, 'lightbox-modal': window.closeLightbox,
                 'guide-modal': window.closeGuideModal, 'qr-modal': window.closeQrModal,
-                'upload-guide-modal': window.closeUploadGuideModal, 'admin-modal': window.closeAdminModal
+                'upload-guide-modal': window.closeUploadGuideModal, 'admin-modal': window.closeAdminModal,
+                'draft-image-modal': window.closeDraftImage
             };
             if (top) { closeActions[top](); return; }
             if (window.selectedCategoryKey) {
@@ -1131,22 +1194,27 @@
             document.getElementById("hero-section").classList.toggle("hidden", !items.length);
             if (!items.length) return;
             window.currentSlideIndex = (window.currentSlideIndex + items.length) % items.length;
-            const key = items.map(item => `${item.id}:${item.updatedAt || ''}:${item.title}`).join('|');
+            const key = items.map(item => `${item.id}:${item.updatedAt || ''}:${item.title}:${item.likes || 0}:${getCommentCount(item)}`).join('|');
             if (key !== renderedHeroKey) {
                 renderedHeroKey = key;
                 container.innerHTML = items.map(item => `<article class="hero-card">
                     <a href="?post=${encodeURIComponent(item.id)}" data-post-id="${escapeHtml(item.id)}" class="hero-card-link">
                         <div class="hero-image-link">${renderThumbnailHtml(getThumbnail(item), '')}<span class="media-count">${getMediaBadgeText(getImageCount(item), getMediaLinks(item).length)}</span></div>
-                        <div class="hero-copy"><p>${getCategoryLabel(item.category)}</p><h3>${escapeHtml(item.title)}${getCommentCount(item) ? ` <span class="comment-count" aria-label="댓글 ${getCommentCount(item)}개">[${getCommentCount(item)}]</span>` : ''}</h3></div>
+                        <div class="hero-copy"><p class="hero-category">${getCategoryLabel(item.category)}</p><h3>${escapeHtml(item.title)}</h3>
+                            <p class="hero-excerpt">${escapeHtml(item.desc || '')}</p>
+                            <div class="hero-meta"><span aria-label="추천 ${item.likes || 0}개">👍 ${item.likes || 0}</span><span class="comment-count">댓글 ${getCommentCount(item)}</span></div>
+                        </div>
                     </a></article>`).join('');
             }
             container.classList.toggle('instant', options.instant === true);
-            const width = container.querySelector('.hero-card').getBoundingClientRect().width;
+            const width = container.querySelector('.hero-card').offsetWidth;
             [...container.children].forEach((card, index) => {
                 let offset = (index - window.currentSlideIndex + items.length) % items.length;
                 if (offset > items.length / 2) offset -= items.length;
-                card.style.setProperty('--slide-x', `${offset * (width + 20)}px`);
-                card.style.opacity = offset === 0 ? '1' : Math.abs(offset) === 1 ? '.45' : '0';
+                card.style.setProperty('--slide-x', `${offset * (width * .89 + 24)}px`);
+                card.style.setProperty('--slide-scale', offset === 0 ? '1' : '.78');
+                card.style.setProperty('--slide-y', offset === 0 ? '0px' : '46px');
+                card.style.opacity = offset === 0 ? '1' : Math.abs(offset) === 1 ? '.52' : '0';
                 card.style.zIndex = offset === 0 ? '2' : '1';
                 card.querySelectorAll('img').forEach(img => { img.loading = Math.abs(offset) <= 1 ? 'eager' : 'lazy'; img.fetchPriority = offset === 0 ? 'high' : 'auto'; });
                 card.inert = offset !== 0;
@@ -2131,6 +2199,7 @@
         window.closeAdminModal = function() { setModalOpen("admin-modal", false); };
         window.clearAdminSession = function() {
             isAdminLoggedIn = false;
+            window.resetDraftWorkspace?.();
             document.getElementById("admin-indicator").classList.add("hidden");
             updateCommentFormForAdminState();
             document.getElementById('admin-entry-label').textContent = '관리자 로그인';
