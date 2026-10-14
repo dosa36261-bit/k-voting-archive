@@ -74,8 +74,10 @@ read/written through admin callable actions or the operator's IAM credentials.
 changes; transactional publication and deterministic post IDs prevent duplicates.
 `node scripts/backup-security.mjs` now includes `_archiveDrafts`.
 
-`node scripts/import-drafts.mjs drafts.json` validates locally. Add `--apply` to
-import private drafts. Importing never publishes and ignores untrusted imported
-status, post ID or permission fields. An administrator reviews and publishes via
-the workspace. Published drafts remain as history; subsequent edits use the post
+Agents use `scripts/agent-drafts.mjs` with existing operator IAM to list and save
+private drafts directly, without an exchange file. The helper shares the backend
+content whitelist and version checks and exposes no publication function.
+Alternatively, the authenticated AI workspace provides a direct editor.
+Only an explicit publication request authorizes publishing. Humans use the normal
+post editor. Published drafts remain as history; subsequent edits use the post
 editor. The workspace currently shows the latest 100 drafts/publications.

@@ -206,7 +206,7 @@ input,select,textarea { font-size:16px!important; }
 .category-card .category-icon { color:var(--category-color); background:var(--category-tint); }
 .category-card h3 { color:var(--category-color); }
 .category-card p { font-size:16px; line-height:1.65; color:#526176; word-break:keep-all; overflow-wrap:anywhere; }
-.category-card .category-count { color:var(--category-color); background:var(--category-tint); padding:3px 8px; border-radius:7px; }
+.category-card .category-count { color:var(--category-color); background:transparent; padding:0; border:0; border-radius:0; white-space:nowrap; }
 .category-arrow { display:none; }
 .category-all { min-height:0; flex-direction:row; align-items:center; gap:24px; }
 .category-all .category-card-top { flex:1; }

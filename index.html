@@ -185,29 +185,27 @@
             </div>
         </div>
         <section id="page-admin" class="hidden" aria-labelledby="admin-page-title">
-            <div class="admin-heading"><div><h2 id="admin-page-title" tabindex="-1">관리자 페이지</h2><p>AI 초안을 검토하고 게시하세요.</p></div><button class="secondary-button" onclick="logoutAdmin()">로그아웃</button></div>
+            <div class="admin-heading"><div><h2 id="admin-page-title" tabindex="-1">AI 초안 작업실</h2><p>에이전트가 자료를 정리하고 초안으로 저장하는 공간입니다.</p></div><button class="secondary-button" onclick="logoutAdmin()">로그아웃</button></div>
             <section class="admin-panel" aria-labelledby="admin-feedback-heading">
                 <h3 id="admin-feedback-heading">미답변 문의 <span id="admin-feedback-count">0</span> <span id="admin-feedback-dot" class="notification-dot hidden" aria-hidden="true"></span></h3>
                 <p id="admin-feedback-status" class="admin-muted">문의를 불러오는 중…</p><div id="admin-feedback-list" class="admin-feedback-list"></div>
             </section>
             <div class="admin-toolbar">
-                <button class="secondary-button" type="button" onclick="document.getElementById('draft-import-file').click()">AI 초안 가져오기</button><input id="draft-import-file" aria-label="AI 초안 JSON 파일" type="file" accept="application/json,.json" class="hidden" onchange="importDraftFile(event)">
                 <button class="secondary-button" onclick="newAdminDraft()">새 초안</button><button class="secondary-button" onclick="loadAdminDrafts()">새로고침</button>
-                <a href="drafts.example.json" download class="text-blue-700 underline text-base">초안 양식</a>
             </div>
             <p id="draft-status" role="status"></p>
             <div class="admin-workspace">
                 <aside aria-label="초안 목록"><div id="admin-draft-list" class="draft-list"></div></aside>
                 <section class="admin-panel">
-                    <p id="draft-empty" class="admin-muted">초안을 선택하거나 AI가 만든 JSON 파일을 가져오세요.<br>초안은 관리자만 볼 수 있습니다.</p>
+                    <p id="draft-empty" class="admin-muted">새 초안을 만들거나 저장된 초안을 선택하세요.<br>저장한 초안은 공개되지 않습니다.</p>
                     <form id="admin-draft-form" class="draft-form hidden" onsubmit="saveAdminDraft(event)">
                         <section class="draft-preview-section" aria-labelledby="draft-preview-heading"><div class="draft-preview-heading"><h3 id="draft-preview-heading">이미지 확인</h3><span id="draft-image-count"></span></div><p id="draft-image-status" class="admin-muted" role="status">이미지 주소를 입력하면 여기에 표시됩니다.</p><div id="draft-image-previews" class="draft-image-previews"></div></section>
                         <fieldset id="draft-fields"><legend class="sr-only">초안 편집</legend>
-                            <div class="form-row"><div><label for="draft-category">게시판</label><select id="draft-category"></select></div><div><label for="draft-source">출처 <span class="admin-muted">(선택)</span></label><input id="draft-source" maxlength="160"></div></div>
+                            <div class="form-row"><div><label for="draft-category">게시판</label><select id="draft-category"></select></div><div><label for="draft-source">증거물 출처 <span class="admin-muted">(선택)</span></label><input id="draft-source" maxlength="160" placeholder="예: 2020년 총선 · 파주시을 재검표 현장"></div></div>
                             <label for="draft-title">제목</label><input id="draft-title" required maxlength="120">
-                            <label for="draft-desc">내용</label><textarea id="draft-desc" rows="7" maxlength="20000"></textarea>
+                            <label for="draft-desc">내용</label><textarea id="draft-desc" rows="7" maxlength="20000" placeholder="1. 언제, 어느 현장에서 나온 자료인지&#10;2. 사진에서 확인할 핵심 특징&#10;3. 관련 설명이나 쟁점"></textarea>
                             <label for="draft-images">이미지 주소</label><textarea id="draft-images" rows="3" placeholder="이미지 주소를 한 줄에 하나씩 입력하세요."></textarea>
-                            <label for="draft-media">영상 / SNS 링크</label><textarea id="draft-media" rows="2" placeholder="링크를 한 줄에 하나씩 입력하세요."></textarea>
+                            <label for="draft-media">영상 / SNS / 기사 링크</label><textarea id="draft-media" rows="2" placeholder="참고 링크를 한 줄에 하나씩 입력하세요."></textarea>
                             <label for="draft-notes">검토 메모 <span class="admin-muted">(관리자만 표시)</span></label><textarea id="draft-notes" rows="3" maxlength="4000"></textarea>
                         </fieldset>
                         <a id="draft-published-link" class="hidden" target="_blank" rel="noopener">게시글 보기 ↗</a>
@@ -225,7 +223,7 @@
                 <button id="feedback-footer-button" onclick="openFeedbackBoard()" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm transition-colors">
                     <i aria-hidden="true" class="fa-regular fa-message mr-1"></i> 버그제보 / 건의 <span id="feedback-alert-dot" class="notification-dot hidden" aria-label="관리자 미답변 문의 있음"></span>
                 </button>
-                <button id="admin-entry-button" onclick="openAdminPage()" class="text-slate-500 hover:text-blue-600 font-bold transition-colors">
+                <button id="admin-entry-button" onclick="if(isAdminLoggedIn) openAdminPage(); else openAdminModal();" class="text-slate-500 hover:text-blue-600 font-bold transition-colors">
                     <i aria-hidden="true" class="fa-solid fa-lock mr-1"></i> <span id="admin-entry-label">관리자 로그인</span>
                 </button>
                 <span id="admin-indicator" class="hidden sr-only">관리자 로그인됨</span>
@@ -322,7 +320,7 @@
                             <p id="file-status" role="status"></p>
                         </div>
                         <div id="upload-preview-container"></div>
-                        <label for="form-media-links">영상 / SNS 링크</label>
+                        <label for="form-media-links">영상 / SNS / 기사 링크</label>
                         <textarea id="form-media-links" rows="3" placeholder="링크를 한 줄에 하나씩 입력하세요."></textarea>
                     </section>
                     <section class="editor-details" aria-label="게시글 내용">
@@ -339,7 +337,7 @@
                         </div>
                         <div class="form-field"><label for="form-title">제목 <span class="required-star" aria-hidden="true">*</span><span class="sr-only"> (필수)</span></label><input type="text" id="form-title" maxlength="120" name="post-title" autocomplete="on" required placeholder="자료의 핵심을 적어주세요."></div>
                         <div class="form-field"><label for="form-desc">내용</label><textarea id="form-desc" maxlength="20000" rows="6" placeholder="언제, 어디서 있었던 일인지 적어주세요."></textarea></div>
-                        <div id="form-source-wrapper" class="form-field"><label for="form-source">출처 <span class="field-optional">선택</span></label><input type="text" id="form-source" maxlength="160" placeholder="원문 링크 또는 자료 제공자"></div>
+                        <div id="form-source-wrapper" class="form-field"><label for="form-source">증거물 출처 <span class="field-optional">선택</span></label><input type="text" id="form-source" maxlength="160" placeholder="예: 2020년 총선 · 파주시을 재검표 현장"></div>
                         <div class="form-field editor-password"><label for="form-post-password">게시글 비밀번호 <span class="required-star" aria-hidden="true">*</span><span class="sr-only"> (필수)</span></label><input type="password" id="form-post-password" name="post-code" autocomplete="new-password" required minlength="4" maxlength="128" aria-describedby="post-password-hint" placeholder="4자 이상"><small id="post-password-hint">수정·삭제할 때 사용합니다.</small></div>
                     </section>
                 </div>
@@ -1130,7 +1128,7 @@
                 const allCount = window.categoryCounts
                     ? CATEGORY_KEYS.reduce((sum, cat) => sum + Number(window.categoryCounts[cat] || 0), 0)
                     : window.evidences.filter(item => CATEGORY_KEYS.includes(item.category)).length;
-                allBadge.textContent = allCount;
+                allBadge.textContent = `(${allCount})`;
                 allBadge.title = "";
             }
 
@@ -1140,7 +1138,7 @@
                     : window.evidences.filter(item => item.category === cat).length;
                 const badge = document.getElementById(`count-${cat}`);
                 if (badge) {
-                    badge.textContent = count;
+                    badge.textContent = `(${count})`;
                     badge.title = "";
                 }
             });
@@ -2223,9 +2221,9 @@
                 document.getElementById("admin-indicator").classList.remove("hidden");
                 updateCommentFormForAdminState();
                 window.closeAdminModal(); showNotification("관리자 인증 성공!");
-                document.getElementById('admin-entry-label').textContent = '관리자 페이지';
+                document.getElementById('admin-entry-label').textContent = 'AI 초안';
                 window.watchAdminFeedback?.(true);
-                window.openAdminPage();
+                if (new URLSearchParams(location.search).has('admin')) window.openAdminPage({ updateHistory: false });
             }
         };
 

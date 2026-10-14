@@ -267,11 +267,11 @@ Open Vercel Deployments and redeploy latest `main` commit.
 - `admin.js` implements the admin workspace after the existing password login. Unanswered feedback means no comment with `isAdmin === true`; the admin-only red dot and inbox update from Firestore snapshots.
 - `functions/drafts.js` implements private draft actions. Every action requires a server-verified admin session. Saves/deletion/publication check a draft version. Publication atomically creates the post, private admin-only authorization, category count and published draft. Retries return the same post.
 
-### AI research → human publication
+### Direct agent drafting
 
-When the operator requests research drafts, prepare 1–20 objects matching `drafts.example.json`. Separate verified facts from allegations in the public text. Include original sources and leave checks or uncertainties in private `reviewNotes`. Do not put passwords or API keys in the JSON. Remote media must use valid HTTP(S) URLs.
+Read `AGENTS.md` for the operator's editorial rules. Use one clear evidence photo, a short concrete headline, numbered one-sentence points, and the election/location as `source`. Put article/video/SNS references in `mediaLinks`. Do not add routine defensive disclaimers to the public text or make unsupported technical claims.
 
-Use `node scripts/import-drafts.mjs <file.json>` to validate. `--apply` imports private drafts using the local Firebase operator login. This command never publishes. The administrator can also choose **AI 초안 가져오기** in the admin page, review/edit the content and press **검토 후 게시**. Only publish directly when the operator has explicitly requested publication, as with the single redesign test post.
+Agents write directly through the AI draft workspace or `scripts/agent-drafts.mjs` using authorized operator IAM. The module exports `listAgentDrafts()` and `saveAgentDraft(content, { id, version })`; omit the second argument to create a new private draft. There is no JSON exchange-file workflow. Humans use the regular post form; ordinary admin login stays on the current page and AI drafts are a separate footer entry. Publication still requires an explicit user request.
 
 Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows the 100 most recently updated drafts/publications. Automated research scheduling or an LLM service is not wired in this scaffold.
 

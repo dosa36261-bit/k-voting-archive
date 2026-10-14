@@ -166,19 +166,6 @@ async function withDraftBusy(callback) {
         document.querySelectorAll('.draft-actions button, .admin-toolbar button').forEach(button => { button.disabled = false; });
     }
 }
-window.importDraftFile = async function(event) {
-    const file = event.target.files[0]; event.target.value = '';
-    if (!file || draftBusy || !allowDraftSwitch()) return;
-    await withDraftBusy(async () => {
-        if (file.size > 2 * 1024 * 1024) throw new Error('2MB 이하의 JSON 파일을 선택해주세요.');
-        let parsed;
-        try { parsed = JSON.parse(await file.text()); } catch { throw new Error('JSON 파일 형식을 확인해주세요.'); }
-        const result = await window.archiveAction('importDrafts', { drafts: Array.isArray(parsed) ? parsed : parsed.drafts });
-        if (!result) return;
-        adminDrafts.unshift(...result.drafts); selectAdminDraft(result.drafts[0]);
-        showNotification(`초안 ${result.drafts.length}개를 가져왔습니다.`);
-    });
-};
 window.newAdminDraft = async function() {
     if (draftBusy || !allowDraftSwitch()) return;
     await withDraftBusy(async () => {

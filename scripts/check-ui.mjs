@@ -326,7 +326,7 @@ try {
     assert.equal(await page.locator('#sort-select').isVisible(), false);
     assert.equal(await page.locator('#gallery-empty-action').innerText(), '문의 작성');
     await audit('feedback-empty');
-    // Exercise the human review workflow with a mocked API; no production writes.
+    // Exercise direct agent drafting with a mocked API; no exchange file or production writes.
     await page.evaluate(() => {
         window.__drafts = [];
         window.archiveAction = async (action, payload = {}) => {
@@ -344,9 +344,15 @@ try {
     await page.locator('#admin-entry-button').click();
     await page.locator('#admin-pass-input').fill('fixture');
     await page.locator('#admin-modal button[type=submit]').click();
+    await page.locator('#admin-modal.hidden').waitFor({ state: 'attached' });
+    assert.equal(await page.locator('#page-admin').isVisible(), false, 'Human login stays on the normal page');
+    await page.locator('#admin-entry-button').click();
     await page.locator('#page-admin:not(.hidden)').waitFor();
-    await page.locator('#draft-import-file').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ drafts: [{ title: 'AI 초안 검토', category: 'free-board', desc: '내용', source: '', images: [base + '/fixture.svg'], mediaLinks: [], reviewNotes: '검토 메모' }] })) });
+    await page.getByRole('button', { name: '새 초안', exact: true }).click();
     await page.locator('#admin-draft-form:not(.hidden)').waitFor();
+    await page.locator('#draft-title').fill('AI 초안 검토');
+    await page.locator('#draft-desc').fill('1. 핵심 정보');
+    await page.locator('#draft-images').fill(base + '/fixture.svg');
     await page.waitForFunction(() => document.querySelector('.draft-image-preview img')?.naturalWidth > 0);
     await page.locator('.draft-image-preview').click();
     await page.waitForFunction(() => document.getElementById('draft-viewer-image').naturalWidth > 0);
