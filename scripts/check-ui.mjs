@@ -183,6 +183,14 @@ try {
     assert.equal(await page.locator('#main-content').evaluate(node => node.inert), true);
     assert.equal(await page.locator('#lightbox-desc a').getAttribute('href'), 'https://example.com/view?id=1&no=2');
     await audit('post');
+    const openId = await page.evaluate(() => getCurrentLightboxItemId());
+    await page.evaluate(() => {
+        window.currentSortMode = 'created';
+        window.renderCategoryGrid();
+    });
+    assert.equal(await page.evaluate(() => getCurrentLightboxItemId()), openId);
+    await page.evaluate(() => { window.currentSortMode = 'updated'; window.renderCategoryGrid(); });
+
     await page.locator('#comment-form button[type="submit"]').focus();
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), '이전 게시글');
@@ -351,8 +359,24 @@ try {
     await page.locator('#draft-published-link:not(.hidden)').waitFor();
     assert.equal(await page.locator('#draft-title').isDisabled(), true);
 
+    // Direct URLs must resolve after the deferred Firebase module becomes available.
+    await page.goto(base + '/?post=initial-deep-link', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+        window.loadEvidenceById = async id => ({ id, title: '처음 연 공유 링크', category: 'etc', images: [], comments: [] });
+        window.handleAppRoute({ force: true });
+    });
+    await page.locator('#lightbox-modal:not(.hidden)').waitFor();
+    assert.equal(await page.locator('#lightbox-title').innerText(), '처음 연 공유 링크');
+    await page.keyboard.press('Escape');
+    await page.goto(base + '/?category=etc', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+        window.__initialCategoryLoads = 0;
+        window.loadCategoryEvidenceBatch = async () => { window.__initialCategoryLoads++; };
+        window.handleAppRoute({ force: true });
+    });
+    assert.equal(await page.evaluate(() => window.__initialCategoryLoads), 1);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: ['pagination race, recovery and 24/25 boundary', 'closed-post scroll regression', 'direction-aware header and focus reveal', 'back/forward and stale post fetch', 'private draft review UI and feedback badges', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
+    console.log(JSON.stringify({ passed: ['pagination race, recovery and 24/25 boundary', 'closed-post scroll regression', 'direction-aware header and focus reveal', 'back/forward, stale post fetch and deferred initial routes', 'private draft review UI and feedback badges', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
     assert.equal(audits.reduce((total, item) => total + item.violations.length, 0), 0, 'Accessibility violations remain; see audit output.');
 } finally {
     await browser.close();

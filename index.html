@@ -626,6 +626,9 @@
 
         async function startApp() {
             try {
+                // The classic UI may run before the deferred Firebase module is ready.
+                // Resolve the initial route once now that direct reads and pagination exist.
+                window.handleAppRoute({ force: true });
                 window.setCategoryCountersLoading();
                 window.loadCategoryCounts().catch((error) => {
                     console.error("Category count load failed:", error);
@@ -1027,7 +1030,7 @@
             };
         }
 
-        function handleAppRoute() {
+        function handleAppRoute(options = {}) {
             const route = getRouteFromLocation();
             if (route.admin) { window.closeLightbox({ updateHistory: false, showCategoryOnClose: false }); window.openAdminPage({ updateHistory: false }); return; }
             const routeKey = `${route.category}|${route.post || route.modalPost}`;
@@ -1035,7 +1038,7 @@
             if (!route.post && !route.modalPost && isLightboxOpen) {
                 window.closeLightbox({ updateHistory: false });
             }
-            if (window.lastAppliedRouteKey === routeKey) {
+            if (!options.force && window.lastAppliedRouteKey === routeKey) {
                 if (!(route.post || route.modalPost) || isLightboxOpen) return;
             }
             window.lastAppliedRouteKey = routeKey;
@@ -1214,6 +1217,7 @@
             const gridContainer = document.getElementById("gallery-grid");
             const emptyState = document.getElementById("gallery-empty-state");
             const searchVal = document.getElementById("grid-search-input").value.toLowerCase().trim();
+            const openPostId = document.getElementById("lightbox-modal").classList.contains("hidden") ? null : window.currentGridEvidences[window.currentLightboxIndex]?.id;
 
             window.currentGridEvidences = getSortedEvidences(window.evidences.filter(item => {
                 if (window.selectedCategoryKey === ALL_CATEGORY_KEY) {
@@ -1226,6 +1230,10 @@
                 }
                 return true;
             }));
+            if (openPostId) {
+                const currentIndex = window.currentGridEvidences.findIndex(item => item.id === openPostId);
+                if (currentIndex >= 0) window.currentLightboxIndex = currentIndex;
+            }
             const isFeedback = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY;
             const state = window.categoryPagination;
             const count = window.currentGridEvidences.length;
@@ -1369,7 +1377,7 @@
                 catch { showNotification("게시글을 불러오지 못했습니다."); return; }
             }
             if (request !== lightboxRequest) return;
-            if (!itemObj) { showNotification("게시글을 찾을 수 없습니다."); return; }
+            if (!itemObj) { if (window.loadEvidenceById) showNotification("게시글을 찾을 수 없습니다."); return; }
             const contextCategory = options.category
                 || (window.selectedCategoryKey === ALL_CATEGORY_KEY ? ALL_CATEGORY_KEY : "")
                 || (CATEGORY_KEYS.includes(window.selectedCategoryKey) || window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY ? window.selectedCategoryKey : "")
