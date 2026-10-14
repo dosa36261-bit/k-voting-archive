@@ -415,6 +415,18 @@ try {
         window.handleAppRoute({ force: true });
     });
     assert.equal(await page.evaluate(() => window.__initialCategoryLoads), 1);
+    await seed();
+    await page.evaluate(async () => {
+        const deleted = { id: 'deleted-cached-post', title: '삭제 전 캐시', category: 'etc', images: [] };
+        window.evidences.push(deleted);
+        window.loadEvidenceById = async () => null;
+        await window.openLightboxDirectly(deleted.id);
+    });
+    assert.equal(await page.locator('#lightbox-modal').isVisible(), false, 'A cached post must not bypass server deletion');
+    await page.evaluate(() => {
+        window.applyFetchedEvidences([{ id: 'deleted-cached-post', deleted: true }], { allowEmpty: true });
+    });
+    assert.equal(await page.evaluate(() => window.evidences.some(item => item.id === 'deleted-cached-post')), false);
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ passed: ['pagination race, recovery and 24/25 boundary', 'closed-post scroll regression', 'direction-aware header and focus reveal', 'back/forward, stale post fetch and deferred initial routes', 'private draft review UI and feedback badges', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
     assert.equal(audits.reduce((total, item) => total + item.violations.length, 0), 0, 'Accessibility violations remain; see audit output.');

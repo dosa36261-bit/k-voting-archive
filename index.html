@@ -471,9 +471,9 @@
             feedbackUnsubscribe?.(); feedbackUnsubscribe = null;
             if (!enabled) { window.setAdminFeedback([]); return; }
             feedbackUnsubscribe = onSnapshot(query(getEvidenceCollectionRef(), where('category', '==', 'feedback-board')), snapshot => {
-                const items = snapshotToEvidences(snapshot).filter(item => !item.deleted);
+                const items = snapshotToEvidences(snapshot);
                 window.evidences = mergeEvidenceItems(items);
-                window.setAdminFeedback(items);
+                window.setAdminFeedback(items.filter(item => !item.deleted));
             }, () => { document.getElementById('admin-feedback-status').textContent = '문의를 불러오지 못했습니다. 다시 로그인해 주세요.'; });
         };
         window.logoutAdmin = function() { adminToken = ''; window.clearAdminSession(); window.goHome(); };
@@ -607,7 +607,7 @@
                 requestState.cursors[cursorKey] = docs.length > 0 ? docs[docs.length - 1] : requestState.cursors[cursorKey];
                 requestState.hasMore[cursorKey] = snapshot.docs.length > categoryPageLimit;
                 const fetched = docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-                window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
+                window.applyFetchedEvidences(fetched, { allowEmpty: true, cache: true });
                 return fetched;
             } catch (error) {
                 requestState.error = true;
@@ -634,10 +634,12 @@
         window.loadEvidenceById = async function(evidenceId) {
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
             const docSnap = await getDoc(docRef);
-            if (!docSnap.exists()) return null;
+            if (!docSnap.exists() || docSnap.data().deleted) {
+                window.applyFetchedEvidences([{ id: evidenceId, deleted: true }], { allowEmpty: true, cache: true });
+                return null;
+            }
             const item = { id: docSnap.id, ...docSnap.data() };
-            if (item.deleted) return null;
-            window.applyFetchedEvidences(mergeEvidenceItems([item]), { allowEmpty: true, cache: true });
+            window.applyFetchedEvidences([item], { allowEmpty: true, cache: true });
             return item;
         };
 
@@ -971,7 +973,7 @@
         }
 
         function cacheFetchedEvidences(items) {
-            if (!items || items.length === 0) return;
+            if (!items) return;
             try {
                 localStorage.setItem(EVIDENCE_CACHE_KEY, JSON.stringify(items));
             } catch (error) {
@@ -983,7 +985,7 @@
             try {
                 const cached = JSON.parse(localStorage.getItem(EVIDENCE_CACHE_KEY) || "[]");
                 if (!Array.isArray(cached) || cached.length === 0) return false;
-                window.evidences = cached;
+                window.evidences = cached.filter(item => item && !item.deleted);
                 window.hasVisibleEvidenceData = true;
                 refreshEvidenceViews();
                 return true;
@@ -1105,6 +1107,8 @@
             }
             window.lastAppliedRouteKey = routeKey;
             if (route.post || route.modalPost) {
+                // A shared URL must wait for server verification; local cache can contain a deleted post.
+                if (route.post && !window.loadEvidenceById) return;
                 window.openLightboxDirectly(route.post || route.modalPost, { updateHistory: false, category: route.category });
                 return;
             }
@@ -1440,12 +1444,16 @@
             const wasLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
             if (!wasLightboxOpen) saveCurrentScrollPosition();
             let itemObj = window.evidences.find(i => i.id === itemId);
-            if (!itemObj && window.loadEvidenceById) {
+            if (window.loadEvidenceById) {
                 try { itemObj = await window.loadEvidenceById(itemId); }
                 catch { showNotification("게시글을 불러오지 못했습니다."); return; }
             }
             if (request !== lightboxRequest) return;
-            if (!itemObj) { if (window.loadEvidenceById) showNotification("게시글을 찾을 수 없습니다."); return; }
+            if (!itemObj || itemObj.deleted) {
+                if (wasLightboxOpen && window.currentGridEvidences[window.currentLightboxIndex]?.id === itemId) window.closeLightbox({ updateHistory: false });
+                if (window.loadEvidenceById) showNotification("게시글을 찾을 수 없습니다.");
+                return;
+            }
             const contextCategory = options.category
                 || (window.selectedCategoryKey === ALL_CATEGORY_KEY ? ALL_CATEGORY_KEY : "")
                 || (CATEGORY_KEYS.includes(window.selectedCategoryKey) || window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY ? window.selectedCategoryKey : "")
