@@ -254,3 +254,24 @@ Open Vercel Deployments and redeploy latest `main` commit.
 - Upload previews in the writing form can be reordered by dragging thumbnails. The save flow preserves that preview order in the stored `images` array.
 - Upload previews also have keyboard-accessible move and remove buttons.
 - Body text URL linkification must avoid double-escaping query strings. In particular, links like `https://gall.dcinside.com/mgallery/board/view?id=uspolitics&no=3225244` should open with the real `&no=` query parameter, not a literal `&amp;no=`.
+
+
+## Image-first redesign and admin drafts (2026-10-14)
+
+- The home page starts with a centered carousel with square thumbnails, fading side cards, manual arrows and reduced-motion support. Category links contain only the name and count.
+- Gallery thumbnails are square; title-adjacent blue numbers are comment counts, and likes use 👍 plus the count. A missing source renders no placeholder.
+- Pagination reads 25 documents, renders 24 and retains the 25th as look-ahead evidence for the next request. IntersectionObserver preloads near the end. Only errors show a retry button.
+- Never replay routing on every data refresh. Closing a modal must replace history state even when the URL does not change, clearing `lightboxPost`. Async post fetches carry a request sequence so navigation cancels stale opens.
+- The sticky header hides on downward scroll and returns on upward scroll. Keep it visible at the top or when keyboard focus enters it. Transform only; do not change document geometry.
+- `admin.js` implements the admin workspace after the existing password login. Unanswered feedback means no comment with `isAdmin === true`; the admin-only red dot and inbox update from Firestore snapshots.
+- `functions/drafts.js` implements private draft actions. Every action requires a server-verified admin session. Saves/deletion/publication check a draft version. Publication atomically creates the post, private admin-only authorization, category count and published draft. Retries return the same post.
+
+### AI research → human publication
+
+When the operator requests research drafts, prepare 1–20 objects matching `drafts.example.json`. Separate verified facts from allegations in the public text. Include original sources and leave checks or uncertainties in private `reviewNotes`. Do not put passwords or API keys in the JSON. Remote media must use valid HTTP(S) URLs.
+
+Use `node scripts/import-drafts.mjs <file.json>` to validate. `--apply` imports private drafts using the local Firebase operator login. This command never publishes. The administrator can also choose **AI 초안 가져오기** in the admin page, review/edit the content and press **검토 후 게시**. Only publish directly when the operator has explicitly requested publication, as with the single redesign test post.
+
+Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows the 100 most recently updated drafts/publications. Automated research scheduling or an LLM service is not wired in this scaffold.
+
+Validation: `npm test --prefix functions` (14 security/concurrency cases) and `node scripts/check-ui.mjs` (6 responsive widths, navigation/scroll regression, header behavior, admin draft workflow). Use `UI_AXE_PATH` for 14-state axe coverage.

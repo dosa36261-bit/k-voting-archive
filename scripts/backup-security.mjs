@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { db } from './admin-firestore.mjs';
 const directory = `backups/private-${new Date().toISOString().replace(/[:.]/g, '-')}`;
 await mkdir(directory, { recursive: true });
-for (const collection of ['_archivePostSecrets', '_archiveAdmin']) {
+for (const collection of ['_archivePostSecrets', '_archiveAdmin', '_archiveDrafts']) {
   const snapshot = await db.collection(collection).get();
   await writeFile(`${directory}/${collection}.json`, JSON.stringify(snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })), null, 2));
 }

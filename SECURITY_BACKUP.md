@@ -63,3 +63,19 @@ Anonymous identities and rate limits reduce abuse but cannot prevent every spam 
 
 - 2026-07-02: Restored 136 legacy Cloudinary images to Firebase Storage; verified zero remaining Cloudinary URLs and zero broken image URLs.
 - 2026-10-14: Backed up 239 posts (226 active) and 21 comments before the server-side security migration. Images are unchanged by this migration.
+
+
+## Private admin draft workflow
+
+The admin workspace uses the same server-verified, one-hour password session.
+`_archiveDrafts` is denied by the existing catch-all Firestore rules and is only
+read/written through admin callable actions or the operator's IAM credentials.
+`reviewNotes` never becomes public post content. Version checks reject stale
+changes; transactional publication and deterministic post IDs prevent duplicates.
+`node scripts/backup-security.mjs` now includes `_archiveDrafts`.
+
+`node scripts/import-drafts.mjs drafts.json` validates locally. Add `--apply` to
+import private drafts. Importing never publishes and ignores untrusted imported
+status, post ID or permission fields. An administrator reviews and publishes via
+the workspace. Published drafts remain as history; subsequent edits use the post
+editor. The workspace currently shows the latest 100 drafts/publications.

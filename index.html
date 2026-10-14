@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="theme-color" content="#ffffff">
     <title>선거 이슈 아카이브</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,7 +19,6 @@
                 <span class="site-logo"><i class="fa-solid fa-square-poll-horizontal text-xl" aria-hidden="true"></i></span>
                 <div>
                     <h1 class="site-title">선거 이슈 아카이브</h1>
-                    <p class="site-tagline">선거 무결성을 위한 시민 참여형 아카이브</p>
                 </div>
             </a>
             <nav class="header-nav" aria-label="이용 도움말">
@@ -36,121 +36,47 @@
         
         <div id="page-home" class="space-y-12">
             
-            <div class="home-intro">
-                <div>
-                    <p class="eyebrow">K-VOTING ARCHIVE</p>
-                    <h2>시민의 기록을 한곳에.</h2>
-                    <p>사진과 영상, 출처를 모으고 주제별로 살펴보세요.</p>
-                </div>
-                <a class="intro-link" href="#categories">주제별로 둘러보기 <i class="fa-solid fa-arrow-down ml-2" aria-hidden="true"></i></a>
-            </div>
             <div id="home-load-status" class="load-message" role="status">
                 <p id="home-load-text">자료를 불러오는 중입니다…</p>
                 <button id="home-retry-button" type="button" class="hidden" onclick="retryHomeLoad()">다시 불러오기</button>
             </div>
-            <section id="hero-section" class="bg-white hidden" aria-labelledby="hero-heading">
-                <div class="section-heading">
-                    <h2 id="hero-heading">주목받는 자료</h2>
-                    <div class="hero-controls" aria-label="추천 자료 탐색">
-                        <span id="hero-position" aria-live="polite"></span>
-                        <button type="button" onclick="prevSlide()" aria-label="이전 추천 자료"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
-                        <button type="button" onclick="nextSlide()" aria-label="다음 추천 자료"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
-                    </div>
+            <section id="hero-section" class="hidden" aria-labelledby="hero-heading">
+                <div class="section-heading"><h2 id="hero-heading">주목받는 자료</h2><span id="hero-position" aria-live="polite"></span></div>
+                <div class="hero-stage">
+                    <div id="hero-slide-container" class="hero-track"></div>
+                    <button class="hero-arrow hero-arrow-prev" type="button" onclick="prevSlide(event)" aria-label="이전 추천 자료"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                    <button class="hero-arrow hero-arrow-next" type="button" onclick="nextSlide(event)" aria-label="다음 추천 자료"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
                 </div>
-                <div id="hero-slide-container"></div>
             </section>
-
-            <section id="categories" aria-labelledby="categories-heading">
-                <div class="section-heading">
-                    <div>
-                        <h2 id="categories-heading">주제별로 살펴보기</h2>
-                        <p>관심 있는 카테고리에서 사진, 영상과 기록을 확인하세요.</p>
-                    </div>
-                </div>
-
+            <section id="categories" aria-label="게시판 카테고리">
                 <div class="category-grid">
                     <a href="?category=all-posts" data-category="all-posts" class="category-card category-all">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-slate-100 text-slate-800"><i class="fa-solid fa-layer-group text-lg" aria-hidden="true"></i></span>
-                                <h3>전체 글 보기</h3>
-                            </div>
-                            <span class="category-count" id="count-all-posts">…</span>
-                        </div>
-                        <p>모든 카테고리의 기록을 한 번에 확인하세요.</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+                        <h3>전체 글</h3><span class="category-count" id="count-all-posts">…</span>
                     </a>
-
                     <a href="?category=shape-memory" data-category="shape-memory" class="category-card">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-emerald-100 text-emerald-800"><i class="fa-solid fa-scroll text-lg" aria-hidden="true"></i></span>
-                                <h3>신비한 투표지</h3>
-                            </div>
-                            <span class="category-count" id="count-shape-memory">…</span>
-                        </div>
-                        <p>형상기억 종이, 비정상적 투표지 등 개표장에서 발견되는 마법의 종이 사례집</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-scroll" aria-hidden="true"></i></span>
+                        <h3>신비한 투표지</h3><span class="category-count" id="count-shape-memory">…</span>
                     </a>
-
                     <a href="?category=strange-ballot" data-category="strange-ballot" class="category-card">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-amber-100 text-amber-800"><i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i></span>
-                                <h3>이상 현상</h3>
-                            </div>
-                            <span class="category-count" id="count-strange-ballot">…</span>
-                        </div>
-                        <p>통계 이상, 비정상적 전자 개표 등 지금까지의 상식이 박살나는 기묘한 현상 모음집</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+                        <h3>이상 현상</h3><span class="category-count" id="count-strange-ballot">…</span>
                     </a>
-
                     <a href="?category=bad-management" data-category="bad-management" class="category-card">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-rose-100 text-rose-800"><i class="fa-solid fa-shield-halved text-lg" aria-hidden="true"></i></span>
-                                <h3>관리 부실</h3>
-                            </div>
-                            <span class="category-count" id="count-bad-management">…</span>
-                        </div>
-                        <p>투표함의 봉인지 훼손, 무단 개봉, 운송 중 통제 미흡 등 상식 이하의 관리 사례.</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+                        <h3>관리 부실</h3><span class="category-count" id="count-bad-management">…</span>
                     </a>
-
                     <a href="?category=nec-admin" data-category="nec-admin" class="category-card">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-blue-100 text-blue-800"><i class="fa-solid fa-building-columns text-lg" aria-hidden="true"></i></span>
-                                <h3>선관위 행정</h3>
-                            </div>
-                            <span class="category-count" id="count-nec-admin">…</span>
-                        </div>
-                        <p>어디서도 볼 수 없었던 참신하고 놀라운 선관위의 일처리를 칭찬합니다.</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
+                        <h3>선관위 행정</h3><span class="category-count" id="count-nec-admin">…</span>
                     </a>
-
                     <a href="?category=etc" data-category="etc" class="category-card">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-purple-100 text-purple-800"><i class="fa-solid fa-asterisk text-lg" aria-hidden="true"></i></span>
-                                <h3>기타</h3>
-                            </div>
-                            <span class="category-count" id="count-etc">…</span>
-                        </div>
-                        <p>그 외 분류항목에 한정되지 않는 못말리는 실수들</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-asterisk" aria-hidden="true"></i></span>
+                        <h3>기타</h3><span class="category-count" id="count-etc">…</span>
                     </a>
-
                     <a href="?category=free-board" data-category="free-board" class="category-card">
-                        <div class="category-card-top">
-                            <div class="category-name">
-                                <span class="category-icon bg-indigo-100 text-indigo-800"><i class="fa-solid fa-comments text-lg" aria-hidden="true"></i></span>
-                                <h3>자유게시판</h3>
-                            </div>
-                            <span class="category-count" id="count-free-board">…</span>
-                        </div>
-                        <p>선거 제도나 자유로운 의견, 제보 분석을 나누는 시민 소통 게시판</p>
-                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        <span class="category-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
+                        <h3>자유게시판</h3><span class="category-count" id="count-free-board">…</span>
                     </a>
                 </div>
             </section>
@@ -189,10 +115,10 @@
 
             <p id="gallery-result-count" role="status" aria-atomic="true"></p>
             <div id="gallery-grid" class="evidence-grid"></div>
-            <div id="load-more-wrapper" class="hidden mt-8 flex justify-center">
-                <button id="load-more-button" onclick="loadMoreCategoryEvidence()" class="bg-white hover:bg-slate-50 text-slate-700 text-sm font-black px-5 py-3 rounded-xl border-2 border-slate-200 shadow-sm">
-                    더 보기
-                </button>
+            <div id="gallery-scroll-sentinel" aria-hidden="true"></div>
+            <div id="load-more-wrapper" class="hidden feed-status">
+                <p id="feed-status-text" role="status"></p>
+                <button id="load-more-button" type="button" onclick="loadMoreCategoryEvidence()" class="hidden secondary-button">다시 불러오기</button>
             </div>
 
             <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-slate-500">
@@ -202,40 +128,68 @@
                 <button id="gallery-empty-action" class="empty-action" onclick="openUploadModal()">사례 제출</button>
             </div>
         </div>
+        <section id="page-admin" class="hidden" aria-labelledby="admin-page-title">
+            <div class="admin-heading"><div><h2 id="admin-page-title" tabindex="-1">관리자 페이지</h2><p>AI 초안을 검토하고 게시하세요.</p></div><button class="secondary-button" onclick="logoutAdmin()">로그아웃</button></div>
+            <section class="admin-panel" aria-labelledby="admin-feedback-heading">
+                <h3 id="admin-feedback-heading">미답변 문의 <span id="admin-feedback-count">0</span> <span id="admin-feedback-dot" class="notification-dot hidden" aria-hidden="true"></span></h3>
+                <p id="admin-feedback-status" class="admin-muted">문의를 불러오는 중…</p><div id="admin-feedback-list" class="admin-feedback-list"></div>
+            </section>
+            <div class="admin-toolbar">
+                <button class="secondary-button" type="button" onclick="document.getElementById('draft-import-file').click()">AI 초안 가져오기</button><input id="draft-import-file" aria-label="AI 초안 JSON 파일" type="file" accept="application/json,.json" class="hidden" onchange="importDraftFile(event)">
+                <button class="secondary-button" onclick="newAdminDraft()">새 초안</button><button class="secondary-button" onclick="loadAdminDrafts()">새로고침</button>
+                <a href="drafts.example.json" download class="text-blue-700 underline text-base">초안 양식</a>
+            </div>
+            <p id="draft-status" role="status"></p>
+            <div class="admin-workspace">
+                <aside aria-label="초안 목록"><div id="admin-draft-list" class="draft-list"></div></aside>
+                <section class="admin-panel">
+                    <p id="draft-empty" class="admin-muted">초안을 선택하거나 AI가 만든 JSON 파일을 가져오세요.<br>초안은 관리자만 볼 수 있습니다.</p>
+                    <form id="admin-draft-form" class="draft-form hidden" onsubmit="saveAdminDraft(event)">
+                        <fieldset id="draft-fields"><legend class="sr-only">초안 편집</legend>
+                            <div class="form-row"><div><label for="draft-category">게시판</label><select id="draft-category"></select></div><div><label for="draft-source">출처 <span class="admin-muted">(선택)</span></label><input id="draft-source" maxlength="160"></div></div>
+                            <label for="draft-title">제목</label><input id="draft-title" required maxlength="120">
+                            <label for="draft-desc">내용</label><textarea id="draft-desc" rows="7" maxlength="20000"></textarea>
+                            <label for="draft-images">이미지 주소</label><textarea id="draft-images" rows="3" placeholder="이미지 주소를 한 줄에 하나씩 입력하세요."></textarea>
+                            <label for="draft-media">영상 / SNS 링크</label><textarea id="draft-media" rows="2" placeholder="링크를 한 줄에 하나씩 입력하세요."></textarea>
+                            <label for="draft-notes">검토 메모 <span class="admin-muted">(관리자만 표시)</span></label><textarea id="draft-notes" rows="3" maxlength="4000"></textarea>
+                        </fieldset>
+                        <a id="draft-published-link" class="hidden" target="_blank" rel="noopener">게시글 보기 ↗</a>
+                        <div class="draft-actions"><button id="draft-delete-button" type="button" class="secondary-button" onclick="deleteAdminDraft()">초안 삭제</button><button id="draft-save-button" type="submit" class="secondary-button">초안 저장</button><button id="draft-publish-button" type="button" class="primary-button" onclick="publishAdminDraft()">검토 후 게시</button></div>
+                    </form>
+                </section>
+            </div>
+        </section>
     </main>
 
     <footer class="archive-footer">
         <div class="site-shell flex flex-col md:flex-row items-center justify-between gap-4">
-            <p>시민들이 자발적으로 사진 자료와 제보를 모으는 오픈 아카이브입니다.</p>
+            <p>선거 이슈 아카이브</p>
             <div class="flex items-center gap-3 flex-wrap justify-center">
-                <button onclick="openFeedbackBoard()" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm transition-colors">
-                    <i aria-hidden="true" class="fa-regular fa-message mr-1"></i> 버그제보 / 건의
+                <button id="feedback-footer-button" onclick="openFeedbackBoard()" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm transition-colors">
+                    <i aria-hidden="true" class="fa-regular fa-message mr-1"></i> 버그제보 / 건의 <span id="feedback-alert-dot" class="notification-dot hidden" aria-label="관리자 미답변 문의 있음"></span>
                 </button>
-                <button onclick="openAdminModal()" class="text-slate-500 hover:text-blue-600 font-bold transition-colors">
-                    <i aria-hidden="true" class="fa-solid fa-lock mr-1"></i> 관리자 로그인
+                <button id="admin-entry-button" onclick="openAdminPage()" class="text-slate-500 hover:text-blue-600 font-bold transition-colors">
+                    <i aria-hidden="true" class="fa-solid fa-lock mr-1"></i> <span id="admin-entry-label">관리자 로그인</span>
                 </button>
-                <span id="admin-indicator" class="hidden text-red-600 font-black"><i aria-hidden="true" class="fa-solid fa-user-shield mr-1"></i>관리자 모드 실행중</span>
+                <span id="admin-indicator" class="hidden sr-only">관리자 로그인됨</span>
             </div>
         </div>
     </footer>
 
-    <div id="lightbox-modal" role="dialog" aria-modal="true" aria-label="게시글 상세" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3" onclick="handleOutsideClick(event)">
-        <div id="lightbox-body" class="max-w-4xl w-full bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh] relative">
+    <div id="lightbox-modal" role="dialog" aria-modal="true" aria-label="게시글 상세" tabindex="-1" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="handleOutsideClick(event)">
+        <button class="reader-arrow reader-prev" type="button" onclick="prevLightboxSlide()" aria-label="이전 게시글"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+        <button class="reader-arrow reader-next" type="button" onclick="nextLightboxSlide()" aria-label="다음 게시글"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+        <button class="reader-close" type="button" aria-label="게시글 닫기" onclick="closeLightbox()"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        <div id="lightbox-body" class="bg-white flex flex-col relative">
             <div class="lightbox-topbar flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <div class="flex items-center gap-2">
                     <span id="lightbox-cat-badge" class="px-3 py-1 rounded-full text-xs font-black border-2">카테고리</span>
-                    <span class="text-xs text-slate-500 font-bold">고유번호: <span id="lightbox-item-id"></span></span>
+                    <span id="lightbox-item-id" class="sr-only"></span><span id="lightbox-position" class="reader-position"></span>
                 </div>
-                <div class="lightbox-nav">
-                    <button type="button" onclick="prevLightboxSlide()" aria-label="이전 게시글"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
-                    <button type="button" onclick="nextLightboxSlide()" aria-label="다음 게시글"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
-                <button type="button" aria-label="게시글 닫기" onclick="closeLightbox()" class="text-slate-500 hover:text-slate-700 text-2xl p-1.5">
-                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                </button>
-                </div>
+
             </div>
 
-            <div class="overflow-y-auto p-6 space-y-6 flex-grow">
+            <div class="reader-content overflow-y-auto flex-grow">
                 <div class="lightbox-title-row flex items-start justify-between gap-3">
                     <h3 id="lightbox-title" class="font-black text-2xl md:text-3xl text-slate-950 leading-snug">제목</h3>
                     <div class="shrink-0 flex gap-2">
@@ -253,7 +207,7 @@
                     <span id="lightbox-source" class="font-bold"></span>
                 </div>
 
-                <div id="lightbox-images-stack" class="space-y-4 bg-slate-50 p-3 rounded-xl border-2 border-slate-100"></div>
+                <div id="lightbox-images-stack" class="reader-images"></div>
                 <div id="lightbox-media-stack" class="space-y-4"></div>
 
                 <div id="lightbox-desc-wrapper" class="space-y-2">
@@ -263,7 +217,7 @@
                 <div class="pt-6 border-t-2 border-slate-100 space-y-4">
                     <div class="flex items-center justify-between">
                         <button id="like-post-button" onclick="likeCurrentPost()" class="flex items-center gap-2.5 px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-base font-black transition-colors">
-                            <i aria-hidden="true" class="fa-regular fa-thumbs-up text-base"></i> 추천 <span id="lightbox-likes-count">0</span>
+                            <span aria-hidden="true">👍</span> 추천 <span id="lightbox-likes-count">0</span>
                         </button>
                         
                         <div class="flex gap-2">
@@ -292,21 +246,25 @@
         </div>
     </div>
 
-    <div id="upload-modal" role="dialog" aria-modal="true" aria-label="사례 작성" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button type="button" aria-label="작성창 닫기" onclick="closeUploadModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-600 text-xl">
-                <i aria-hidden="true" class="fa-solid fa-xmark"></i>
-            </button>
-
-            <div class="mb-4">
-                <h3 id="modal-form-title" class="text-xl font-black text-slate-950">새로운 사례 제출</h3>
-            </div>
-
-            <form id="evidence-form" onsubmit="saveEvidence(event)" class="space-y-4">
+    <div id="upload-modal" role="dialog" aria-modal="true" aria-label="사례 작성" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+        <div class="editor-shell">
+            <header class="editor-header"><h3 id="modal-form-title">새로운 사례 제출</h3><button type="button" class="icon-button" aria-label="작성창 닫기" onclick="closeUploadModal()"><i aria-hidden="true" class="fa-solid fa-xmark"></i></button></header>
+            <form id="evidence-form" onsubmit="saveEvidence(event)">
                 <input type="hidden" id="edit-id" value="">
-
-                <div id="form-category-wrapper">
-                    <label for="form-category" class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 <span class="text-red-600">*</span></label>
+                <div class="editor-fields">
+                    <section id="form-media-wrapper" class="editor-media">
+                        <label for="form-files">사진 / GIF</label>
+                        <div id="drop-zone">
+                            <input type="file" id="form-files" accept="image/jpeg,image/png,image/gif,image/webp" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <i aria-hidden="true" class="fa-regular fa-images"></i><strong>사진 추가</strong><span>끌어놓기 · 붙여넣기 · 파일 선택</span><small>파일당 25MB · 최대 20개</small>
+                            <p id="file-status" role="status"></p>
+                        </div>
+                        <div id="upload-preview-container"></div>
+                        <label for="form-media-links">영상 / SNS 링크</label>
+                        <textarea id="form-media-links" rows="3" placeholder="링크를 한 줄에 하나씩 입력하세요."></textarea>
+                    </section>
+                    <section class="editor-details" aria-label="게시글 내용">
+                        <div id="form-category-wrapper" class="form-field"><label for="form-category">게시판</label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="shape-memory">신비한 투표지</option>
                         <option value="strange-ballot">이상 현상</option>
@@ -316,50 +274,14 @@
                         <option value="free-board">자유게시판</option>
                         <option value="feedback-board" hidden>문의게시판</option>
                     </select>
-                </div>
-
-                <div>
-                    <label for="form-title" class="block text-sm font-black text-slate-700 mb-1">제목 <span class="text-red-600">*</span></label>
-                    <input type="text" id="form-title" maxlength="120" name="post-title" autocomplete="on" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div class="max-w-56 ml-auto">
-                    <label for="form-post-password" class="block text-xs font-black text-slate-700 mb-1 text-right">게시글 비밀번호 <span class="text-red-600">*</span></label>
-                    <input type="text" id="form-post-password" name="post-code" autocomplete="on" data-lpignore="true" data-1p-ignore="true" required minlength="4" placeholder="비밀번호" class="password-code-input placeholder-slate-500 w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-[11px] text-slate-500 font-bold mt-1 text-right">4자 이상</p>
-                </div>
-
-                <div id="form-media-wrapper" class="space-y-2">
-                    <label for="form-files" class="block text-sm font-black text-slate-700 mb-0.5">사진/GIF 또는 영상/SNS 링크 <span class="text-red-600">*</span></label>
-                    
-                    <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 focus:bg-blue-50 focus:border-blue-300 focus:outline-none transition-colors cursor-pointer relative">
-                        <input type="file" id="form-files" accept="image/jpeg,image/png,image/gif,image/webp" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                        <div class="space-y-1 text-slate-600 pointer-events-none">
-                            <i aria-hidden="true" class="fa-solid fa-cloud-arrow-up text-lg text-slate-500"></i>
-                            <p class="text-xs font-bold text-slate-500">사진/GIF를 드래그, 클릭, 또는 글쓰기 창에서 Ctrl+V로 붙여넣으세요. (~25MB)</p>
-                            <p id="file-status" class="text-[11px] text-blue-600 font-extrabold"></p>
                         </div>
-                    </div>
-
-                    <div id="upload-preview-container" class="flex flex-wrap gap-2 pt-1"></div>
-                    <label for="form-media-links" class="block text-sm font-bold text-slate-700">영상/SNS 링크</label>
-                    <textarea id="form-media-links" rows="3" placeholder="유튜브, X, 스레드 링크를 한 줄에 하나씩 입력해주세요." class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        <div class="form-field"><label for="form-title">제목</label><input type="text" id="form-title" maxlength="120" name="post-title" autocomplete="on" required placeholder="자료의 핵심을 적어주세요."></div>
+                        <div class="form-field"><label for="form-desc">내용</label><textarea id="form-desc" maxlength="20000" rows="6" placeholder="언제, 어디서 있었던 일인지 적어주세요."></textarea></div>
+                        <div id="form-source-wrapper" class="form-field"><label for="form-source">출처 <span class="field-optional">선택</span></label><input type="text" id="form-source" maxlength="160" placeholder="원문 링크 또는 자료 제공자"></div>
+                        <div class="form-field editor-password"><label for="form-post-password">게시글 비밀번호</label><input type="password" id="form-post-password" name="post-code" autocomplete="new-password" required minlength="4" maxlength="128" aria-describedby="post-password-hint" placeholder="4자 이상"><small id="post-password-hint">수정·삭제할 때 사용합니다.</small></div>
+                    </section>
                 </div>
-
-                <div id="form-source-wrapper">
-                    <label for="form-source" class="block text-sm font-black text-slate-700 mb-1">출처</label>
-                    <input type="text" id="form-source" maxlength="160" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label for="form-desc" class="block text-sm font-black text-slate-700 mb-1">내용</label>
-                    <textarea id="form-desc" maxlength="20000" rows="4" placeholder="상황에 대한 핵심 내용을 간단하게 기록해주세요." class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-
-                <div class="flex gap-2 justify-end pt-1">
-                    <button type="button" onclick="closeUploadModal()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-extrabold rounded-xl">취소</button>
-                    <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold rounded-xl">저장하기</button>
-                </div>
+                <footer class="editor-actions"><button type="button" onclick="closeUploadModal()" class="secondary-button">취소</button><button type="submit" class="primary-button">게시글 등록</button></footer>
             </form>
         </div>
     </div>
@@ -370,8 +292,8 @@
                 <i aria-hidden="true" class="fa-solid fa-xmark"></i>
             </button>
             <div class="mb-4">
-                <h3 class="text-lg font-black text-slate-950">관리자 본인 인증</h3>
-                <p class="text-xs text-slate-500 mt-1">임의 도배성 게시물을 정화하기 위해 로그인합니다.</p>
+                <h3 class="text-lg font-black text-slate-950">관리자 로그인</h3>
+                <p class="text-xs text-slate-500 mt-1">초안과 게시글, 문의를 관리합니다.</p>
             </div>
             <form class="space-y-4" autocomplete="on" onsubmit="tryAdminLogin(); return false;">
                 <input type="text" name="username" autocomplete="username" value="kvoting-admin" class="sr-only" tabindex="-1" aria-hidden="true">
@@ -440,7 +362,7 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, getDoc, getDocs, query, where, orderBy, limit, startAfter, documentId } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, getDoc, getDocs, query, where, orderBy, limit, startAfter, documentId, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
@@ -482,6 +404,17 @@
             }
         };
         
+        let feedbackUnsubscribe;
+        window.watchAdminFeedback = function(enabled) {
+            feedbackUnsubscribe?.(); feedbackUnsubscribe = null;
+            if (!enabled) { window.setAdminFeedback([]); return; }
+            feedbackUnsubscribe = onSnapshot(query(getEvidenceCollectionRef(), where('category', '==', 'feedback-board')), snapshot => {
+                const items = snapshotToEvidences(snapshot).filter(item => !item.deleted);
+                window.evidences = mergeEvidenceItems(items);
+                window.setAdminFeedback(items);
+            }, () => { document.getElementById('admin-feedback-status').textContent = '문의를 불러오지 못했습니다. 다시 로그인해 주세요.'; });
+        };
+        window.logoutAdmin = function() { adminToken = ''; window.clearAdminSession(); window.goHome(); };
         const appId = 'k-voting';
         const collectionName = 'evidences';
         const statsCollectionName = 'stats';
@@ -573,7 +506,7 @@
                 parts.push(orderBy(documentId(), "desc"));
             }
             if (cursor) parts.push(startAfter(cursor));
-            parts.push(limit(pageSize));
+            parts.push(limit(pageSize + 1));
             return query(colRef, ...parts);
         }
 
@@ -582,7 +515,7 @@
                 ? [where("category", "in", categoryKeys)]
                 : [where("category", "==", category)];
             if (cursor) parts.push(startAfter(cursor));
-            parts.push(limit(pageSize));
+            parts.push(limit(pageSize + 1));
             return query(colRef, ...parts);
         }
 
@@ -608,10 +541,10 @@
                     snapshot = await getDocs(getFallbackCategoryQuery(colRef, category, categoryPageLimit, requestState.cursors[cursorKey]));
                 }
                 if (requestState !== window.categoryPagination) return [];
-                const docs = snapshot.docs;
+                const docs = snapshot.docs.slice(0, categoryPageLimit);
                 requestState.cursors[cursorKey] = docs.length > 0 ? docs[docs.length - 1] : requestState.cursors[cursorKey];
-                requestState.hasMore[cursorKey] = docs.length === categoryPageLimit;
-                const fetched = snapshotToEvidences(snapshot);
+                requestState.hasMore[cursorKey] = snapshot.docs.length > categoryPageLimit;
+                const fetched = docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
                 window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
                 return fetched;
             } catch (error) {
@@ -890,10 +823,10 @@
                     return;
                 } else if (event.key === "ArrowLeft") {
                     if (isLightboxOpen) window.prevLightboxSlide();
-                    else window.prevSlide();
+                    else if (!window.selectedCategoryKey && document.getElementById("page-admin").classList.contains("hidden")) window.prevSlide(event);
                 } else if (event.key === "ArrowRight") {
                     if (isLightboxOpen) window.nextLightboxSlide();
-                    else window.nextSlide();
+                    else if (!window.selectedCategoryKey && document.getElementById("page-admin").classList.contains("hidden")) window.nextSlide(event);
                 }
             });
 
@@ -902,6 +835,29 @@
             });
         };
         window.setupKeyboardNavigation();
+
+        // Sticky keeps its layout space; transform only hides the visible header.
+        const siteHeader = document.getElementById('site-header');
+        let headerLastY = 0, headerDirection = 0, headerTravel = 0, headerFrame = 0;
+        window.addEventListener('scroll', () => {
+            if (headerFrame) return;
+            headerFrame = requestAnimationFrame(() => {
+                headerFrame = 0;
+                const y = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - innerHeight));
+                const delta = y - headerLastY;
+                headerLastY = y;
+                if (modalStack.length) return;
+                if (y < siteHeader.offsetHeight || (siteHeader.contains(document.activeElement) && document.activeElement.matches(':focus-visible')) || window.scrollRestorationTarget !== null) {
+                    siteHeader.classList.remove('header-hidden'); headerTravel = 0; return;
+                }
+                const direction = Math.sign(delta);
+                if (direction !== headerDirection) { headerDirection = direction; headerTravel = 0; }
+                headerTravel += Math.abs(delta);
+                if (headerTravel >= 8) siteHeader.classList.toggle('header-hidden', direction > 0);
+            });
+        }, { passive: true });
+        siteHeader.addEventListener('focusin', () => siteHeader.classList.remove('header-hidden'));
+
 
         const ALL_CATEGORY_KEY = "all-posts";
         const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
@@ -940,8 +896,8 @@
             if (window.selectedCategoryKey) {
                 window.renderCategoryGrid();
             }
-            if (hasAppRouteInUrl()) handleAppRoute();
-            else openPostFromHashIfNeeded();
+            // Data refreshes never replay navigation or reopen a dismissed post.
+            if (!window.lastAppliedRouteKey) handleAppRoute();
         }
 
         function hasAppRouteInUrl() {
@@ -1054,9 +1010,8 @@
 
         function updateAppHistory(params = {}, mode = "push") {
             const nextUrl = buildAppUrl(params);
-            if (nextUrl.href === window.location.href) return;
             const state = { appRoute: true, ...params };
-            if (mode === "replace") window.history.replaceState(state, "", nextUrl);
+            if (mode === "replace" || nextUrl.href === window.location.href) window.history.replaceState(state, "", nextUrl);
             else window.history.pushState(state, "", nextUrl);
         }
 
@@ -1068,11 +1023,13 @@
                 category: params.get("category") || "",
                 post: params.get("post") || (hashMatch ? decodeURIComponent(hashMatch[1]) : ""),
                 modalPost: state.lightboxPost || "",
+                admin: params.has("admin"),
             };
         }
 
         function handleAppRoute() {
             const route = getRouteFromLocation();
+            if (route.admin) { window.closeLightbox({ updateHistory: false, showCategoryOnClose: false }); window.openAdminPage({ updateHistory: false }); return; }
             const routeKey = `${route.category}|${route.post || route.modalPost}`;
             const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
             if (!route.post && !route.modalPost && isLightboxOpen) {
@@ -1121,8 +1078,11 @@
         };
 
         window.goHome = function(options = {}) {
+            ++lightboxRequest;
+            document.getElementById("page-admin").classList.add("hidden");
             saveCurrentScrollPosition();
             if (options.updateHistory !== false) updateAppHistory({}, "push");
+            window.lastAppliedRouteKey = "|";
             window.selectedCategoryKey = "";
             document.getElementById("page-category").classList.add("hidden");
             document.getElementById("page-home").classList.remove("hidden");
@@ -1134,6 +1094,7 @@
         };
 
         window.showSelectedCategoryPage = function() {
+            document.getElementById("page-admin").classList.add("hidden");
             if (!window.selectedCategoryKey) return;
             document.getElementById("page-home").classList.add("hidden");
             document.getElementById("page-category").classList.remove("hidden");
@@ -1158,55 +1119,47 @@
             }
         };
 
-        // 슬라이더 렌더링
-        window.renderHeroSlider = function() {
+        // Stable cards let interrupted transitions continue from their current position.
+        let renderedHeroKey = "";
+        window.renderHeroSlider = function(options = {}) {
             const container = document.getElementById("hero-slide-container");
-            const heroSection = document.getElementById("hero-section");
-            const heroEvidences = getHeroEvidences();
-            const loadStatus = document.getElementById("home-load-status");
-            loadStatus.classList.toggle("hidden", heroEvidences.length > 0 || window.hasReceivedEvidenceSnapshot);
-            
-            if (!heroEvidences || heroEvidences.length === 0) {
-                heroSection.classList.add("hidden");
-                return;
+            const items = getHeroEvidences();
+            document.getElementById("home-load-status").classList.toggle("hidden", items.length > 0 || window.hasReceivedEvidenceSnapshot);
+            document.getElementById("hero-section").classList.toggle("hidden", !items.length);
+            if (!items.length) return;
+            window.currentSlideIndex = (window.currentSlideIndex + items.length) % items.length;
+            const key = items.map(item => `${item.id}:${item.updatedAt || ''}:${item.title}`).join('|');
+            if (key !== renderedHeroKey) {
+                renderedHeroKey = key;
+                container.innerHTML = items.map(item => `<article class="hero-card">
+                    <a href="?post=${encodeURIComponent(item.id)}" data-post-id="${escapeHtml(item.id)}" class="hero-card-link">
+                        <div class="hero-image-link">${renderThumbnailHtml(getThumbnail(item), '')}<span class="media-count">${getMediaBadgeText(getImageCount(item), getMediaLinks(item).length)}</span></div>
+                        <div class="hero-copy"><p>${getCategoryLabel(item.category)}</p><h3>${escapeHtml(item.title)}${getCommentCount(item) ? ` <span class="comment-count" aria-label="댓글 ${getCommentCount(item)}개">[${getCommentCount(item)}]</span>` : ''}</h3></div>
+                    </a></article>`).join('');
             }
-            heroSection.classList.remove("hidden");
-
-            if (window.currentSlideIndex < 0) window.currentSlideIndex = heroEvidences.length - 1;
-            if (window.currentSlideIndex >= heroEvidences.length) window.currentSlideIndex = 0;
-
-            const item = heroEvidences[window.currentSlideIndex];
-            const catLabel = getCategoryLabel(item.category);
-            const catBadgeClass = getCategoryBadgeClass(item.category);
-            const imageCount = getImageCount(item);
-            const mediaCount = getMediaLinks(item).length;
-            const thumb = getThumbnail(item);
-            const commentCount = getCommentCount(item);
-
-            const postUrl = `?post=${encodeURIComponent(item.id)}`;
-            document.getElementById("hero-position").textContent = `${window.currentSlideIndex + 1} / ${heroEvidences.length}`;
-            container.innerHTML = `
-                <a class="hero-image-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.title)} — 게시글 보기">
-                    ${renderThumbnailHtml(thumb, item.title)}
-                    <span class="media-count">${getMediaBadgeText(imageCount, mediaCount)}</span>
-                </a>
-                <div class="hero-copy">
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <span class="px-3 py-1 rounded-lg text-xs font-bold ${catBadgeClass}">${catLabel}</span>
-                        <span class="text-xs text-slate-500">추천 ${item.likes || 0}${commentCount ? ` · 댓글 ${commentCount}` : ""}</span>
-                    </div>
-                    <h3><a href="${postUrl}" data-post-id="${escapeHtml(item.id)}" class="line-clamp-3">${escapeHtml(item.title)}</a></h3>
-                    ${item.desc ? `<p class="hero-description line-clamp-3">${escapeHtml(item.desc)}</p>` : ""}
-                    ${item.source ? `<p class="hero-source line-clamp-2">출처 · ${escapeHtml(item.source)}</p>` : ""}
-                    <a class="hero-read-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}">자료 자세히 보기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-                </div>
-            `;
+            container.classList.toggle('instant', options.instant === true);
+            const width = container.querySelector('.hero-card').getBoundingClientRect().width;
+            [...container.children].forEach((card, index) => {
+                let offset = (index - window.currentSlideIndex + items.length) % items.length;
+                if (offset > items.length / 2) offset -= items.length;
+                card.style.setProperty('--slide-x', `${offset * (width + 20)}px`);
+                card.style.opacity = offset === 0 ? '1' : Math.abs(offset) === 1 ? '.45' : '0';
+                card.style.zIndex = offset === 0 ? '2' : '1';
+                card.querySelectorAll('img').forEach(img => { img.loading = Math.abs(offset) <= 1 ? 'eager' : 'lazy'; img.fetchPriority = offset === 0 ? 'high' : 'auto'; });
+                card.inert = offset !== 0;
+                card.setAttribute('aria-hidden', String(offset !== 0));
+                card.classList.toggle('is-current', offset === 0);
+            });
+            document.getElementById("hero-position").textContent = `${window.currentSlideIndex + 1} / ${items.length}`;
+            document.querySelectorAll('.hero-arrow').forEach(button => { button.disabled = items.length < 2; });
         };
-
-        window.prevSlide = function() { window.currentSlideIndex--; window.renderHeroSlider(); };
-        window.nextSlide = function() { window.currentSlideIndex++; window.renderHeroSlider(); };
+        window.prevSlide = function(event) { window.currentSlideIndex--; window.renderHeroSlider({ instant: event?.type === 'keydown' || event?.detail === 0 }); };
+        window.nextSlide = function(event) { window.currentSlideIndex++; window.renderHeroSlider({ instant: event?.type === 'keydown' || event?.detail === 0 }); };
+        new ResizeObserver(() => window.renderHeroSlider({ instant: true })).observe(document.getElementById('hero-slide-container'));
 
         window.selectCategory = function(catKey, options = {}) {
+            ++lightboxRequest;
+            document.getElementById("page-admin").classList.add("hidden");
             if (catKey !== ALL_CATEGORY_KEY && !CATEGORY_KEYS.includes(catKey) && catKey !== FEEDBACK_CATEGORY_KEY) return;
             const isSameCategory = window.selectedCategoryKey === catKey;
             if (!isSameCategory) saveCurrentScrollPosition();
@@ -1318,14 +1271,14 @@
             window.currentGridEvidences.forEach(item => {
                 const card = document.createElement("article");
                 const postUrl = `?post=${encodeURIComponent(item.id)}`;
-                const link = `<a class="stretched-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>`;
+                const link = `<a class="stretched-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}${getCommentCount(item) ? ` <span class="comment-count" aria-label="댓글 ${getCommentCount(item)}개">[${getCommentCount(item)}]</span>` : ""}</a>`;
                 const commentCount = getCommentCount(item);
                 const deleteBtn = isAdminLoggedIn ? `<button class="card-delete" data-delete-post="${escapeHtml(item.id)}">삭제</button>` : "";
                 if (isFeedback) {
                     card.className = "feedback-card";
                     const dateText = item.createdAt ? new Date(item.createdAt).toLocaleDateString("ko-KR") : "";
                     card.innerHTML = `
-                        <h3 class="text-lg font-bold line-clamp-3 break-words">${link}</h3>
+                        <h3 class="text-lg font-bold line-clamp-3 break-words">${isAdminLoggedIn && !hasAdminReply(item) ? '<span class="notification-dot" aria-label="관리자 미답변"></span> ' : ''}${link}</h3>
                         ${item.desc ? `<p class="text-sm text-slate-600 mt-2 line-clamp-2 break-words">${escapeHtml(item.desc)}</p>` : ""}
                         <div class="mt-4 flex justify-between items-center gap-3 text-xs text-slate-500"><span>${escapeHtml(dateText)} · 답글 ${commentCount}</span>${deleteBtn}</div>`;
                 } else {
@@ -1336,11 +1289,11 @@
                             <span class="media-count">${getMediaBadgeText(getImageCount(item), getMediaLinks(item).length)}</span>
                         </div>
                         <div class="evidence-card-body">
-                            <span class="text-xs font-semibold text-slate-500">${getCategoryLabel(item.category)}</span>
+                            <span class="card-category">${getCategoryLabel(item.category)}</span>
                             <h3 class="line-clamp-3">${link}</h3>
                             <div class="evidence-card-meta">
-                                <span class="evidence-source">${item.source ? escapeHtml(item.source) : "출처 미등록"}</span>
-                                <span class="shrink-0">추천 ${item.likes || 0}${commentCount ? ` · 댓글 ${commentCount}` : ""}</span>
+                                ${item.source ? `<span class="evidence-source">${escapeHtml(item.source)}</span>` : ""}
+                                <span class="card-likes" aria-label="추천 ${item.likes || 0}개">👍 ${item.likes || 0}</span>
                                 ${deleteBtn}
                             </div>
                         </div>`;
@@ -1350,40 +1303,29 @@
             window.updateLoadMoreControl();
         };
 
-        window.updateLoadMoreControl = function() {
-            const wrapper = document.getElementById("load-more-wrapper");
-            const button = document.getElementById("load-more-button");
-            if (!wrapper || !button) return;
-            const shouldShow = !!window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence();
-            wrapper.classList.toggle("hidden", !shouldShow);
-            button.classList.toggle("hidden", !shouldShow);
-            button.setAttribute("aria-hidden", shouldShow ? "false" : "true");
-            button.disabled = !!(window.categoryPagination && window.categoryPagination.isLoading);
-            button.textContent = button.disabled ? "자료 불러오는 중…" : window.categoryPagination.error ? "다시 불러오기" : "자료 더 보기";
-            if (shouldShow && !button.disabled && !window.categoryPagination.error && document.documentElement.scrollHeight <= window.innerHeight + 300) {
-                setTimeout(() => {
-                    if (window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence()) {
-                        window.loadMoreCategoryEvidence();
-                    }
-                }, 120);
-            }
-        };
-
-        function setupInfiniteCategoryScroll() {
-            let ticking = false;
-            window.addEventListener("scroll", () => {
-                if (ticking) return;
-                ticking = true;
-                requestAnimationFrame(() => {
-                    ticking = false;
-                    if (!window.selectedCategoryKey || !window.hasMoreCategoryEvidence || !window.hasMoreCategoryEvidence()) return;
-                    if (window.categoryPagination && (window.categoryPagination.isLoading || window.categoryPagination.error)) return;
-                    const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
-                    if (nearBottom) window.loadMoreCategoryEvidence();
-                });
-            }, { passive: true });
+        function maybeLoadNextPage() {
+            if (!window.selectedCategoryKey || !window.hasMoreCategoryEvidence?.() || modalStack.length) return;
+            const state = window.categoryPagination;
+            if (state.isLoading || state.error) return;
+            if (document.getElementById('gallery-scroll-sentinel').getBoundingClientRect().top < innerHeight + 700) window.loadMoreCategoryEvidence();
         }
-        setupInfiniteCategoryScroll();
+        window.updateLoadMoreControl = function() {
+            const state = window.categoryPagination;
+            const active = !!window.selectedCategoryKey && state.category === window.selectedCategoryKey;
+            const error = active && state.error;
+            const loading = active && state.isLoading;
+            const done = active && state.initialized && !window.hasMoreCategoryEvidence?.() && !loading;
+            document.getElementById('load-more-wrapper').classList.toggle('hidden', !(error || loading || done));
+            const button = document.getElementById('load-more-button');
+            button.classList.toggle('hidden', !error);
+            button.disabled = !!loading;
+            document.getElementById('feed-status-text').textContent = error ? '자료를 불러오지 못했습니다.' : loading ? '자료를 불러오는 중…' : done ? '마지막 게시글입니다.' : '';
+            requestAnimationFrame(maybeLoadNextPage);
+        };
+        const feedObserver = new IntersectionObserver(entries => {
+            if (entries.some(entry => entry.isIntersecting)) maybeLoadNextPage();
+        }, { rootMargin: '700px 0px' });
+        feedObserver.observe(document.getElementById('gallery-scroll-sentinel'));
 
         window.filterGridData = function() { window.renderCategoryGrid(); };
         window.clearGridSearch = function() { document.getElementById("grid-search-input").value = ""; window.renderCategoryGrid(); };
@@ -1416,14 +1358,18 @@
             window.currentLightboxIndex = index;
             window.showLightbox({ updateHistory: true });
         };
+        let lightboxRequest = 0;
         window.openLightboxDirectly = async function(itemId, options = {}) {
+            const request = ++lightboxRequest;
             const wasLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
             if (!wasLightboxOpen) saveCurrentScrollPosition();
             let itemObj = window.evidences.find(i => i.id === itemId);
             if (!itemObj && window.loadEvidenceById) {
-                itemObj = await window.loadEvidenceById(itemId);
+                try { itemObj = await window.loadEvidenceById(itemId); }
+                catch { showNotification("게시글을 불러오지 못했습니다."); return; }
             }
-            if (!itemObj) return;
+            if (request !== lightboxRequest) return;
+            if (!itemObj) { showNotification("게시글을 찾을 수 없습니다."); return; }
             const contextCategory = options.category
                 || (window.selectedCategoryKey === ALL_CATEGORY_KEY ? ALL_CATEGORY_KEY : "")
                 || (CATEGORY_KEYS.includes(window.selectedCategoryKey) || window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY ? window.selectedCategoryKey : "")
@@ -1456,6 +1402,7 @@
                 window.lastAppliedRouteKey = `${routeCategory}|${item.id}`;
             }
             document.getElementById("lightbox-item-id").textContent = item.id;
+            document.getElementById("lightbox-position").textContent = `${window.currentLightboxIndex + 1} / ${window.currentGridEvidences.length}`;
             document.getElementById("lightbox-title").innerHTML = `${escapeHtml(item.title)}${getCommentCount(item) > 0 ? ` <span class="text-blue-600">[${getCommentCount(item)}]</span>` : ""}`;
             document.getElementById("lightbox-likes-count").textContent = item.likes || 0;
 
@@ -1478,7 +1425,7 @@
             imagesStack.classList.toggle("hidden", imagesList.length === 0);
             imagesList.forEach((src, index) => {
                 const wrap = document.createElement("div");
-                wrap.className = "w-full overflow-hidden rounded-xl bg-slate-950 flex justify-center items-start py-1";
+                wrap.className = "reader-image";
                 wrap.innerHTML = `
                     <img src="${escapeHtml(src)}" class="w-full h-auto object-contain" onerror="this.onerror=null;this.src='${mockImgLinks[0]}'" alt="${escapeHtml(item.title)} — 첨부 이미지 ${index + 1}">
                 `;
@@ -1498,6 +1445,7 @@
         };
 
         window.closeLightbox = function(options = {}) {
+            ++lightboxRequest;
             setModalOpen("lightbox-modal", false);
             clearLightboxMedia();
 
@@ -1515,8 +1463,17 @@
                 restoreScrollPosition(`category:${window.selectedCategoryKey}`);
             }
         };
-        window.prevLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex - 1 + window.currentGridEvidences.length) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };
-        window.nextLightboxSlide = function() { window.currentLightboxIndex = (window.currentLightboxIndex + 1) % window.currentGridEvidences.length; window.showLightbox({ updateHistory: false }); };
+        function changeLightboxSlide(delta) {
+            if (!window.currentGridEvidences.length) return;
+            window.currentLightboxIndex = (window.currentLightboxIndex + delta + window.currentGridEvidences.length) % window.currentGridEvidences.length;
+            const item = window.currentGridEvidences[window.currentLightboxIndex];
+            const category = window.selectedCategoryKey || item.category;
+            history.replaceState({ appRoute: true, category, lightboxPost: item.id }, '', buildAppUrl({ category }));
+            window.lastAppliedRouteKey = `${category}|${item.id}`;
+            window.showLightbox({ updateHistory: false });
+        }
+        window.prevLightboxSlide = () => changeLightboxSlide(-1);
+        window.nextLightboxSlide = () => changeLightboxSlide(1);
 
         function clearLightboxMedia() {
             const mediaStack = document.getElementById("lightbox-media-stack");
@@ -1893,7 +1850,8 @@
             document.getElementById("evidence-form").reset();
             document.getElementById("edit-id").value = "";
             document.getElementById("form-category").disabled = false;
-            document.getElementById("form-post-password").setAttribute("required", "true");
+            document.getElementById("form-post-password").required = !isAdminLoggedIn;
+            document.querySelector(".editor-password").classList.toggle("hidden", isAdminLoggedIn);
             document.getElementById("file-status").textContent = "";
             localUploadedBase64List = [];
             localUploadedFileList = [];
@@ -2167,6 +2125,10 @@
             isAdminLoggedIn = false;
             document.getElementById("admin-indicator").classList.add("hidden");
             updateCommentFormForAdminState();
+            document.getElementById('admin-entry-label').textContent = '관리자 로그인';
+            window.watchAdminFeedback?.(false);
+            document.getElementById('page-admin').classList.add('hidden');
+            if (new URLSearchParams(location.search).has('admin')) window.goHome();
         };
         window.tryAdminLogin = async function() {
             const result = await window.archiveAction('adminLogin', { password: document.getElementById("admin-pass-input").value });
@@ -2176,7 +2138,9 @@
                 document.getElementById("admin-indicator").classList.remove("hidden");
                 updateCommentFormForAdminState();
                 window.closeAdminModal(); showNotification("관리자 인증 성공!");
-                if (window.selectedCategoryKey) window.renderCategoryGrid(); else window.renderHeroSlider();
+                document.getElementById('admin-entry-label').textContent = '관리자 페이지';
+                window.watchAdminFeedback?.(true);
+                window.openAdminPage();
             }
         };
 
@@ -2602,9 +2566,12 @@
             setTimeout(() => { toast.classList.add("opacity-0", "transition-opacity", "duration-500"); setTimeout(() => toast.remove(), 500); }, 2500);
         }
 
-        window.history.replaceState({ appRoute: true, ...getRouteFromLocation() }, "", window.location.href);
+    </script>
+    <script src="admin.js"></script>
+    <script>
+        window.history.replaceState({ appRoute: true, ...getRouteFromLocation(), lightboxPost: history.state?.lightboxPost || "" }, "", window.location.href);
         window.restoreCachedEvidences();
-        if (hasAppRouteInUrl()) handleAppRoute();
+        if (hasAppRouteInUrl() || new URLSearchParams(location.search).has("admin")) handleAppRoute();
     </script>
 </body>
 </html>

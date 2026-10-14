@@ -1,13 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { hashPassword, verifyPassword, validPassword, sha256 } from './passwords.js';
+import { draftActions, createDraftService } from './drafts.js';
 
 export const categories = ['shape-memory', 'strange-ballot', 'bad-management', 'nec-admin', 'etc', 'free-board'];
 export const postsPath = 'artifacts/k-voting/public/data/evidences';
 export const countsPath = 'artifacts/k-voting/public/data/stats/categoryCounts';
-const actions = new Set(['adminLogin', 'verifyPost', 'uploadGrant', 'savePost', 'deletePost', 'like', 'addComment', 'deleteComment']);
+const actions = new Set(['adminLogin', 'verifyPost', 'uploadGrant', 'savePost', 'deletePost', 'like', 'addComment', 'deleteComment', ...draftActions]);
 
 export function createArchiveService(db, { fail, timestamp = value => value, now = () => Date.now() }) {
   function check(condition, message, code = 'invalid-argument') { if (!condition) fail(code, message); }
+  const draftAction = createDraftService(db, { check, now, postsPath, countsPath });
   function text(value, max, required = false) {
     check(typeof value === 'string' && value.length <= max && (!required || value.trim().length > 0), '입력 내용의 길이를 확인해주세요.');
     return value.trim();
@@ -62,9 +64,13 @@ export function createArchiveService(db, { fail, timestamp = value => value, now
       await db.doc(`_archiveAdminSessions/${sha256(token)}`).set({ uid, expiresAt });
       return { token, expiresAt };
     }
-    check(typeof id === 'string' && /^[A-Za-z0-9_-]{1,160}$/.test(id), '올바른 게시글을 선택해주세요.');
     const admin = await isAdmin(adminToken, uid);
     if (adminToken) check(admin, '관리자 인증이 만료되었습니다. 다시 로그인해주세요.', 'permission-denied');
+    if (draftActions.has(action)) {
+      check(admin, '관리자만 초안을 관리할 수 있습니다.', 'permission-denied');
+      return draftAction(input);
+    }
+    check(typeof id === 'string' && /^[A-Za-z0-9_-]{1,160}$/.test(id), '올바른 게시글을 선택해주세요.');
     const postRef = db.doc(`${postsPath}/${id}`);
     const secretRef = db.doc(`_archivePostSecrets/${id}`);
     const newPassword = action === 'savePost' || action === 'addComment'

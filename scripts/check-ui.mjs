@@ -11,6 +11,7 @@ import { chromium } from 'playwright';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const html = await readFile(path.join(root, 'index.html'), 'utf8');
 const css = await readFile(path.join(root, 'styles.css'), 'utf8');
+const adminJs = await readFile(path.join(root, 'admin.js'), 'utf8');
 const moduleSource = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
 const isolatedHtml = html.replace(/<script type="module">[\s\S]*?<\/script>/, '');
 const output = process.env.UI_CHECK_OUTPUT;
@@ -35,7 +36,7 @@ async function checkPaginationRace() {
     new vm.Script(moduleSource.replace(/^\s*import .*?;$/gm, '').replace('        startApp();', '')).runInContext(context);
     const first = win.loadCategoryEvidenceBatch('shape-memory', { reset: true });
     const second = win.loadCategoryEvidenceBatch('etc', { reset: true });
-    const snapshot = id => ({ docs: [{ id }], forEach(fn) { fn({ id, data: () => ({ category: 'etc', title: '테스트' }) }); } });
+    const snapshot = id => ({ docs: [{ id, data: () => ({ category: 'etc', title: '테스트' }) }], forEach(fn) { fn({ id, data: () => ({ category: 'etc', title: '테스트' }) }); } });
     requests[1].resolve(snapshot('new-category'));
     await second;
     requests[0].resolve(snapshot('old-category'));
@@ -50,10 +51,22 @@ async function checkPaginationRace() {
     await assert.rejects(failing);
     assert.equal(win.categoryPagination.error, true);
     assert.equal(win.categoryPagination.isLoading, false);
+    // The extra document is a look-ahead, not part of the rendered page.
+    for (const size of [24, 25]) {
+        const pending = win.loadCategoryEvidenceBatch('etc', { reset: true });
+        const docs = Array.from({ length: size }, (_, n) => ({ id: `boundary-${n}`, data: () => ({ category: 'etc', title: '경계' }) }));
+        requests.at(-1).resolve({ docs });
+        const fetched = await pending;
+        assert.equal(fetched.length, 24);
+        assert.equal(win.categoryPagination.cursors.etc.id, 'boundary-23');
+        assert.equal(win.hasMoreCategoryEvidence(), size === 25);
+    }
+
 }
 await checkPaginationRace();
 
 const server = createServer((req, res) => {
+    if (req.url.startsWith('/admin.js')) { res.setHeader('Content-Type', 'text/javascript'); res.end(adminJs); return; }
     if (req.url.startsWith('/styles.css')) { res.setHeader('Content-Type', 'text/css'); res.end(css); return; }
     if (req.url === '/fixture.svg') {
         res.setHeader('Content-Type', 'image/svg+xml');
@@ -83,6 +96,7 @@ const fixture = Array.from({ length: 12 }, (_, index) => ({
 async function seed() {
     await page.evaluate(items => {
         window.evidences = items;
+        window.mergeEvidenceItems = incoming => [...new Map([...window.evidences, ...incoming].map(item => [item.id, item])).values()];
         window.hasReceivedEvidenceSnapshot = true;
         window.hasVisibleEvidenceData = true;
         window.categoryCounts = Object.fromEntries(['shape-memory','strange-ballot','bad-management','nec-admin','etc','free-board'].map(cat => [cat, 2]));
@@ -116,17 +130,31 @@ try {
     await page.goto(base, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => getComputedStyle(document.getElementById('page-category')).display === 'none');
     await seed();
-    const firstHero = await page.locator('.hero-copy h3').innerText();
+    const firstHero = await page.locator('.hero-card.is-current h3').innerText();
     await page.getByRole('button', { name: '다음 추천 자료' }).click();
     await page.getByRole('button', { name: '이전 추천 자료' }).click();
-    assert.equal(await page.locator('.hero-copy h3').innerText(), firstHero);
+    assert.equal(await page.locator('.hero-card.is-current h3').innerText(), firstHero);
+    assert.equal(await page.locator('.hero-card:not(.is-current)').first().evaluate(el => el.inert), true);
+    const square = await page.locator('.hero-card.is-current .hero-image-link').boundingBox();
+    assert.ok(Math.abs(square.width - square.height) < 1);
     await audit('home');
     await page.locator('[data-category="all-posts"]').focus();
     await page.keyboard.press('Enter');
     await page.locator('.evidence-card').first().waitFor();
     assert.equal(await page.locator('.evidence-card').count(), 12);
-    assert.equal(await page.locator('.evidence-card').first().evaluate(el => Math.round(el.getBoundingClientRect().width)), 290);
+    assert.equal(await page.locator('.evidence-card').first().evaluate(el => Math.round(el.getBoundingClientRect().width)), 296);
     await audit('category');
+    await page.locator('#cat-badge').focus();
+    await page.evaluate(() => scrollTo(0, 700));
+    await page.waitForFunction(() => document.getElementById('site-header').classList.contains('header-hidden'));
+    await page.evaluate(() => scrollTo(0, 600));
+    await page.waitForFunction(() => !document.getElementById('site-header').classList.contains('header-hidden'));
+    await page.evaluate(() => scrollTo(0, 800));
+    await page.waitForFunction(() => document.getElementById('site-header').classList.contains('header-hidden'));
+    await page.locator('#main-upload-button').focus();
+    assert.equal(await page.locator('#site-header').evaluate(el => el.classList.contains('header-hidden')), false);
+    await page.evaluate(() => scrollTo(0, 0));
+
     await page.locator('#grid-search-input').fill('存在しない検索');
     assert.equal(await page.locator('.evidence-card').count(), 0);
     assert.equal(await page.locator('#gallery-empty-action').innerText(), '검색 초기화');
@@ -188,6 +216,46 @@ try {
     assert.equal(await page.locator('#main-content').evaluate(node => node.inert), false);
     await page.waitForTimeout(50);
     assert.equal(await page.evaluate(() => document.activeElement.dataset.postId), fixture[0].id);
+    // Regression: a closed modal must stay closed when infinite scrolling merges a batch.
+    assert.equal(await page.evaluate(() => !!history.state?.lightboxPost), false);
+    await page.evaluate(() => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        window.applyFetchedEvidences([{ id: 'next-page', category: 'all-posts', title: '페이지 추가', images: [] }], { allowEmpty: true });
+    });
+    await page.waitForTimeout(80);
+    assert.equal(await page.locator('#lightbox-modal').isVisible(), false);
+    await unusualLink.click();
+    await page.goBack();
+    await page.waitForFunction(() => document.getElementById('lightbox-modal').classList.contains('hidden'));
+    await page.goForward();
+    await page.locator('#lightbox-modal:not(.hidden)').waitFor();
+    await page.locator('[aria-label="다음 게시글"]').click();
+    assert.equal(await page.evaluate(() => history.state.lightboxPost), await page.locator('#lightbox-item-id').innerText());
+    await page.keyboard.press('Escape');
+    await page.evaluate(async () => {
+        let resolve;
+        window.loadEvidenceById = () => new Promise(done => { resolve = done; });
+        const request = window.openLightboxDirectly('late-post');
+        window.goHome();
+        resolve({ id: 'late-post', category: 'etc', title: '늦은 응답', images: [] });
+        await request;
+        delete window.loadEvidenceById;
+    });
+    assert.equal(await page.locator('#lightbox-modal').isVisible(), false);
+    await page.evaluate(() => {
+        window.selectCategory('all-posts');
+        window.hasMoreCategoryEvidence = () => false;
+        window.categoryPagination = { category: 'all-posts', initialized: true, isLoading: false, hasMore: { all: false } };
+        window.updateLoadMoreControl();
+    });
+    assert.equal(await page.locator('#load-more-button').isVisible(), false);
+    assert.equal(await page.locator('#feed-status-text').innerText(), '마지막 게시글입니다.');
+    await page.evaluate(() => window.goHome());
+    await page.goBack();
+    await page.locator('#page-category:not(.hidden)').waitFor();
+    assert.equal(await page.evaluate(() => window.selectedCategoryKey), 'all-posts');
+
+
 
     for (const width of [320, 390, 768, 1024, 1440, 1920]) {
         await page.setViewportSize({ width, height: 950 });
@@ -201,6 +269,9 @@ try {
         await noOverflow(`post ${width}`);
         assert.equal(await page.locator('#lightbox-body > .overflow-y-auto').evaluate(node => node.scrollTop), 0);
         assert.ok(await page.locator('[aria-label="게시글 닫기"]').isVisible());
+        const panel = await page.locator('#lightbox-body').boundingBox();
+        assert.equal(panel.y, 0);
+        assert.equal(panel.height, 950);
         if (width === 390) { await screenshot('post-390'); await audit('post-mobile'); }
         await page.keyboard.press('Escape');
         await page.locator('#main-upload-button').click();
@@ -233,15 +304,55 @@ try {
         await page.waitForTimeout(40);
         assert.ok((await page.evaluate(() => document.activeElement.textContent)).includes(trigger));
     }
-    await page.getByRole('button', { name: '관리자 로그인', exact: true }).click();
+    await page.locator('#admin-entry-button').click();
     await audit('admin');
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: '버그제보 / 건의' }).click();
     assert.equal(await page.locator('#sort-select').isVisible(), false);
     assert.equal(await page.locator('#gallery-empty-action').innerText(), '문의 작성');
     await audit('feedback-empty');
+    // Exercise the human review workflow with a mocked API; no production writes.
+    await page.evaluate(() => {
+        window.__drafts = [];
+        window.archiveAction = async (action, payload = {}) => {
+            if (action === 'adminLogin') return { token: 'fixture' };
+            if (action === 'listDrafts') return { drafts: structuredClone(window.__drafts) };
+            if (action === 'importDrafts') {
+                const drafts = payload.drafts.map((draft, index) => ({ ...draft, id: `draft-${index}`, status: 'draft', version: 1 }));
+                window.__drafts.push(...drafts); return { drafts: structuredClone(drafts) };
+            }
+            const draft = window.__drafts.find(item => item.id === payload.id);
+            if (action === 'saveDraft') { Object.assign(draft, payload.draft, { version: draft.version + 1 }); return { draft: structuredClone(draft) }; }
+            if (action === 'publishDraft') { Object.assign(draft, { status: 'published', postId: 'ev-published' }); return { draft, post: { ...draft, id: 'ev-published' } }; }
+        };
+    });
+    await page.locator('#admin-entry-button').click();
+    await page.locator('#admin-pass-input').fill('fixture');
+    await page.locator('#admin-modal button[type=submit]').click();
+    await page.locator('#page-admin:not(.hidden)').waitFor();
+    await page.locator('#draft-import-file').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ drafts: [{ title: 'AI 초안 검토', category: 'free-board', desc: '내용', source: '', images: [base + '/fixture.svg'], mediaLinks: [], reviewNotes: '검토 메모' }] })) });
+    await page.locator('#admin-draft-form:not(.hidden)').waitFor();
+    await page.locator('#draft-title').fill('검토를 마친 제목');
+    await page.locator('#draft-save-button').click();
+    assert.equal(await page.locator('#admin-draft-list strong').innerText(), '검토를 마친 제목');
+    await page.evaluate(() => window.setAdminFeedback([{ id: 'pending-feedback', title: '미답변 문의', comments: [] }, { id: 'answered', title: '답변됨', comments: [{ isAdmin: true }] }]));
+    assert.equal(await page.locator('#admin-feedback-count').innerText(), '1');
+    assert.equal(await page.locator('#feedback-alert-dot').isVisible(), true);
+    await audit('admin-workspace');
+    await screenshot('admin-1440');
+    await page.setViewportSize({ width: 390, height: 950 });
+    await noOverflow('admin mobile');
+    await audit('admin-workspace-mobile');
+    await screenshot('admin-390');
+    await page.evaluate(() => window.setAdminFeedback([{ id: 'pending-feedback', comments: [{ isAdmin: true }] }]));
+    assert.equal(await page.locator('#feedback-alert-dot').isVisible(), false);
+    page.removeAllListeners('dialog'); page.on('dialog', dialog => dialog.accept());
+    await page.locator('#draft-publish-button').click();
+    await page.locator('#draft-published-link:not(.hidden)').waitFor();
+    assert.equal(await page.locator('#draft-title').isDisabled(), true);
+
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: ['pagination race and recovery', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
+    console.log(JSON.stringify({ passed: ['pagination race, recovery and 24/25 boundary', 'closed-post scroll regression', 'direction-aware header and focus reveal', 'back/forward and stale post fetch', 'private draft review UI and feedback badges', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
     assert.equal(audits.reduce((total, item) => total + item.violations.length, 0), 0, 'Accessibility violations remain; see audit output.');
 } finally {
     await browser.close();

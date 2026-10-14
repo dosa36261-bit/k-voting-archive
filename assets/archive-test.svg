@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">새 게시판 화면 확인용 테스트 이미지</title>
+  <desc id="desc">실제 사례가 아닌 화면과 기능 점검용 게시글입니다.</desc>
+  <rect width="1000" height="1000" fill="#eaf1ff"/>
+  <rect x="90" y="90" width="820" height="820" rx="40" fill="white"/>
+  <rect x="150" y="150" width="122" height="52" rx="12" fill="#2563eb"/>
+  <g font-family="Pretendard,Malgun Gothic,sans-serif">
+    <text x="211" y="185" text-anchor="middle" font-size="26" font-weight="700" fill="white">TEST 01</text>
+    <text x="150" y="405" font-size="70" font-weight="750" fill="#142033">더 크게 보고,</text>
+    <text x="150" y="500" font-size="70" font-weight="750" fill="#142033">더 쉽게 기록하기.</text>
+    <text x="150" y="625" font-size="30" fill="#526176">새 게시판 화면 확인용 테스트</text>
+    <text x="150" y="677" font-size="28" fill="#526176">실제 사례를 제보하는 자료가 아닙니다.</text>
+    <path d="M150 760H850" stroke="#dce3ed" stroke-width="2"/>
+    <text x="150" y="824" font-size="28" font-weight="650" fill="#2563eb">선거 이슈 아카이브</text>
+  </g>
+</svg>

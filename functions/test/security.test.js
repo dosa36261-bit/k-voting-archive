@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createArchiveService, postsPath, countsPath } from '../service.js';
 import { hashPassword, verifyPassword, sha256 } from '../passwords.js';
+import { normalizeDraft, draftActions, draftsPath } from '../drafts.js';
 
 // Serialized transactions model Firestore's retry/commit boundary: each request
 // reads the most recently committed state, never a stale browser array.
@@ -10,12 +11,14 @@ function fixture() {
   let queue = Promise.resolve();
   const snapshot = ref => ({ exists: data.has(ref.path), data: () => structuredClone(data.get(ref.path)) });
   const db = {
+    collection(path) { return { orderBy() { return this; }, limit() { return this; }, async get() { return { docs: [...data].filter(([key]) => key.startsWith(path + '/')).map(([key, value]) => ({ id: key.split('/').at(-1), data: () => structuredClone(value) })) }; } }; },
     doc(path) { return { path, get: async () => snapshot({ path }), set: async value => data.set(path, structuredClone(value)) }; },
     runTransaction(fn) {
       const run = queue.then(async () => {
         const writes = [];
         const result = await fn({ get: async ref => snapshot(ref), getAll: async (...refs) => refs.map(snapshot),
           set: (ref, value) => writes.push(() => data.set(ref.path, structuredClone(value))),
+          delete: ref => writes.push(() => data.delete(ref.path)),
           update: (ref, value) => writes.push(() => data.set(ref.path, { ...data.get(ref.path), ...structuredClone(value) })) });
         writes.forEach(write => write()); return result;
       });
@@ -95,4 +98,54 @@ test('admin login brute force is rate limited even across visitor identities on 
   const f = fixture();
   for (let n = 0; n < 10; n++) await assert.rejects(f.call({ action: 'adminLogin', password: 'wrong' }, `visitor-${n}`), { code: 'permission-denied' });
   await assert.rejects(f.call({ action: 'adminLogin', password: 'wrong' }, 'new-visitor'), { code: 'resource-exhausted' });
+});
+
+async function adminFixture() {
+  const f = fixture();
+  f.data.set('_archiveAdmin/config', { password: await hashPassword('admin-password') });
+  const { token } = await f.call({ action: 'adminLogin', password: 'admin-password' });
+  return { ...f, admin: input => f.call({ ...input, adminToken: token }) };
+}
+const draftContent = { title: '검토할 초안', category: 'free-board', desc: '설명', source: '', images: ['https://example.com/image.png'], mediaLinks: [], reviewNotes: '비공개 검토 메모' };
+
+test('all draft actions require server admin authorization', async () => {
+  const f = fixture();
+  for (const action of draftActions) await assert.rejects(f.call({ action, isAdmin: true, drafts: [draftContent] }), { code: 'permission-denied' });
+  assert.equal([...f.data.keys()].some(key => key.startsWith(draftsPath)), false);
+});
+test('imported drafts stay private even if the file forges status or publication fields', async () => {
+  const f = await adminFixture();
+  const { drafts } = await f.admin({ action: 'importDrafts', drafts: [{ ...draftContent, status: 'published', postId: 'forged', isAdmin: true }] });
+  assert.equal(drafts[0].status, 'draft');
+  assert.equal(drafts[0].postId, undefined);
+  assert.equal([...f.data.keys()].some(key => key.startsWith(postsPath)), false);
+  assert.equal((await f.admin({ action: 'listDrafts' })).drafts.length, 1);
+});
+test('stale draft edits and publication are rejected without changing the draft', async () => {
+  const f = await adminFixture();
+  const { drafts: [draft] } = await f.admin({ action: 'importDrafts', drafts: [draftContent] });
+  const saved = await f.admin({ action: 'saveDraft', id: draft.id, version: 1, draft: { ...draftContent, title: '수정한 제목' } });
+  assert.equal(saved.draft.version, 2);
+  for (const action of ['saveDraft', 'deleteDraft', 'publishDraft']) await assert.rejects(f.admin({ action, id: draft.id, version: 1, draft: draftContent }), { code: 'aborted' });
+  assert.equal(f.data.get(`${draftsPath}/${draft.id}`).title, '수정한 제목');
+});
+test('concurrent publication creates exactly one post and count, without private notes', async () => {
+  const f = await adminFixture();
+  const { drafts: [draft] } = await f.admin({ action: 'importDrafts', drafts: [draftContent] });
+  const result = await Promise.all([1, 2].map(() => f.admin({ action: 'publishDraft', id: draft.id, version: 1 })));
+  assert.equal(result[0].post.id, result[1].post.id);
+  assert.equal(result[1].alreadyPublished, true);
+  assert.equal(f.data.get(countsPath)['free-board'], 1);
+  assert.equal(result[0].post.reviewNotes, undefined);
+  assert.equal(f.data.get(`_archivePostSecrets/${result[0].post.id}`).password, null);
+  await assert.rejects(f.call({ action: 'deletePost', id: result[0].post.id, password: 'guess' }), { code: 'permission-denied' });
+});
+test('draft validation rejects executable URLs, oversized content and an incomplete publication', async () => {
+  assert.throws(() => normalizeDraft({ ...draftContent, images: ['javascript:alert(1)'] }));
+  assert.throws(() => normalizeDraft({ ...draftContent, title: 'x'.repeat(121) }));
+  const f = await adminFixture();
+  const { drafts: [draft] } = await f.admin({ action: 'importDrafts', drafts: [{ ...draftContent, images: [] }] });
+  await assert.rejects(f.admin({ action: 'publishDraft', id: draft.id, version: 1 }), { code: 'invalid-argument' });
+  await f.admin({ action: 'deleteDraft', id: draft.id, version: 1 });
+  assert.equal(f.data.has(`${draftsPath}/${draft.id}`), false);
 });
