@@ -275,3 +275,6 @@ Use `node scripts/import-drafts.mjs <file.json>` to validate. `--apply` imports 
 Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows the 100 most recently updated drafts/publications. Automated research scheduling or an LLM service is not wired in this scaffold.
 
 Validation: `npm test --prefix functions` (14 security/concurrency cases) and `node scripts/check-ui.mjs` (6 responsive widths, navigation/scroll regression, header behavior, admin draft workflow). Use `UI_AXE_PATH` for 14-state axe coverage.
+
+
+The user-requested redesign example is published at `/?post=ev-draft-246bb565-a373-47ff-8f3e-9c18eb528ec9`, titled `[테스트] 새 게시판 화면 확인`. Preserve this one post; temporary QA feedback and sessions were removed. Its square illustration is `assets/archive-test.svg`. See `UI_REVIEW.md` for deployment checks.
