@@ -1210,12 +1210,15 @@
             }
             container.classList.toggle('instant', options.instant === true);
             const width = container.querySelector('.hero-card').offsetWidth;
+            const height = container.querySelector('.hero-card').offsetHeight;
+            const sideScale = .5;
+            const sideGap = window.innerWidth < 720 ? 16 : 40;
             [...container.children].forEach((card, index) => {
                 let offset = (index - window.currentSlideIndex + items.length) % items.length;
                 if (offset > items.length / 2) offset -= items.length;
-                card.style.setProperty('--slide-x', `${offset * (width * .89 + 24)}px`);
-                card.style.setProperty('--slide-scale', offset === 0 ? '1' : '.78');
-                card.style.setProperty('--slide-y', offset === 0 ? '0px' : '46px');
+                card.style.setProperty('--slide-x', `${offset * (width * (1 + sideScale) / 2 + sideGap)}px`);
+                card.style.setProperty('--slide-scale', offset === 0 ? '1' : String(sideScale));
+                card.style.setProperty('--slide-y', offset === 0 ? '0px' : `${height * (1 - sideScale) / 2}px`);
                 card.style.opacity = offset === 0 ? '1' : Math.abs(offset) === 1 ? '.52' : '0';
                 card.style.zIndex = offset === 0 ? '2' : '1';
                 card.querySelectorAll('img').forEach(img => { img.loading = Math.abs(offset) <= 1 ? 'eager' : 'lazy'; img.fetchPriority = offset === 0 ? 'high' : 'auto'; });
