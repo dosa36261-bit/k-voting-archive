@@ -38,6 +38,7 @@ test('salted password hashes differ; legacy hash is not accepted as a password',
   const legacy = { scheme: 'sha256', hash: sha256('old-password') };
   assert.equal(await verifyPassword('old-password', legacy), true);
   assert.equal(await verifyPassword(legacy.hash, legacy), false);
+  assert.equal(await verifyPassword('abc', { scheme: 'sha256', hash: sha256('abc') }), true);
 });
 test('public post contains no verifier; a forged likes/comments/admin flag is ignored', async () => {
   const f = fixture();

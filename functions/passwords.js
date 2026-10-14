@@ -8,7 +8,9 @@ export async function hashPassword(value) {
   return { scheme: 'scrypt', salt, hash: (await scrypt(value, salt, 64)).toString('hex') };
 }
 export async function verifyPassword(value, record) {
-  if (!validPassword(value) || !record) return false;
+  // Verification preserves existing administrator passwords; minimum length
+  // applies when creating a new post/comment password, not to legacy logins.
+  if (typeof value !== 'string' || !value.length || value.length > 1024 || !record) return false;
   const candidate = record.scheme === 'scrypt'
     ? (await scrypt(value, record.salt, 64)).toString('hex')
     : record.scheme === 'sha256' ? sha256(value) : '';
