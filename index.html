@@ -6,316 +6,238 @@
     <title>선거 이슈 아카이브</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap');
-        body {
-            font-family: 'Pretendard', sans-serif;
-            background-color: #f8fafc;
-            font-size: 17px;
-        }
-        .fade-in {
-            animation: fadeIn 0.2s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        /* 드래그 앤 드롭 활성화 시 시각 효과 */
-        .drag-over {
-            border-color: #2563eb !important;
-            background-color: #eff6ff !important;
-        }
-        #site-header {
-            transition: transform 0.22s ease;
-            will-change: transform;
-        }
-        .mobile-header-hidden {
-            transform: translateY(-100%);
-        }
-        .password-code-input {
-            -webkit-text-security: disc;
-        }
-        @media (max-width: 767px) {
-            .site-tagline,
-            .upload-button-text {
-                display: none;
-            }
-            .site-header-inner {
-                padding-top: 0.75rem;
-                padding-bottom: 0.75rem;
-            }
-            .site-title {
-                font-size: 1.1rem;
-            }
-            .site-logo {
-                padding: 0.65rem;
-            }
-            .site-logo i {
-                font-size: 1.1rem;
-            }
-            .submit-button {
-                width: 2.75rem;
-                height: 2.75rem;
-                padding: 0;
-                justify-content: center;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="text-slate-900 flex flex-col min-h-screen">
 
-    <header id="site-header" class="bg-white border-b-2 border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div class="site-header-inner max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="goHome()">
-                <div class="site-logo bg-blue-600 text-white p-3 rounded-xl flex items-center justify-center shadow-lg">
-                    <i class="fa-solid fa-square-poll-horizontal text-2xl"></i>
-                </div>
+    <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+    <header id="site-header" class="sticky top-0 z-40">
+        <div class="site-header-inner site-shell">
+            <a href="./" class="site-brand" data-home>
+                <span class="site-logo"><i class="fa-solid fa-square-poll-horizontal text-xl" aria-hidden="true"></i></span>
                 <div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <h1 class="site-title font-black text-2xl text-slate-955 tracking-tight leading-tight">선거 이슈 아카이브</h1>
-                        <button onclick="event.stopPropagation(); openGuideModal()" class="bg-white hover:bg-slate-50 text-slate-600 text-xs font-black px-2.5 py-1 rounded-lg border border-slate-200">
-                            이용안내
-                        </button>
-                        <button onclick="event.stopPropagation(); openQrModal()" class="bg-white hover:bg-slate-50 text-slate-600 text-xs font-black px-2.5 py-1 rounded-lg border border-slate-200">
-                            QR코드
-                        </button>
-                        <button onclick="event.stopPropagation(); openUploadGuideModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-black px-2.5 py-1 rounded-lg border border-blue-200">
-                            업로드 방법
-                        </button>
-                    </div>
-                    <p class="site-tagline text-sm text-slate-500 font-bold">선거 무결성을 위한 시민 참여형 아카이브</p>
+                    <h1 class="site-title">선거 이슈 아카이브</h1>
+                    <p class="site-tagline">선거 무결성을 위한 시민 참여형 아카이브</p>
                 </div>
-            </div>
-            
-            <button id="main-upload-button" onclick="openUploadModal()" aria-label="사례 제출" title="사례 제출" class="submit-button bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-base font-extrabold flex items-center gap-2 transition-colors shadow-md">
-                <i class="fa-solid fa-plus text-lg"></i> <span class="upload-button-text">사례 제출</span>
+            </a>
+            <nav class="header-nav" aria-label="이용 도움말">
+                <button type="button" onclick="openGuideModal()">이용안내</button>
+                <button type="button" onclick="openQrModal()"><i class="fa-solid fa-qrcode mr-1.5" aria-hidden="true"></i>QR코드</button>
+                <button type="button" onclick="openUploadGuideModal()">업로드 방법</button>
+            </nav>
+            <button id="main-upload-button" onclick="openUploadModal()" aria-label="사례 제출" title="사례 제출" class="submit-button bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i><span class="upload-button-text">사례 제출</span>
             </button>
         </div>
     </header>
 
-    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
+    <main id="main-content" tabindex="-1" class="site-shell flex-grow">
         
         <div id="page-home" class="space-y-12">
             
-            <section id="hero-section" class="bg-white rounded-2xl border-2 border-slate-200 p-4 md:p-6 shadow-xs relative hidden">
-                <div class="flex justify-between items-center mb-4 px-1">
-                    <span class="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-full flex items-center gap-2">
-                        <span class="w-2 h-2 bg-white rounded-full animate-ping"></span> 주목받는 자료
-                    </span>
-                    <span class="hidden md:inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold">
-                        <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">←</kbd>
-                        <kbd class="px-1.5 py-0.5 bg-slate-100 border rounded-sm font-sans">→</kbd>
-                        키보드 방향키 이동
-                    </span>
+            <div class="home-intro">
+                <div>
+                    <p class="eyebrow">K-VOTING ARCHIVE</p>
+                    <h2>시민의 기록을 한곳에.</h2>
+                    <p>사진과 영상, 출처를 모으고 주제별로 살펴보세요.</p>
                 </div>
-
-                <div class="relative flex flex-col items-center">
-                    <button onclick="prevSlide()" class="absolute left-2 top-[35%] md:top-[40%] -translate-y-1/2 z-0 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
-                        <i class="fa-solid fa-chevron-left text-xl"></i>
-                    </button>
-
-                    <div id="hero-slide-container" class="w-full max-w-4xl mx-auto space-y-5 px-1 md:px-12"></div>
-
-                    <button onclick="nextSlide()" class="absolute right-2 top-[35%] md:top-[40%] -translate-y-1/2 z-0 bg-white/95 hover:bg-white text-slate-800 p-4 rounded-full border-2 border-slate-200 shadow-md transition-transform hover:scale-105">
-                        <i class="fa-solid fa-chevron-right text-xl"></i>
-                    </button>
+                <a class="intro-link" href="#categories">주제별로 둘러보기 <i class="fa-solid fa-arrow-down ml-2" aria-hidden="true"></i></a>
+            </div>
+            <div id="home-load-status" class="load-message" role="status">
+                <p id="home-load-text">자료를 불러오는 중입니다…</p>
+                <button id="home-retry-button" type="button" class="hidden" onclick="retryHomeLoad()">다시 불러오기</button>
+            </div>
+            <section id="hero-section" class="bg-white hidden" aria-labelledby="hero-heading">
+                <div class="section-heading">
+                    <h2 id="hero-heading">주목받는 자료</h2>
+                    <div class="hero-controls" aria-label="추천 자료 탐색">
+                        <span id="hero-position" aria-live="polite"></span>
+                        <button type="button" onclick="prevSlide()" aria-label="이전 추천 자료"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                        <button type="button" onclick="nextSlide()" aria-label="다음 추천 자료"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                    </div>
                 </div>
+                <div id="hero-slide-container"></div>
             </section>
 
-            <section class="space-y-6">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-955">카테고리</h2>
-                    <p class="text-slate-500 text-sm mt-1">원하는 주제를 누르면 보관된 사진들을 모두 모아 볼 수 있습니다.</p>
+            <section id="categories" aria-labelledby="categories-heading">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="categories-heading">주제별로 살펴보기</h2>
+                        <p>관심 있는 카테고리에서 사진, 영상과 기록을 확인하세요.</p>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div onclick="selectCategory('all-posts')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-slate-100 text-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-200/70 transition-colors">
-                                        <i class="fa-solid fa-layer-group text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">전체 글 보기</span>
-                                </div>
-                                <span class="bg-slate-100 text-slate-800 font-bold text-sm px-3 py-1 rounded-full border border-slate-200 group-hover:bg-white group-hover:text-slate-800 group-hover:border-transparent" id="count-all-posts">0</span>
+                <div class="category-grid">
+                    <a href="?category=all-posts" data-category="all-posts" class="category-card category-all">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-slate-100 text-slate-800"><i class="fa-solid fa-layer-group text-lg" aria-hidden="true"></i></span>
+                                <h3>전체 글 보기</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">모든 카테고리에 등록된 글을 한 번에 모아 봅니다.</p>
+                            <span class="category-count" id="count-all-posts">…</span>
                         </div>
-                    </div>
+                        <p>모든 카테고리의 기록을 한 번에 확인하세요.</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
 
-                    <div onclick="selectCategory('shape-memory')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-emerald-100 text-emerald-800 rounded-lg flex items-center justify-center group-hover:bg-emerald-200/50 transition-colors">
-                                        <i class="fa-solid fa-scroll text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">신비한 투표지</span>
-                                </div>
-                                <span class="bg-emerald-100 text-emerald-800 font-bold text-sm px-3 py-1 rounded-full border border-emerald-200 group-hover:bg-white group-hover:text-emerald-800 group-hover:border-transparent" id="count-shape-memory">0</span>
+                    <a href="?category=shape-memory" data-category="shape-memory" class="category-card">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-emerald-100 text-emerald-800"><i class="fa-solid fa-scroll text-lg" aria-hidden="true"></i></span>
+                                <h3>신비한 투표지</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">형상기억 종이, 비정상 적 투표지 등 개표장에서 발견되는 마법의 종이 사례집</p>
+                            <span class="category-count" id="count-shape-memory">…</span>
                         </div>
-                    </div>
+                        <p>형상기억 종이, 비정상적 투표지 등 개표장에서 발견되는 마법의 종이 사례집</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
 
-                    <div onclick="selectCategory('strange-ballot')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-amber-100 text-amber-800 rounded-lg flex items-center justify-center group-hover:bg-amber-200/50 transition-colors">
-                                        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">이상 현상</span>
-                                </div>
-                                <span class="bg-amber-100 text-amber-800 font-bold text-sm px-3 py-1 rounded-full border border-amber-200 group-hover:bg-white group-hover:text-amber-800 group-hover:border-transparent" id="count-strange-ballot">0</span>
+                    <a href="?category=strange-ballot" data-category="strange-ballot" class="category-card">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-amber-100 text-amber-800"><i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i></span>
+                                <h3>이상 현상</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">통계 이상, 비정상 적 전자 개표 등 지금까지의 상식이 박살나는 기묘한 현상 모음집</p>
+                            <span class="category-count" id="count-strange-ballot">…</span>
                         </div>
-                    </div>
+                        <p>통계 이상, 비정상적 전자 개표 등 지금까지의 상식이 박살나는 기묘한 현상 모음집</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
 
-                    <div onclick="selectCategory('bad-management')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-rose-100 text-rose-800 rounded-lg flex items-center justify-center group-hover:bg-rose-200/50 transition-colors">
-                                        <i class="fa-solid fa-shield-halved text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">관리 부실</span>
-                                </div>
-                                <span class="bg-rose-100 text-rose-800 font-bold text-sm px-3 py-1 rounded-full border border-rose-200 group-hover:bg-white group-hover:text-rose-800 group-hover:border-transparent" id="count-bad-management">0</span>
+                    <a href="?category=bad-management" data-category="bad-management" class="category-card">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-rose-100 text-rose-800"><i class="fa-solid fa-shield-halved text-lg" aria-hidden="true"></i></span>
+                                <h3>관리 부실</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">투표함의 봉인지 훼손, 무단 개봉, 운송중 통제 미흡 등 상식 이하의 관리 사례.</p>
+                            <span class="category-count" id="count-bad-management">…</span>
                         </div>
-                    </div>
+                        <p>투표함의 봉인지 훼손, 무단 개봉, 운송 중 통제 미흡 등 상식 이하의 관리 사례.</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
 
-                    <div onclick="selectCategory('nec-admin')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-blue-100 text-blue-800 rounded-lg flex items-center justify-center group-hover:bg-blue-200/50 transition-colors">
-                                        <i class="fa-solid fa-building-columns text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">선관위 행정</span>
-                                </div>
-                                <span class="bg-blue-100 text-blue-800 font-bold text-sm px-3 py-1 rounded-full border border-blue-200 group-hover:bg-white group-hover:text-blue-800 group-hover:border-transparent" id="count-nec-admin">0</span>
+                    <a href="?category=nec-admin" data-category="nec-admin" class="category-card">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-blue-100 text-blue-800"><i class="fa-solid fa-building-columns text-lg" aria-hidden="true"></i></span>
+                                <h3>선관위 행정</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">어디서도 볼 수 없었던 참신하고 놀라운 선관위의 일처리를 칭찬합니다.</p>
+                            <span class="category-count" id="count-nec-admin">…</span>
                         </div>
-                    </div>
+                        <p>어디서도 볼 수 없었던 참신하고 놀라운 선관위의 일처리를 칭찬합니다.</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
 
-                    <div onclick="selectCategory('etc')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-purple-100 text-purple-800 rounded-lg flex items-center justify-center group-hover:bg-purple-200/50 transition-colors">
-                                        <i class="fa-solid fa-asterisk text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">기타</span>
-                                </div>
-                                <span class="bg-purple-100 text-purple-800 font-bold text-sm px-3 py-1 rounded-full border border-purple-200 group-hover:bg-white group-hover:text-purple-800 group-hover:border-transparent" id="count-etc">0</span>
+                    <a href="?category=etc" data-category="etc" class="category-card">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-purple-100 text-purple-800"><i class="fa-solid fa-asterisk text-lg" aria-hidden="true"></i></span>
+                                <h3>기타</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">그 외 분류항목에 한정되지 않는 못말리는 실수들</p>
+                            <span class="category-count" id="count-etc">…</span>
                         </div>
-                    </div>
+                        <p>그 외 분류항목에 한정되지 않는 못말리는 실수들</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
 
-                    <div onclick="selectCategory('free-board')" class="group bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-xs hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-h-[185px]">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center space-x-2.5">
-                                    <div class="w-10 h-10 bg-indigo-100 text-indigo-850 rounded-lg flex items-center justify-center group-hover:bg-indigo-200/50 transition-colors">
-                                        <i class="fa-solid fa-comments text-lg"></i>
-                                    </div>
-                                    <span class="font-black text-xl text-slate-900 group-hover:text-blue-800 transition-colors">자유게시판</span>
-                                </div>
-                                <span class="bg-indigo-100 text-indigo-800 font-bold text-sm px-3 py-1 rounded-full border border-indigo-200 group-hover:bg-white group-hover:text-indigo-800 group-hover:border-transparent" id="count-free-board">0</span>
+                    <a href="?category=free-board" data-category="free-board" class="category-card">
+                        <div class="category-card-top">
+                            <div class="category-name">
+                                <span class="category-icon bg-indigo-100 text-indigo-800"><i class="fa-solid fa-comments text-lg" aria-hidden="true"></i></span>
+                                <h3>자유게시판</h3>
                             </div>
-                            <p class="text-sm text-slate-600 leading-relaxed font-semibold">선거 제도나 자유로운 의견, 제보 분석을 나누는 시민 소통 게시판</p>
+                            <span class="category-count" id="count-free-board">…</span>
                         </div>
-                    </div>
+                        <p>선거 제도나 자유로운 의견, 제보 분석을 나누는 시민 소통 게시판</p>
+                        <i class="category-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
                 </div>
             </section>
         </div>
 
         <div id="page-category" class="hidden space-y-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-slate-200 pb-5">
+            <div class="category-toolbar">
                 <div>
-                    <button onclick="goHome()" class="text-slate-500 hover:text-blue-600 text-base font-extrabold flex items-center gap-1.5 mb-2 transition-colors">
-                        <i class="fa-solid fa-arrow-left"></i> 처음 화면으로
+                    <button onclick="goHome()" class="text-slate-600 hover:text-blue-600 text-base font-extrabold flex items-center gap-1.5 mb-2 transition-colors">
+                        <i aria-hidden="true" class="fa-solid fa-arrow-left"></i> 처음 화면으로
                     </button>
                     <div class="flex items-center gap-2.5">
-                        <span id="cat-badge" class="px-5 py-2.5 rounded-2xl text-xl font-black border-2">분류 제목</span>
+                        <h2 id="cat-badge" tabindex="-1">분류 제목</h2>
                     </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row gap-2">
+                <div class="category-filters">
                     <button id="feedback-write-button" onclick="openFeedbackUploadModal()" class="hidden bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-black">
-                        <i class="fa-solid fa-pen mr-1"></i> 글쓰기
+                        <i aria-hidden="true" class="fa-solid fa-pen mr-1"></i> 글쓰기
                     </button>
+                    <div class="filter-field sort-field"><label for="sort-select">정렬</label>
                     <select id="sort-select" onchange="setSortMode(this.value)" class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="updated">수정순</option>
-                        <option value="created">생성순</option>
+                        <option value="updated">최근 수정순</option>
+                        <option value="created">최근 등록순</option>
                         <option value="likes">추천순</option>
                     </select>
-                    <input type="text" id="grid-search-input" oninput="filterGridData()" placeholder="제목, 출처, 내용 검색..." class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60">
-                    <button id="grid-search-reset-button" onclick="clearGridSearch()" class="p-2.5 border-2 border-slate-300 rounded-xl hover:bg-slate-50 text-slate-500" title="필터 리셋">
-                        <i class="fa-solid fa-rotate-left"></i>
+                    </div>
+                    <div class="filter-field search-field"><label for="grid-search-input">불러온 자료에서 검색</label>
+                    <input type="search" id="grid-search-input" oninput="filterGridData()" placeholder="제목, 출처, 내용으로 검색" class="px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60">
+                    </div>
+                    <button id="grid-search-reset-button" aria-label="검색 초기화" onclick="clearGridSearch()" class="p-2.5 border-2 border-slate-300 rounded-xl hover:bg-slate-50 text-slate-500" title="필터 리셋">
+                        <i aria-hidden="true" class="fa-solid fa-rotate-left"></i>
                     </button>
                 </div>
             </div>
 
-            <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+            <p id="gallery-result-count" role="status" aria-atomic="true"></p>
+            <div id="gallery-grid" class="evidence-grid"></div>
             <div id="load-more-wrapper" class="hidden mt-8 flex justify-center">
-                <button id="load-more-button" onclick="loadMoreCategoryEvidence()" class="bg-white hover:bg-slate-50 text-slate-700 text-sm font-black px-5 py-3 rounded-xl border-2 border-slate-200 shadow-xs">
+                <button id="load-more-button" onclick="loadMoreCategoryEvidence()" class="bg-white hover:bg-slate-50 text-slate-700 text-sm font-black px-5 py-3 rounded-xl border-2 border-slate-200 shadow-sm">
                     더 보기
                 </button>
             </div>
 
-            <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-slate-400">
-                <i class="fa-regular fa-folder-open text-6xl mb-3 text-slate-300"></i>
-                <p class="font-bold text-slate-600 text-lg">기록이 없습니다.</p>
-                <p class="text-sm text-slate-400 mt-1">상단 '+ 사례 제출' 버튼을 눌러 첫 정보를 기재해주세요.</p>
+            <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-slate-500">
+                <i aria-hidden="true" class="fa-regular fa-folder-open text-6xl mb-3 text-slate-300"></i>
+                <p id="gallery-empty-title" class="font-bold text-slate-700 text-lg">아직 등록된 기록이 없습니다.</p>
+                <p id="gallery-empty-description" class="text-sm text-slate-500 mt-1">사진, 영상이나 출처를 등록해 첫 기록을 남겨보세요.</p>
+                <button id="gallery-empty-action" class="empty-action" onclick="openUploadModal()">사례 제출</button>
             </div>
         </div>
     </main>
 
-    <footer class="bg-white border-t-2 border-slate-200 py-8 mt-16 text-slate-500 text-sm">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer class="archive-footer">
+        <div class="site-shell flex flex-col md:flex-row items-center justify-between gap-4">
             <p>시민들이 자발적으로 사진 자료와 제보를 모으는 오픈 아카이브입니다.</p>
             <div class="flex items-center gap-3 flex-wrap justify-center">
-                <button onclick="openFeedbackBoard()" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-xs transition-colors">
-                    <i class="fa-regular fa-message mr-1"></i> 버그제보 / 건의
+                <button onclick="openFeedbackBoard()" class="bg-white hover:bg-slate-50 text-slate-700 text-xs font-black px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm transition-colors">
+                    <i aria-hidden="true" class="fa-regular fa-message mr-1"></i> 버그제보 / 건의
                 </button>
-                <button onclick="openAdminModal()" class="text-slate-400 hover:text-blue-600 font-bold transition-colors">
-                    <i class="fa-solid fa-lock mr-1"></i> 관리자 로그인
+                <button onclick="openAdminModal()" class="text-slate-500 hover:text-blue-600 font-bold transition-colors">
+                    <i aria-hidden="true" class="fa-solid fa-lock mr-1"></i> 관리자 로그인
                 </button>
-                <span id="admin-indicator" class="hidden text-red-600 font-black"><i class="fa-solid fa-user-shield mr-1"></i>관리자 모드 실행중</span>
+                <span id="admin-indicator" class="hidden text-red-600 font-black"><i aria-hidden="true" class="fa-solid fa-user-shield mr-1"></i>관리자 모드 실행중</span>
             </div>
         </div>
     </footer>
 
-    <div id="lightbox-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3" onclick="handleOutsideClick(event)">
+    <div id="lightbox-modal" role="dialog" aria-modal="true" aria-label="게시글 상세" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3" onclick="handleOutsideClick(event)">
         <div id="lightbox-body" class="max-w-4xl w-full bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh] relative">
-            <button onclick="prevLightboxSlide()" class="absolute -left-16 top-1/2 -translate-y-1/2 hidden md:flex bg-white text-slate-900 p-4 rounded-full shadow-lg border-2 border-slate-200">
-                <i class="fa-solid fa-chevron-left text-xl"></i>
-            </button>
-            <button onclick="nextLightboxSlide()" class="absolute -right-16 top-1/2 -translate-y-1/2 hidden md:flex bg-white text-slate-900 p-4 rounded-full shadow-lg border-2 border-slate-200">
-                <i class="fa-solid fa-chevron-right text-xl"></i>
-            </button>
-
-            <div class="flex items-center justify-between px-6 py-4 border-b-2 border-slate-100">
+            <div class="lightbox-topbar flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <div class="flex items-center gap-2">
                     <span id="lightbox-cat-badge" class="px-3 py-1 rounded-full text-xs font-black border-2">카테고리</span>
-                    <span class="text-xs text-slate-400 font-bold">고유번호: <span id="lightbox-item-id"></span></span>
+                    <span class="text-xs text-slate-500 font-bold">고유번호: <span id="lightbox-item-id"></span></span>
                 </div>
-                <button onclick="closeLightbox()" class="text-slate-400 hover:text-slate-700 text-2xl p-1.5">
-                    <i class="fa-solid fa-xmark"></i>
+                <div class="lightbox-nav">
+                    <button type="button" onclick="prevLightboxSlide()" aria-label="이전 게시글"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                    <button type="button" onclick="nextLightboxSlide()" aria-label="다음 게시글"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                <button type="button" aria-label="게시글 닫기" onclick="closeLightbox()" class="text-slate-500 hover:text-slate-700 text-2xl p-1.5">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
+                </div>
             </div>
 
             <div class="overflow-y-auto p-6 space-y-6 flex-grow">
-                <div class="flex items-start justify-between gap-3">
-                    <h3 id="lightbox-title" class="font-black text-2xl md:text-3xl text-slate-955 leading-snug">제목</h3>
+                <div class="lightbox-title-row flex items-start justify-between gap-3">
+                    <h3 id="lightbox-title" class="font-black text-2xl md:text-3xl text-slate-950 leading-snug">제목</h3>
                     <div class="shrink-0 flex gap-2">
                         <button onclick="copyCurrentPostLink()" class="bg-white hover:bg-slate-50 text-slate-600 text-xs font-black px-3 py-2 rounded-lg border border-slate-200">
                             링크 복사
@@ -340,16 +262,16 @@
 
                 <div class="pt-6 border-t-2 border-slate-100 space-y-4">
                     <div class="flex items-center justify-between">
-                        <button onclick="likeCurrentPost()" class="flex items-center gap-2.5 px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-base font-black transition-colors">
-                            <i class="fa-regular fa-thumbs-up text-base"></i> 추천 <span id="lightbox-likes-count">0</span>
+                        <button id="like-post-button" onclick="likeCurrentPost()" class="flex items-center gap-2.5 px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-base font-black transition-colors">
+                            <i aria-hidden="true" class="fa-regular fa-thumbs-up text-base"></i> 추천 <span id="lightbox-likes-count">0</span>
                         </button>
                         
                         <div class="flex gap-2">
                             <button onclick="editCurrentPost()" class="text-slate-600 hover:text-blue-700 font-bold flex items-center gap-1 bg-white hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
-                                <i class="fa-solid fa-pen"></i> 수정
+                                <i aria-hidden="true" class="fa-solid fa-pen"></i> 수정
                             </button>
                             <button onclick="deleteEvidence(getCurrentLightboxItemId())" class="text-slate-500 hover:text-red-600 font-bold flex items-center gap-1 bg-white hover:bg-red-50 px-3 py-2 rounded-lg transition-colors text-xs border border-slate-200">
-                                <i class="fa-solid fa-trash-can"></i> 삭제
+                                <i aria-hidden="true" class="fa-solid fa-trash-can"></i> 삭제
                             </button>
                         </div>
                     </div>
@@ -358,11 +280,11 @@
                         <h4 id="comments-title-text" class="text-base font-black text-slate-800">댓글</h4>
                         <div id="comments-list" class="space-y-3 max-h-52 overflow-y-auto text-sm pr-1"></div>
 
-                        <form onsubmit="addComment(event)" class="flex gap-2 pt-2">
-                            <input type="text" id="comment-author" value="ㅇㅇ" placeholder="작성자" required class="w-20 md:w-24 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
-                            <input type="text" id="comment-text" placeholder="의견을 남겨보세요..." required class="flex-grow px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-300">
-                            <input type="text" id="comment-password" name="comment-code" autocomplete="on" data-lpignore="true" data-1p-ignore="true" placeholder="비번" required minlength="4" class="password-code-input w-16 md:w-20 px-2 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-300">
-                            <button type="submit" class="bg-slate-900 hover:bg-slate-850 text-white px-4 py-2 rounded-xl text-sm font-black whitespace-nowrap">등록</button>
+                        <form id="comment-form" onsubmit="addComment(event)" class="flex gap-2 pt-2">
+                            <input type="text" id="comment-author" maxlength="40" aria-label="작성자" value="ㅇㅇ" placeholder="작성자" required class="w-20 md:w-24 px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-500">
+                            <input type="text" id="comment-text" maxlength="1000" aria-label="댓글 내용" placeholder="의견을 남겨보세요..." required class="flex-grow px-3 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-500">
+                            <input type="text" id="comment-password" aria-label="댓글 비밀번호 (4자 이상)" name="comment-code" autocomplete="on" data-lpignore="true" data-1p-ignore="true" placeholder="비번" required minlength="4" class="password-code-input w-16 md:w-20 px-2 py-2 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none placeholder-slate-500">
+                            <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-black whitespace-nowrap">등록</button>
                         </form>
                     </div>
                 </div>
@@ -370,21 +292,21 @@
         </div>
     </div>
 
-    <div id="upload-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2">
+    <div id="upload-modal" role="dialog" aria-modal="true" aria-label="사례 작성" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2">
         <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeUploadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
-                <i class="fa-solid fa-xmark"></i>
+            <button type="button" aria-label="작성창 닫기" onclick="closeUploadModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-600 text-xl">
+                <i aria-hidden="true" class="fa-solid fa-xmark"></i>
             </button>
 
             <div class="mb-4">
-                <h3 id="modal-form-title" class="text-xl font-black text-slate-955">새로운 사례 제출</h3>
+                <h3 id="modal-form-title" class="text-xl font-black text-slate-950">새로운 사례 제출</h3>
             </div>
 
             <form id="evidence-form" onsubmit="saveEvidence(event)" class="space-y-4">
                 <input type="hidden" id="edit-id" value="">
 
                 <div id="form-category-wrapper">
-                    <label class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 <span class="text-red-600">*</span></label>
+                    <label for="form-category" class="block text-sm font-black text-slate-700 mb-1">카테고리 구분 <span class="text-red-600">*</span></label>
                     <select id="form-category" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="shape-memory">신비한 투표지</option>
                         <option value="strange-ballot">이상 현상</option>
@@ -397,40 +319,41 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">제목 <span class="text-red-600">*</span></label>
-                    <input type="text" id="form-title" name="post-title" autocomplete="on" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="form-title" class="block text-sm font-black text-slate-700 mb-1">제목 <span class="text-red-600">*</span></label>
+                    <input type="text" id="form-title" maxlength="120" name="post-title" autocomplete="on" required placeholder="예: 구김선이 없는 신권형 사전 투표지" class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div class="max-w-56 ml-auto">
-                    <label class="block text-xs font-black text-slate-700 mb-1 text-right">게시글 비밀번호 <span class="text-red-600">*</span></label>
-                    <input type="text" id="form-post-password" name="post-code" autocomplete="on" data-lpignore="true" data-1p-ignore="true" required minlength="4" placeholder="비밀번호" class="password-code-input placeholder-slate-300 w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-[11px] text-slate-400 font-bold mt-1 text-right">4자 이상</p>
+                    <label for="form-post-password" class="block text-xs font-black text-slate-700 mb-1 text-right">게시글 비밀번호 <span class="text-red-600">*</span></label>
+                    <input type="text" id="form-post-password" name="post-code" autocomplete="on" data-lpignore="true" data-1p-ignore="true" required minlength="4" placeholder="비밀번호" class="password-code-input placeholder-slate-500 w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-[11px] text-slate-500 font-bold mt-1 text-right">4자 이상</p>
                 </div>
 
                 <div id="form-media-wrapper" class="space-y-2">
-                    <label class="block text-sm font-black text-slate-700 mb-0.5">사진/GIF 등록 or 영상/SNS 링크 <span class="text-red-600">*</span></label>
+                    <label for="form-files" class="block text-sm font-black text-slate-700 mb-0.5">사진/GIF 또는 영상/SNS 링크 <span class="text-red-600">*</span></label>
                     
-                    <div id="drop-zone" tabindex="0" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 focus:bg-blue-50 focus:border-blue-300 focus:outline-none transition-colors cursor-pointer relative">
-                        <input type="file" id="form-files" accept="image/*,.gif" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 text-center hover:bg-slate-100/70 focus:bg-blue-50 focus:border-blue-300 focus:outline-none transition-colors cursor-pointer relative">
+                        <input type="file" id="form-files" accept="image/jpeg,image/png,image/gif,image/webp" multiple onchange="handleFileSelected(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <div class="space-y-1 text-slate-600 pointer-events-none">
-                            <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400"></i>
+                            <i aria-hidden="true" class="fa-solid fa-cloud-arrow-up text-lg text-slate-500"></i>
                             <p class="text-xs font-bold text-slate-500">사진/GIF를 드래그, 클릭, 또는 글쓰기 창에서 Ctrl+V로 붙여넣으세요. (~25MB)</p>
                             <p id="file-status" class="text-[11px] text-blue-600 font-extrabold"></p>
                         </div>
                     </div>
 
                     <div id="upload-preview-container" class="flex flex-wrap gap-2 pt-1"></div>
-                    <textarea id="form-media-links" rows="3" placeholder="유튜브, X, 스레드 링크를 한 줄에 하나씩 입력해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <label for="form-media-links" class="block text-sm font-bold text-slate-700">영상/SNS 링크</label>
+                    <textarea id="form-media-links" rows="3" placeholder="유튜브, X, 스레드 링크를 한 줄에 하나씩 입력해주세요." class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
                 <div id="form-source-wrapper">
-                    <label class="block text-sm font-black text-slate-700 mb-1">출처</label>
-                    <input type="text" id="form-source" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="form-source" class="block text-sm font-black text-slate-700 mb-1">출처</label>
+                    <input type="text" id="form-source" maxlength="160" placeholder="예: 제 22대 총선 남양주시 개표소" class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-black text-slate-700 mb-1">내용</label>
-                    <textarea id="form-desc" rows="4" placeholder="상황에 대한 핵심 내용을 간단하게 기록해주세요." class="placeholder-slate-300 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <label for="form-desc" class="block text-sm font-black text-slate-700 mb-1">내용</label>
+                    <textarea id="form-desc" maxlength="20000" rows="4" placeholder="상황에 대한 핵심 내용을 간단하게 기록해주세요." class="placeholder-slate-500 w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
                 <div class="flex gap-2 justify-end pt-1">
@@ -441,18 +364,18 @@
         </div>
     </div>
 
-    <div id="admin-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3">
+    <div id="admin-modal" role="dialog" aria-modal="true" aria-label="관리자 로그인" tabindex="-1" class="hidden fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-3">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
-            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
-                <i class="fa-solid fa-xmark"></i>
+            <button type="button" aria-label="로그인 닫기" onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-600 text-2xl">
+                <i aria-hidden="true" class="fa-solid fa-xmark"></i>
             </button>
             <div class="mb-4">
-                <h3 class="text-lg font-black text-slate-955">관리자 본인 인증</h3>
+                <h3 class="text-lg font-black text-slate-950">관리자 본인 인증</h3>
                 <p class="text-xs text-slate-500 mt-1">임의 도배성 게시물을 정화하기 위해 로그인합니다.</p>
             </div>
             <form class="space-y-4" autocomplete="on" onsubmit="tryAdminLogin(); return false;">
                 <input type="text" name="username" autocomplete="username" value="kvoting-admin" class="sr-only" tabindex="-1" aria-hidden="true">
-                <input type="password" id="admin-pass-input" name="password" autocomplete="current-password" placeholder="비밀번호 입력" class="placeholder-slate-300 w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none">
+                <input type="password" id="admin-pass-input" aria-label="관리자 비밀번호" name="password" autocomplete="current-password" placeholder="비밀번호 입력" class="placeholder-slate-500 w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 text-base font-bold focus:outline-none">
                 <div class="flex justify-end gap-2">
                     <button type="button" onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">취소</button>
                     <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">로그인</button>
@@ -461,13 +384,13 @@
         </div>
     </div>
 
-    <div id="guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleGuideOutsideClick(event)">
+    <div id="guide-modal" role="dialog" aria-modal="true" aria-label="이용안내" tabindex="-1" class="hidden fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-3" onclick="handleGuideOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative">
-            <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
-                <i class="fa-solid fa-xmark"></i>
+            <button type="button" aria-label="이용안내 닫기" onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-600 text-2xl">
+                <i aria-hidden="true" class="fa-solid fa-xmark"></i>
             </button>
             <div class="space-y-4 pr-6">
-                <h3 class="text-xl font-black text-slate-955">이용안내</h3>
+                <h3 class="text-xl font-black text-slate-950">이용안내</h3>
                 <div class="space-y-4 text-sm md:text-base text-slate-700 leading-relaxed font-semibold">
                     <p>본 아카이브는 선거 무결성을 확보하기 위해 시민들이 자발적으로 참여하여 기록을 모으는 공개 공간입니다.</p>
                     <p>이곳은 특정 정당의 이익이나 좌우 이념을 대변하지 않습니다. 정파적 이해관계를 넘어, 헌법이 보장하는 국민의 소중한 기본권을 지키고 선거 제도의 신뢰를 회복하는 것을 최우선 가치로 삼습니다.</p>
@@ -482,27 +405,27 @@
         </div>
     </div>
 
-    <div id="qr-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleQrOutsideClick(event)">
+    <div id="qr-modal" role="dialog" aria-modal="true" aria-label="QR코드" tabindex="-1" class="hidden fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-3" onclick="handleQrOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
-            <button onclick="closeQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
-                <i class="fa-solid fa-xmark"></i>
+            <button type="button" aria-label="QR코드 닫기" onclick="closeQrModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-600 text-2xl">
+                <i aria-hidden="true" class="fa-solid fa-xmark"></i>
             </button>
             <div class="space-y-4 text-center">
-                <h3 class="text-xl font-black text-slate-955">QR코드</h3>
+                <h3 class="text-xl font-black text-slate-950">QR코드</h3>
                 <img src="QR.png" alt="선거 이슈 아카이브 QR코드" class="w-56 h-56 mx-auto rounded-xl border border-slate-200 bg-white object-contain">
                 <p class="text-base text-slate-700 leading-relaxed font-black">증거물들을 국민들 모두가 볼 수 있도록 공유해 주세요</p>
             </div>
         </div>
     </div>
 
-    <div id="upload-guide-modal" class="hidden fixed inset-0 z-55 bg-black/60 flex items-center justify-center p-3" onclick="handleUploadGuideOutsideClick(event)">
+    <div id="upload-guide-modal" role="dialog" aria-modal="true" aria-label="업로드 방법" tabindex="-1" class="hidden fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-3" onclick="handleUploadGuideOutsideClick(event)">
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative">
-            <button onclick="closeUploadGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl">
-                <i class="fa-solid fa-xmark"></i>
+            <button type="button" aria-label="업로드 방법 닫기" onclick="closeUploadGuideModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-600 text-2xl">
+                <i aria-hidden="true" class="fa-solid fa-xmark"></i>
             </button>
             <div class="space-y-4 pr-6">
-                <h3 class="text-xl font-black text-slate-955">업로드 방법</h3>
-                <video class="w-full rounded-xl border border-slate-200 bg-slate-100" src="uploadGuide.mp4" controls autoplay muted loop playsinline></video>
+                <h3 class="text-xl font-black text-slate-950">업로드 방법</h3>
+                <video class="w-full rounded-xl border border-slate-200 bg-slate-100" src="uploadGuide.mp4" controls muted playsinline preload="none"></video>
                 <div class="space-y-2 text-sm md:text-base text-slate-700 leading-relaxed font-semibold">
                     <p>간단하게 사진자료나 영상, SNS를 공유하세요.</p>
                     <p>컴퓨터에서 드래그 하거나 다른 웹사이트 이미지를 드래그해도 됩니다.</p>
@@ -511,6 +434,8 @@
             </div>
         </div>
     </div>
+
+    <div id="app-status" class="sr-only" role="status" aria-atomic="true"></div>
 
     <!-- Firebase SDK 모듈 -->
     <script type="module">
@@ -663,27 +588,33 @@
             if (reset) resetCategoryPagination(category);
             if (window.categoryPagination.isLoading) return [];
 
-            window.categoryPagination.isLoading = true;
-            if (window.updateLoadMoreControl) window.updateLoadMoreControl();
+            const requestState = window.categoryPagination;
+            requestState.isLoading = true;
+            requestState.error = false;
+            if (window.renderCategoryGrid) window.renderCategoryGrid();
             const colRef = getEvidenceCollectionRef();
             try {
                 const cursorKey = category === "all-posts" ? allCategoryCursorKey : category;
                 let snapshot;
                 try {
-                    snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[cursorKey]));
+                    snapshot = await getDocs(getPagedCategoryQuery(colRef, category, categoryPageLimit, requestState.cursors[cursorKey]));
                 } catch (error) {
                     console.warn("Category ordered query failed, falling back:", category, error);
-                    snapshot = await getDocs(getFallbackCategoryQuery(colRef, category, categoryPageLimit, window.categoryPagination.cursors[cursorKey]));
+                    snapshot = await getDocs(getFallbackCategoryQuery(colRef, category, categoryPageLimit, requestState.cursors[cursorKey]));
                 }
+                if (requestState !== window.categoryPagination) return [];
                 const docs = snapshot.docs;
-                window.categoryPagination.cursors[cursorKey] = docs.length > 0 ? docs[docs.length - 1] : window.categoryPagination.cursors[cursorKey];
-                window.categoryPagination.hasMore[cursorKey] = docs.length === categoryPageLimit;
+                requestState.cursors[cursorKey] = docs.length > 0 ? docs[docs.length - 1] : requestState.cursors[cursorKey];
+                requestState.hasMore[cursorKey] = docs.length === categoryPageLimit;
                 const fetched = snapshotToEvidences(snapshot);
                 window.applyFetchedEvidences(mergeEvidenceItems(fetched), { allowEmpty: true, cache: true });
                 return fetched;
+            } catch (error) {
+                requestState.error = true;
+                throw error;
             } finally {
-                window.categoryPagination.isLoading = false;
-                if (window.updateLoadMoreControl) window.updateLoadMoreControl();
+                requestState.isLoading = false;
+                if (requestState === window.categoryPagination && window.renderCategoryGrid) window.renderCategoryGrid();
             }
         };
 
@@ -853,6 +784,78 @@
         let isSavingEvidence = false;
         let isFeedbackWriteMode = false;
         let evidenceLoadRetryTimer = null;
+        let heroSelectionKey = "";
+        let heroSelectionIds = [];
+
+        const modalStack = [];
+        const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), video[controls], [tabindex="0"]';
+
+        function syncModalBackground() {
+            const active = modalStack.at(-1)?.modal;
+            document.querySelectorAll('body > header, body > main, body > footer, body > .skip-link, body > [role="dialog"]').forEach(node => {
+                node.inert = !!active && node !== active;
+            });
+            document.body.style.overflow = active ? "hidden" : "";
+        }
+
+        function setModalOpen(id, open) {
+            const modal = document.getElementById(id);
+            const index = modalStack.findIndex(entry => entry.modal === modal);
+            if (open) {
+                if (index >= 0) return;
+                const trigger = document.activeElement;
+                modalStack.push({ modal, trigger, postId: trigger?.dataset?.postId });
+                modal.classList.remove("hidden");
+                syncModalBackground();
+                const initial = modal.querySelector('button[aria-label*="닫기"]') || modal;
+                initial.focus({ preventScroll: true });
+            } else {
+                if (index < 0) return;
+                const [entry] = modalStack.splice(index, 1);
+                modal.classList.add("hidden");
+                syncModalBackground();
+                // Closing a post re-renders its card list; resolve the replacement link afterwards.
+                requestAnimationFrame(() => {
+                    if (modalStack.length) {
+                        if (!modalStack.at(-1).modal.contains(document.activeElement)) modalStack.at(-1).modal.focus({ preventScroll: true });
+                        return;
+                    }
+                    let target = entry.trigger;
+                    if (!target?.isConnected || !target.getClientRects().length) {
+                        target = [...document.querySelectorAll('a[data-post-id]')].find(node => node.dataset.postId === entry.postId && node.getClientRects().length)
+                            || document.querySelector('#page-category:not(.hidden) #cat-badge') || document.getElementById('main-upload-button');
+                    }
+                    target?.focus({ preventScroll: true });
+                });
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Tab' || !modalStack.length) return;
+            const modal = modalStack.at(-1).modal;
+            const controls = [...modal.querySelectorAll(focusableSelector)].filter(node => node.getClientRects().length && !node.closest('[inert]'));
+            const first = controls[0], last = controls.at(-1);
+            if (!first) { event.preventDefault(); modal.focus(); return; }
+            if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === modal)) {
+                event.preventDefault(); first.focus();
+            }
+        });
+
+        document.addEventListener('click', event => {
+            const deletePost = event.target.closest('[data-delete-post]');
+            if (deletePost) { window.deleteEvidence(deletePost.dataset.deletePost); return; }
+            const deleteComment = event.target.closest('[data-delete-comment]');
+            if (deleteComment) { window.deleteComment(deleteComment.dataset.postId, Number(deleteComment.dataset.deleteComment)); return; }
+            const link = event.target.closest('a[data-category], a[data-post-id], a[data-home]');
+            if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            if (link.hasAttribute('data-home')) window.goHome();
+            else if (link.dataset.category) window.selectCategory(link.dataset.category);
+            else window.openLightboxDirectly(link.dataset.postId);
+        });
+
 
         const mockImgLinks = [
             "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
@@ -908,7 +911,7 @@
                 if (event.key === "Escape") {
                     event.preventDefault();
                     window.navigateBackOneStep();
-                } else if (isUploadModalOpen) {
+                } else if (isUploadModalOpen || document.querySelector('[role="dialog"]:not(#lightbox-modal):not(.hidden)')) {
                     return;
                 } else if (event.key === "Backspace" && !isTextInputTarget(event.target)) {
                     event.preventDefault();
@@ -929,28 +932,6 @@
             });
         };
         window.setupKeyboardNavigation();
-
-        function setupMobileHeaderScroll() {
-            const header = document.getElementById("site-header");
-            if (!header) return;
-
-            let lastScrollY = window.scrollY;
-            const updateHeader = () => {
-                const currentScrollY = window.scrollY;
-                const isScrollingDown = currentScrollY > lastScrollY;
-                if (isScrollingDown && currentScrollY > 72) {
-                    header.classList.add("mobile-header-hidden");
-                } else {
-                    header.classList.remove("mobile-header-hidden");
-                }
-                lastScrollY = currentScrollY;
-            };
-
-            window.addEventListener("scroll", updateHeader, { passive: true });
-            window.addEventListener("resize", updateHeader);
-            updateHeader();
-        }
-        setupMobileHeaderScroll();
 
         const ALL_CATEGORY_KEY = "all-posts";
         const CATEGORY_KEYS = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
@@ -1046,7 +1027,7 @@
         window.startEvidenceLoadRetries = function(loadFn) {
             if (evidenceLoadRetryTimer) clearTimeout(evidenceLoadRetryTimer);
             let attempts = 0;
-            const maxAttempts = 12;
+            const maxAttempts = 3;
 
             const run = async () => {
                 if (window.hasReceivedEvidenceSnapshot && window.evidences.length > 0) return;
@@ -1054,15 +1035,14 @@
 
                 try {
                     const fetched = await loadFn();
-                    if (fetched.length > 0) {
-                        window.applyFetchedEvidences(fetched);
-                        return;
-                    }
+                    window.applyFetchedEvidences(fetched, { allowEmpty: true });
+                    return;
                 } catch (error) {
                     console.error("Evidence retry load failed:", error);
                 }
 
                 if (attempts >= maxAttempts) {
+                    showHomeLoadError();
                     return;
                 }
 
@@ -1071,6 +1051,26 @@
 
             evidenceLoadRetryTimer = setTimeout(run, 1200);
         };
+
+        function showHomeLoadError() {
+            if (window.hasVisibleEvidenceData) return;
+            document.getElementById("home-load-status").classList.remove("hidden");
+            document.getElementById("home-load-text").textContent = "자료를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.";
+            document.getElementById("home-retry-button").classList.remove("hidden");
+        }
+
+        window.retryHomeLoad = function() {
+            if (!window.loadHomeEvidenceBatch) { window.location.reload(); return; }
+            document.getElementById("home-load-text").textContent = "자료를 다시 불러오는 중입니다…";
+            document.getElementById("home-retry-button").classList.add("hidden");
+            window.hasReceivedEvidenceSnapshot = false;
+            window.startEvidenceLoadRetries(window.loadHomeEvidenceBatch);
+        };
+
+        // Also expose recovery when the Firebase module itself fails to download.
+        setTimeout(() => {
+            if (!window.hasReceivedEvidenceSnapshot && !window.hasVisibleEvidenceData) showHomeLoadError();
+        }, 20000);
 
         function buildAppUrl(params = {}) {
             const url = new URL(window.location.href);
@@ -1176,38 +1176,13 @@
         };
 
         window.navigateBackOneStep = function() {
-            const isUploadModalOpen = !document.getElementById("upload-modal").classList.contains("hidden");
-            const isLightboxOpen = !document.getElementById("lightbox-modal").classList.contains("hidden");
-            const isGuideOpen = !document.getElementById("guide-modal").classList.contains("hidden");
-            const isQrOpen = !document.getElementById("qr-modal").classList.contains("hidden");
-            const isUploadGuideOpen = !document.getElementById("upload-guide-modal").classList.contains("hidden");
-            const isAdminOpen = !document.getElementById("admin-modal").classList.contains("hidden");
-
-            if (isUploadModalOpen) {
-                window.closeUploadModal();
-                return;
-            }
-            if (isGuideOpen) {
-                window.closeGuideModal();
-                return;
-            }
-            if (isQrOpen) {
-                window.closeQrModal();
-                return;
-            }
-            if (isUploadGuideOpen) {
-                window.closeUploadGuideModal();
-                return;
-            }
-            if (isAdminOpen) {
-                window.closeAdminModal();
-                return;
-            }
-            if (isLightboxOpen) {
-                window.closeLightbox();
-                window.showSelectedCategoryPage();
-                return;
-            }
+            const top = modalStack.at(-1)?.modal.id;
+            const closeActions = {
+                'upload-modal': window.closeUploadModal, 'lightbox-modal': window.closeLightbox,
+                'guide-modal': window.closeGuideModal, 'qr-modal': window.closeQrModal,
+                'upload-guide-modal': window.closeUploadGuideModal, 'admin-modal': window.closeAdminModal
+            };
+            if (top) { closeActions[top](); return; }
             if (window.selectedCategoryKey) {
                 window.goHome();
             }
@@ -1218,6 +1193,8 @@
             const container = document.getElementById("hero-slide-container");
             const heroSection = document.getElementById("hero-section");
             const heroEvidences = getHeroEvidences();
+            const loadStatus = document.getElementById("home-load-status");
+            loadStatus.classList.toggle("hidden", heroEvidences.length > 0 || window.hasReceivedEvidenceSnapshot);
             
             if (!heroEvidences || heroEvidences.length === 0) {
                 heroSection.classList.add("hidden");
@@ -1236,32 +1213,22 @@
             const thumb = getThumbnail(item);
             const commentCount = getCommentCount(item);
 
-            let sourceHtml = item.source ? `<div class="text-sm text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 font-bold border border-slate-200"><span class="font-black text-slate-800">출처:</span> ${escapeHtml(item.source)}</div>` : "";
-            let descHtml = item.desc ? `<p class="text-slate-800 text-base leading-relaxed bg-white whitespace-pre-wrap">${linkifyText(item.desc)}</p>` : "";
-            let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-200"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>` : "";
-
+            const postUrl = `?post=${encodeURIComponent(item.id)}`;
+            document.getElementById("hero-position").textContent = `${window.currentSlideIndex + 1} / ${heroEvidences.length}`;
             container.innerHTML = `
-                <div class="w-full cursor-pointer" onclick="openLightboxDirectly('${item.id}')">
-                    <div class="relative overflow-hidden rounded-xl border border-slate-200 aspect-[4/3] min-h-[180px] md:min-h-[300px] w-full bg-slate-900 shadow-xs">
-                        ${renderThumbnailHtml(thumb, item.title)}
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end justify-between p-3 md:p-5">
-                            <span class="text-white text-sm bg-slate-955/80 px-4 py-2 rounded-xl font-black">[게시물보기]</span>
-                            <span class="text-white text-sm bg-slate-955/80 px-4 py-2 rounded-xl font-black">${getMediaBadgeText(imageCount, mediaCount)}</span>
-                        </div>
+                <a class="hero-image-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.title)} — 게시글 보기">
+                    ${renderThumbnailHtml(thumb, item.title)}
+                    <span class="media-count">${getMediaBadgeText(imageCount, mediaCount)}</span>
+                </a>
+                <div class="hero-copy">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <span class="px-3 py-1 rounded-lg text-xs font-bold ${catBadgeClass}">${catLabel}</span>
+                        <span class="text-xs text-slate-500">추천 ${item.likes || 0}${commentCount ? ` · 댓글 ${commentCount}` : ""}</span>
                     </div>
-                </div>
-                <div class="space-y-3 pt-2 text-left">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <span class="px-3 py-1 rounded-full text-xs font-black ${catBadgeClass}">${catLabel}</span>
-                            <span class="text-xs text-slate-400 font-bold">👍 ${item.likes || 0}</span>
-                        </div>
-                        ${deleteBtn}
-                    </div>
-                    <h3 class="font-black text-2xl text-slate-955 leading-snug cursor-pointer hover:text-blue-600 line-clamp-3 break-words" onclick="openLightboxDirectly('${item.id}')">
-                        ${escapeHtml(item.title)}${commentCount > 0 ? ` <span class="text-blue-600 whitespace-nowrap">[${commentCount}]</span>` : ""}
-                    </h3>
-                    ${sourceHtml} ${descHtml}
+                    <h3><a href="${postUrl}" data-post-id="${escapeHtml(item.id)}" class="line-clamp-3">${escapeHtml(item.title)}</a></h3>
+                    ${item.desc ? `<p class="hero-description line-clamp-3">${escapeHtml(item.desc)}</p>` : ""}
+                    ${item.source ? `<p class="hero-source line-clamp-2">출처 · ${escapeHtml(item.source)}</p>` : ""}
+                    <a class="hero-read-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}">자료 자세히 보기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                 </div>
             `;
         };
@@ -1306,11 +1273,11 @@
             const searchInput = document.getElementById("grid-search-input");
             const resetButton = document.getElementById("grid-search-reset-button");
             const mainUploadButton = document.getElementById("main-upload-button");
-            const emptyText = document.querySelector("#gallery-empty-state p.text-sm");
+            const emptyText = document.getElementById("gallery-empty-description");
             const isFeedbackBoard = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY;
             if (feedbackWriteButton) feedbackWriteButton.classList.toggle("hidden", !isFeedbackBoard);
-            if (sortSelect) sortSelect.classList.toggle("hidden", isFeedbackBoard);
-            if (searchInput) searchInput.classList.toggle("hidden", isFeedbackBoard);
+            if (sortSelect) sortSelect.closest(".filter-field").classList.toggle("hidden", isFeedbackBoard);
+            if (searchInput) searchInput.closest(".filter-field").classList.toggle("hidden", isFeedbackBoard);
             if (resetButton) resetButton.classList.toggle("hidden", isFeedbackBoard);
             if (mainUploadButton) mainUploadButton.classList.toggle("hidden", isFeedbackBoard);
             if (emptyText) {
@@ -1336,73 +1303,78 @@
                 }
                 return true;
             }));
-            gridContainer.className = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY
-                ? "space-y-3"
-                : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6";
+            const isFeedback = window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY;
+            const state = window.categoryPagination;
+            const count = window.currentGridEvidences.length;
+            const isLoading = state.isLoading && state.category === window.selectedCategoryKey;
+            const hasError = state.error && state.category === window.selectedCategoryKey;
+            gridContainer.className = isFeedback ? "space-y-3" : "evidence-grid";
+            gridContainer.setAttribute("aria-busy", String(!!isLoading));
+            document.getElementById("gallery-result-count").textContent = searchVal
+                ? `불러온 자료에서 검색 결과 ${count}개`
+                : `불러온 ${isFeedback ? "문의" : "자료"} ${count}개${isLoading ? " · 더 불러오는 중…" : ""}`;
+            gridContainer.replaceChildren();
+            emptyState.classList.toggle("hidden", count > 0);
 
-            if (window.currentGridEvidences.length === 0) {
-                gridContainer.innerHTML = "";
-                emptyState.classList.remove("hidden");
-                window.updateLoadMoreControl();
-                return;
+            if (count === 0) {
+                const title = document.getElementById("gallery-empty-title");
+                const description = document.getElementById("gallery-empty-description");
+                const action = document.getElementById("gallery-empty-action");
+                if (isLoading) {
+                    title.textContent = "자료를 불러오고 있습니다";
+                    description.textContent = "잠시만 기다려주세요.";
+                    action.classList.add("hidden");
+                } else if (hasError) {
+                    title.textContent = "자료를 불러오지 못했습니다";
+                    description.textContent = "인터넷 연결을 확인한 뒤 다시 시도해주세요.";
+                    action.textContent = "다시 불러오기";
+                    action.onclick = () => window.loadMoreCategoryEvidence();
+                    action.classList.remove("hidden");
+                } else if (searchVal) {
+                    title.textContent = "검색 결과가 없습니다";
+                    description.textContent = "검색어를 바꾸거나 검색을 초기화해보세요. 검색은 불러온 자료에 적용됩니다.";
+                    action.textContent = "검색 초기화";
+                    action.onclick = () => { window.clearGridSearch(); document.getElementById("grid-search-input").focus(); };
+                    action.classList.remove("hidden");
+                } else {
+                    title.textContent = `아직 등록된 ${isFeedback ? "문의" : "기록"}가 없습니다`;
+                    description.textContent = isFeedback ? "관리자에게 문의나 개선 의견을 남겨주세요." : "사진, 영상이나 출처를 등록해 첫 기록을 남겨보세요.";
+                    action.textContent = isFeedback ? "문의 작성" : "사례 제출";
+                    action.onclick = () => window.openUploadModal();
+                    action.classList.remove("hidden");
+                }
             }
 
-            emptyState.classList.add("hidden");
-            gridContainer.innerHTML = "";
-
-            window.currentGridEvidences.forEach((item, index) => {
-                const card = document.createElement("div");
-                if (window.selectedCategoryKey === FEEDBACK_CATEGORY_KEY) {
-                    card.className = "group bg-white rounded-xl border-2 border-slate-200 p-4 shadow-xs hover:border-slate-300 transition-all cursor-pointer";
-                    card.onclick = () => window.openLightboxDirectly(item.id);
-                    const replyCount = getCommentCount(item);
-                    const dateText = item.createdAt ? new Date(item.createdAt).toLocaleString("ko-KR") : "";
-                    let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
-                    card.innerHTML = `
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0 flex-grow">
-                                <h4 class="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 line-clamp-3 break-words">${escapeHtml(item.title)}${replyCount > 0 ? ` <span class="text-blue-600 whitespace-nowrap">[${replyCount}]</span>` : ""}</h4>
-                                ${item.desc ? `<p class="text-sm text-slate-600 mt-1 line-clamp-2 break-words">${escapeHtml(item.desc)}</p>` : ""}
-                                <div class="text-xs text-slate-400 font-bold mt-2">${escapeHtml(dateText)}</div>
-                            </div>
-                            <div class="shrink-0 flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-black">답글 ${replyCount}</span>
-                                ${deleteBtn}
-                            </div>
-                        </div>
-                    `;
-                    gridContainer.appendChild(card);
-                    return;
-                }
-
-                card.className = "group bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col";
-                card.onclick = () => window.openLightboxDirectly(item.id);
-
-                const imageCount = getImageCount(item);
-                const mediaLinks = getMediaLinks(item);
-                const thumb = getThumbnail(item);
+            window.currentGridEvidences.forEach(item => {
+                const card = document.createElement("article");
+                const postUrl = `?post=${encodeURIComponent(item.id)}`;
+                const link = `<a class="stretched-link" href="${postUrl}" data-post-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>`;
                 const commentCount = getCommentCount(item);
-                let sourceTag = item.source ? `<span class="truncate text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${escapeHtml(item.source)}</span>` : `<span class="text-xs text-slate-300">출처 미상</span>`;
-                let deleteBtn = isAdminLoggedIn ? `<button onclick="event.stopPropagation(); deleteEvidence('${item.id}')" class="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 text-[11px] font-bold px-2 py-1 rounded border border-slate-200">삭제</button>` : "";
-
-                card.innerHTML = `
-                    <div class="aspect-square bg-slate-900 overflow-hidden relative">
-                        ${renderThumbnailHtml(thumb, item.title)}
-                        <div class="absolute bottom-2 right-2 bg-slate-955/80 text-white text-[11px] px-2 py-0.5 rounded font-black">${getMediaBadgeText(imageCount, mediaLinks.length)}</div>
-                    </div>
-                    <div class="p-4 flex-grow flex flex-col justify-between space-y-4">
-                        <h4 class="font-bold text-slate-955 text-base group-hover:text-blue-600 leading-snug line-clamp-3 break-words">
-                            ${escapeHtml(item.title)}${commentCount > 0 ? ` <span class="text-blue-600 whitespace-nowrap">[${commentCount}]</span>` : ""}
-                        </h4>
-                        <div class="pt-2 border-t border-slate-155 flex items-center justify-between gap-2">
-                            ${sourceTag}
-                            <div class="shrink-0 flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-black">👍 ${item.likes || 0}</span>
+                const deleteBtn = isAdminLoggedIn ? `<button class="card-delete" data-delete-post="${escapeHtml(item.id)}">삭제</button>` : "";
+                if (isFeedback) {
+                    card.className = "feedback-card";
+                    const dateText = item.createdAt ? new Date(item.createdAt).toLocaleDateString("ko-KR") : "";
+                    card.innerHTML = `
+                        <h3 class="text-lg font-bold line-clamp-3 break-words">${link}</h3>
+                        ${item.desc ? `<p class="text-sm text-slate-600 mt-2 line-clamp-2 break-words">${escapeHtml(item.desc)}</p>` : ""}
+                        <div class="mt-4 flex justify-between items-center gap-3 text-xs text-slate-500"><span>${escapeHtml(dateText)} · 답글 ${commentCount}</span>${deleteBtn}</div>`;
+                } else {
+                    card.className = "evidence-card";
+                    card.innerHTML = `
+                        <div class="evidence-thumbnail">
+                            ${renderThumbnailHtml(getThumbnail(item), "")}
+                            <span class="media-count">${getMediaBadgeText(getImageCount(item), getMediaLinks(item).length)}</span>
+                        </div>
+                        <div class="evidence-card-body">
+                            <span class="text-xs font-semibold text-slate-500">${getCategoryLabel(item.category)}</span>
+                            <h3 class="line-clamp-3">${link}</h3>
+                            <div class="evidence-card-meta">
+                                <span class="evidence-source">${item.source ? escapeHtml(item.source) : "출처 미등록"}</span>
+                                <span class="shrink-0">추천 ${item.likes || 0}${commentCount ? ` · 댓글 ${commentCount}` : ""}</span>
                                 ${deleteBtn}
                             </div>
-                        </div>
-                    </div>
-                `;
+                        </div>`;
+                }
                 gridContainer.appendChild(card);
             });
             window.updateLoadMoreControl();
@@ -1417,8 +1389,8 @@
             button.classList.toggle("hidden", !shouldShow);
             button.setAttribute("aria-hidden", shouldShow ? "false" : "true");
             button.disabled = !!(window.categoryPagination && window.categoryPagination.isLoading);
-            button.textContent = button.disabled ? "..." : "더 보기";
-            if (shouldShow && !button.disabled && document.documentElement.scrollHeight <= window.innerHeight + 300) {
+            button.textContent = button.disabled ? "자료 불러오는 중…" : window.categoryPagination.error ? "다시 불러오기" : "자료 더 보기";
+            if (shouldShow && !button.disabled && !window.categoryPagination.error && document.documentElement.scrollHeight <= window.innerHeight + 300) {
                 setTimeout(() => {
                     if (window.selectedCategoryKey && window.hasMoreCategoryEvidence && window.hasMoreCategoryEvidence()) {
                         window.loadMoreCategoryEvidence();
@@ -1435,7 +1407,7 @@
                 requestAnimationFrame(() => {
                     ticking = false;
                     if (!window.selectedCategoryKey || !window.hasMoreCategoryEvidence || !window.hasMoreCategoryEvidence()) return;
-                    if (window.categoryPagination && window.categoryPagination.isLoading) return;
+                    if (window.categoryPagination && (window.categoryPagination.isLoading || window.categoryPagination.error)) return;
                     const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
                     if (nearBottom) window.loadMoreCategoryEvidence();
                 });
@@ -1505,6 +1477,7 @@
             if (window.currentGridEvidences.length === 0) return;
 
             const item = window.currentGridEvidences[window.currentLightboxIndex];
+            document.getElementById("like-post-button").disabled = pendingLikes.has(item.id);
             if (options.updateHistory) {
                 const routeCategory = window.selectedCategoryKey || item.category;
                 const nextUrl = buildAppUrl({ category: routeCategory });
@@ -1535,9 +1508,9 @@
             imagesStack.classList.toggle("hidden", imagesList.length === 0);
             imagesList.forEach((src, index) => {
                 const wrap = document.createElement("div");
-                wrap.className = "w-full overflow-hidden rounded-xl bg-slate-955 flex justify-center items-start py-1";
+                wrap.className = "w-full overflow-hidden rounded-xl bg-slate-950 flex justify-center items-start py-1";
                 wrap.innerHTML = `
-                    <img src="${escapeHtml(src)}" class="w-full h-auto object-contain" onerror="this.src='${mockImgLinks[0]}'" alt="">
+                    <img src="${escapeHtml(src)}" class="w-full h-auto object-contain" onerror="this.onerror=null;this.src='${mockImgLinks[0]}'" alt="${escapeHtml(item.title)} — 첨부 이미지 ${index + 1}">
                 `;
                 imagesStack.appendChild(wrap);
             });
@@ -1550,14 +1523,14 @@
 
             renderPostComments(item);
             updateCommentFormForAdminState();
-            modal.classList.remove("hidden");
-            document.body.style.overflow = "hidden";
+            setModalOpen("lightbox-modal", true);
+            document.querySelector("#lightbox-body > .overflow-y-auto").scrollTop = 0;
         };
 
         window.closeLightbox = function(options = {}) {
-            document.getElementById("lightbox-modal").classList.add("hidden");
+            setModalOpen("lightbox-modal", false);
             clearLightboxMedia();
-            document.body.style.overflow = "auto";
+
             if (options.updateHistory !== false) {
                 if (window.selectedCategoryKey) {
                     updateAppHistory({ category: window.selectedCategoryKey }, "replace");
@@ -1627,32 +1600,39 @@
             window.openLightboxDirectly(itemId, { updateHistory: false });
         }
 
+        const pendingLikes = new Set();
+        const sessionLikes = new Set();
         window.likeCurrentPost = async function() {
             const item = window.currentGridEvidences[window.currentLightboxIndex];
-            if (hasLikedPost(item.id)) {
-                alert("이미 추천한 게시글입니다.");
-                return;
-            }
-            item.likes = (item.likes || 0) + 1;
-            const updated = await window.saveEvidenceToFirestore(item.id, {
-                likes: item.likes,
-                updatedAt: new Date().toISOString()
-            });
-            if (updated) {
+            if (!item || pendingLikes.has(item.id)) return;
+            if (hasLikedPost(item.id)) { showNotification("이미 추천한 게시글입니다."); return; }
+            pendingLikes.add(item.id);
+            const button = document.getElementById("like-post-button");
+            button.disabled = true;
+            try {
+                const nextLikes = (item.likes || 0) + 1;
+                const updated = await window.saveEvidenceToFirestore(item.id, { likes: nextLikes, updatedAt: new Date().toISOString() });
+                if (!updated) throw new Error("Like save failed");
+                item.likes = nextLikes;
                 markPostLiked(item.id);
-                document.getElementById("lightbox-likes-count").textContent = item.likes;
-                showNotification("추천 완료!");
-            } else {
-                alert("추천 도중 네트워크에 일시적인 장애가 생겼습니다.");
+                if (window.currentGridEvidences[window.currentLightboxIndex]?.id === item.id) document.getElementById("lightbox-likes-count").textContent = item.likes;
+                showNotification("추천이 반영되었습니다.");
+            } catch (error) {
+                alert("추천을 저장하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.");
+            } finally {
+                pendingLikes.delete(item.id);
+                button.disabled = false;
             }
         };
 
         function hasLikedPost(itemId) {
-            return localStorage.getItem(`liked:${itemId}`) === "1";
+            try { return sessionLikes.has(itemId) || localStorage.getItem(`liked:${itemId}`) === "1"; }
+            catch { return sessionLikes.has(itemId); }
         }
 
         function markPostLiked(itemId) {
-            localStorage.setItem(`liked:${itemId}`, "1");
+            sessionLikes.add(itemId);
+            try { localStorage.setItem(`liked:${itemId}`, "1"); } catch { /* Keep session protection when storage is unavailable. */ }
         }
 
         function renderPostComments(item) {
@@ -1664,20 +1644,20 @@
             titleText.textContent = `${replyLabel} (${comments.length})`;
 
             if (comments.length === 0) {
-                list.innerHTML = `<p class="text-slate-400 text-center py-2 text-xs">작성된 ${replyLabel}이 없습니다.</p>`;
+                list.innerHTML = `<p class="text-slate-500 text-center py-2 text-xs">작성된 ${replyLabel}이 없습니다.</p>`;
             } else {
                 comments.forEach((c, idx) => {
                     const node = document.createElement("div");
                     const isAdminComment = c.isAdmin === true;
                     const authorName = isAdminComment ? "관리자" : c.author;
                     const authorClass = isAdminComment ? "font-black text-slate-950 text-sm" : "font-extrabold text-slate-800 text-xs";
-                    node.className = "p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex justify-between items-start";
+                    node.className = "p-3 bg-white rounded-xl border border-slate-200 shadow-sm flex justify-between items-start";
                     node.innerHTML = `
                         <div class="flex-grow text-left min-w-0">
                             <span class="${authorClass}">${escapeHtml(authorName)}</span>
                             <p class="text-slate-700 text-sm mt-0.5 font-medium break-words">${escapeHtml(c.text)}</p>
                         </div>
-                        <button onclick="deleteComment('${item.id}', ${idx})" class="shrink-0 text-slate-400 hover:text-red-600 text-[11px] ml-2 bg-white hover:bg-red-50 px-2 py-0.5 rounded border border-slate-200">삭제</button>
+                        <button data-delete-comment="${idx}" data-post-id="${escapeHtml(item.id)}" class="shrink-0 text-slate-500 hover:text-red-600 text-[11px] ml-2 bg-white hover:bg-red-50 px-2 py-0.5 rounded border border-slate-200">삭제</button>
                     `;
                     list.appendChild(node);
                 });
@@ -1730,19 +1710,20 @@
             }
             
             const passwordHash = isAdminLoggedIn ? "" : await hashPassword(passwordInput.value.trim());
-            item.comments.push({ author, text: textInput.value.trim(), passwordHash, isAdmin: isAdminLoggedIn });
+            const nextComments = [...item.comments, { author, text: textInput.value.trim(), passwordHash, isAdmin: isAdminLoggedIn }];
             const saved = await window.saveEvidenceToFirestore(item.id, {
-                comments: item.comments,
+                comments: nextComments,
                 updatedAt: new Date().toISOString()
             });
             if (saved) {
+                item.comments = nextComments;
                 renderPostComments(item);
                 authorInput.value = isAdminLoggedIn ? "관리자" : "ㅇㅇ";
                 textInput.value = "";
                 passwordInput.value = "";
                 showNotification("댓글이 등록되었습니다.");
             } else {
-                alert("네트워크 문제로 댓글 저장에 실패했습니다.");
+                alert("댓글을 저장하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.");
             }
         };
 
@@ -1804,10 +1785,10 @@
                 const file = localUploadedFileList[index];
                 const isGifFile = file && file.type === "image/gif";
                 const previewMarkup = isGifFile
-                    ? `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-file-image text-lg"></i><span class="text-[10px] font-bold leading-none">GIF</span></div>`
+                    ? `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5"><i aria-hidden="true" class="fa-solid fa-file-image text-lg"></i><span class="text-[10px] font-bold leading-none">GIF</span></div>`
                     : `<img src="${escapeHtml(previewUrl)}" class="w-full h-full object-cover" alt="">`;
                 const div = document.createElement("div");
-                div.className = "relative w-16 h-16 border-2 border-slate-300 rounded-lg overflow-hidden cursor-grab transition-transform";
+                div.className = "upload-preview cursor-grab";
                 div.draggable = true;
                 div.dataset.index = String(index);
                 div.title = "드래그해서 순서 변경";
@@ -1815,7 +1796,20 @@
                 div.addEventListener("dragover", handleUploadPreviewDragOver);
                 div.addEventListener("drop", handleUploadPreviewDrop);
                 div.addEventListener("dragend", handleUploadPreviewDragEnd);
-                div.innerHTML = `${previewMarkup}<div class="absolute bottom-0 left-0 bg-slate-900/80 text-white rounded-tr-md px-1 text-[10px] font-black leading-4">${index + 1}</div><button type="button" onclick="removeUploadedImage(${index})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] m-0.5"><i class="fa-solid fa-xmark"></i></button>`;
+                div.innerHTML = `<div class="upload-preview-media">${previewMarkup}<span class="absolute bottom-0 left-0 bg-slate-900/80 text-white px-1 text-xs">${index + 1}</span></div>
+                    <div class="upload-preview-controls">
+                        <button type="button" data-move="previous" aria-label="이미지 ${index + 1} 앞으로 이동" ${index === 0 ? "disabled" : ""}>←</button>
+                        <button type="button" data-move="next" aria-label="이미지 ${index + 1} 뒤로 이동" ${index === localUploadedBase64List.length - 1 ? "disabled" : ""}>→</button>
+                        <button type="button" onclick="removeUploadedImage(${index})" aria-label="이미지 ${index + 1} 삭제">×</button>
+                    </div>`;
+                div.querySelectorAll('[data-move]').forEach(button => {
+                    button.onclick = () => {
+                        const target = index + (button.dataset.move === "previous" ? -1 : 1);
+                        moveUploadedImage(index, target);
+                        const controls = container.children[target]?.querySelectorAll('button:not([disabled])');
+                        controls?.[0]?.focus();
+                    };
+                });
                 container.appendChild(div);
             });
         }
@@ -1920,11 +1914,11 @@
             resetUploadForm();
             document.getElementById("modal-form-title").textContent = "새로운 사례 제출";
             document.getElementById("form-category").value = CATEGORY_KEYS.includes(window.selectedCategoryKey) ? window.selectedCategoryKey : "free-board";
-            document.getElementById("upload-modal").classList.remove("hidden");
+            setModalOpen("upload-modal", true);
             setupDragAndDrop();
         };
 
-        window.closeUploadModal = function() { document.getElementById("upload-modal").classList.add("hidden"); resetUploadForm(); };
+        window.closeUploadModal = function() { setModalOpen("upload-modal", false); resetUploadForm(); };
 
         function resetUploadForm() {
             uploadPreviewSessionId++;
@@ -2221,12 +2215,12 @@
             localUploadedFileList = localUploadedBase64List.map(() => null);
             if (item.category !== FEEDBACK_CATEGORY_KEY) renderUploadPreviews();
             document.getElementById("modal-form-title").textContent = "게시글 수정";
-            document.getElementById("upload-modal").classList.remove("hidden");
+            setModalOpen("upload-modal", true);
             setupDragAndDrop();
         };
 
-        window.openAdminModal = function() { document.getElementById("admin-modal").classList.remove("hidden"); document.getElementById("admin-pass-input").focus(); };
-        window.closeAdminModal = function() { document.getElementById("admin-modal").classList.add("hidden"); };
+        window.openAdminModal = function() { setModalOpen("admin-modal", true); document.getElementById("admin-pass-input").focus(); };
+        window.closeAdminModal = function() { setModalOpen("admin-modal", false); };
         window.tryAdminLogin = async function() {
             const inputHash = await hashPassword(document.getElementById("admin-pass-input").value);
             if (inputHash === ADMIN_PASSWORD_HASH) {
@@ -2284,9 +2278,10 @@
             }
 
             if (confirm("정말 이 댓글을 삭제하시겠습니까?")) {
-                item.comments.splice(commentIdx, 1);
-                const deleted = await window.saveEvidenceToFirestore(itemId, { comments: item.comments });
+                const nextComments = item.comments.filter((_, index) => index !== commentIdx);
+                const deleted = await window.saveEvidenceToFirestore(itemId, { comments: nextComments });
                 if (deleted) {
+                    item.comments = nextComments;
                     showNotification("댓글 삭제 완료.");
                     if (window.currentGridEvidences[window.currentLightboxIndex]) renderPostComments(window.currentGridEvidences[window.currentLightboxIndex]);
                 }
@@ -2320,18 +2315,18 @@
         window.openGuideModal = function() {
             window.closeUploadGuideModal();
             window.closeQrModal();
-            document.getElementById("guide-modal").classList.remove("hidden");
+            setModalOpen("guide-modal", true);
         };
-        window.closeGuideModal = function() { document.getElementById("guide-modal").classList.add("hidden"); };
+        window.closeGuideModal = function() { setModalOpen("guide-modal", false); };
         window.handleGuideOutsideClick = function(event) {
             if (event.target.id === "guide-modal") window.closeGuideModal();
         };
         window.openQrModal = function() {
             window.closeGuideModal();
             window.closeUploadGuideModal();
-            document.getElementById("qr-modal").classList.remove("hidden");
+            setModalOpen("qr-modal", true);
         };
-        window.closeQrModal = function() { document.getElementById("qr-modal").classList.add("hidden"); };
+        window.closeQrModal = function() { setModalOpen("qr-modal", false); };
         window.handleQrOutsideClick = function(event) {
             if (event.target.id === "qr-modal") window.closeQrModal();
         };
@@ -2351,7 +2346,7 @@
             categorySelect.value = FEEDBACK_CATEGORY_KEY;
             categorySelect.disabled = true;
             setFeedbackWriteMode(true);
-            document.getElementById("upload-modal").classList.remove("hidden");
+            setModalOpen("upload-modal", true);
             setupDragAndDrop();
         };
 
@@ -2360,17 +2355,17 @@
             window.closeQrModal();
             const modal = document.getElementById("upload-guide-modal");
             const video = modal.querySelector("video");
-            modal.classList.remove("hidden");
+            setModalOpen("upload-guide-modal", true);
             if (video) {
                 video.currentTime = 0;
-                video.play().catch(() => {});
+                if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) video.play().catch(() => {});
             }
         };
         window.closeUploadGuideModal = function() {
             const modal = document.getElementById("upload-guide-modal");
             const video = modal.querySelector("video");
             if (video) video.pause();
-            modal.classList.add("hidden");
+            setModalOpen("upload-guide-modal", false);
         };
         window.handleUploadGuideOutsideClick = function(event) {
             if (event.target.id === "upload-guide-modal") window.closeUploadGuideModal();
@@ -2385,13 +2380,17 @@
         }
 
         function getHeroEvidences() {
-            const categories = ["shape-memory", "strange-ballot", "bad-management", "nec-admin", "etc", "free-board"];
-            return categories.flatMap(category => {
-                const categoryItems = window.evidences
-                    .filter(item => item.category === category)
-                    .sort((a, b) => (b.likes || 0) - (a.likes || 0) || getUpdatedTime(b) - getUpdatedTime(a));
-                return shuffleArray(categoryItems.slice(0, 5)).slice(0, 2);
-            });
+            const candidates = CATEGORY_KEYS.map(category => window.evidences
+                .filter(item => item.category === category)
+                .sort((a, b) => (b.likes || 0) - (a.likes || 0) || getUpdatedTime(b) - getUpdatedTime(a))
+                .slice(0, 5));
+            const key = JSON.stringify(candidates.map(items => items.map(item => item.id)));
+            if (key !== heroSelectionKey) {
+                heroSelectionKey = key;
+                heroSelectionIds = candidates.flatMap(items => shuffleArray(items).slice(0, 2).map(item => item.id));
+            }
+            const byId = new Map(window.evidences.map(item => [item.id, item]));
+            return heroSelectionIds.map(id => byId.get(id)).filter(Boolean);
         }
 
         function shuffleArray(items) {
@@ -2475,20 +2474,20 @@
 
         function renderThumbnailHtml(thumb, title) {
             if (thumb.type === "image") {
-                return `<img src="${escapeHtml(thumb.src)}" alt="${escapeHtml(title)}" class="w-full h-full object-cover" onerror="this.src='${mockImgLinks[0]}'">`;
+                return `<img src="${escapeHtml(thumb.src)}" alt="${escapeHtml(title)}" class="w-full h-full object-cover" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${mockImgLinks[0]}'">`;
             }
             if (thumb.type === "x") {
                 return `
                     <div class="w-full h-full bg-slate-950 text-white flex flex-col items-center justify-center gap-3 p-5 text-center">
                         <div class="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center font-black text-3xl">X</div>
                         <div class="space-y-1 max-w-full">
-                            <div class="text-xs font-black text-slate-400">X 영상/게시물</div>
+                            <div class="text-xs font-black text-slate-500">X 영상/게시물</div>
                             <div class="text-sm md:text-base font-black line-clamp-2">${escapeHtml(title)}</div>
                         </div>
                     </div>
                 `;
             }
-            return `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-2"><i class="fa-solid fa-link text-3xl text-slate-300"></i><span class="text-xs font-black text-slate-300">링크 자료</span></div>`;
+            return `<div class="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-center gap-2"><i aria-hidden="true" class="fa-solid fa-link text-3xl text-slate-300"></i><span class="text-xs font-black text-slate-300">링크 자료</span></div>`;
         }
 
         function parseYouTubeId(url) {
@@ -2541,7 +2540,7 @@
             node.className = "bg-white border-2 border-slate-100 rounded-xl p-4 flex items-center justify-between gap-3";
             node.innerHTML = `
                 <div class="min-w-0">
-                    <div class="text-xs font-black text-slate-400 mb-1">${escapeHtml(getMediaTypeLabel(link))}</div>
+                    <div class="text-xs font-black text-slate-500 mb-1">${escapeHtml(getMediaTypeLabel(link))}</div>
                     <div class="text-sm font-bold text-slate-700 truncate">${escapeHtml(link)}</div>
                 </div>
                 <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black px-3 py-2 rounded-lg">열기</a>
@@ -2636,7 +2635,7 @@
 
         function escapeHtml(text) {
             if (!text) return "";
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         function linkifyText(text) {
@@ -2659,10 +2658,13 @@
         }
 
         function showNotification(msg) {
+            const status = document.getElementById("app-status");
+            status.textContent = "";
+            requestAnimationFrame(() => { status.textContent = msg; });
             document.querySelectorAll(".toast-alert").forEach(el => el.remove());
             const toast = document.createElement("div");
-            toast.className = "toast-alert fixed bottom-5 right-5 bg-slate-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2 z-55 fade-in font-bold";
-            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>${escapeHtml(msg)}</span>`;
+            toast.className = "toast-alert fixed bottom-5 right-5 bg-slate-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2 z-[60] fade-in font-bold";
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-blue-300" aria-hidden="true"></i> <span>${escapeHtml(msg)}</span>`;
             document.body.appendChild(toast);
             setTimeout(() => { toast.classList.add("opacity-0", "transition-opacity", "duration-500"); setTimeout(() => toast.remove(), 500); }, 2500);
         }

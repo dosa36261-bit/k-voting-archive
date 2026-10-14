@@ -63,7 +63,7 @@ Video/SNS links are saved in `evidences.json`, but external videos from YouTube/
 - The site now uses soft delete: deleted posts are marked with `deleted: true` and hidden from the UI.
 - New posts must include a valid 64-character password hash.
 - Public updates are broad enough to support browser-side post edit/delete and comment deletion while preserving document IDs and password hashes.
-- Public writes to category count stats are denied.
+- The current local `firestore.rules` permits public category-count creates/updates after field and range checks. These counters are not protected by authentication. The deployed rules must be checked separately; this UI update does not deploy Firebase rules.
 - Firebase Storage uploads are capped at 25MB and cannot overwrite existing files.
 
 ## Remaining Risks

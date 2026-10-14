@@ -16,7 +16,10 @@ Repository:
 
 This is a very small static site:
 
-- `index.html`: all UI, styles, Firebase client code, Firebase Storage upload code, and app logic live here.
+- `index.html`: UI markup, Firebase client code, Firebase Storage upload code, and app logic.
+- `styles.css`: shared UI surfaces, card layout, responsive styles, focus and reduced-motion rules.
+- `scripts/check-ui.mjs`: isolated Playwright regression checks; Firebase is removed from the fixture page so it never reads or writes production data. Requires Playwright and Chrome. Run `node scripts/check-ui.mjs`.
+- `UI_REVIEW.md`: UI review coverage, verification, and remaining code risks.
 - `firestore.rules`: suggested Firestore rules for the Firebase console.
 - `vercel.json`: rewrites all routes to `index.html` so shared links do not show Vercel `Not Found`.
 - `QR.png`: QR image shown from the header QR button for public sharing.
@@ -252,5 +255,10 @@ Open Vercel Deployments and redeploy latest `main` commit.
 
 ## Recent Implementation Notes
 
+- Cards are native links with delegated `data-category` and `data-post-id` navigation. Keep database values out of inline JavaScript attributes.
+- Open and close overlays through `setModalOpen` so background inertness, scroll locking, focus trapping and focus return stay consistent.
+- Pagination requests capture their state object. Ignore stale results after switching categories or sort order.
+- Hero candidates are shuffled only when the candidate set changes so Previous and Next use a stable sequence.
 - Upload previews in the writing form can be reordered by dragging thumbnails. The save flow preserves that preview order in the stored `images` array.
+- Upload previews also have keyboard-accessible move and remove buttons.
 - Body text URL linkification must avoid double-escaping query strings. In particular, links like `https://gall.dcinside.com/mgallery/board/view?id=uspolitics&no=3225244` should open with the real `&no=` query parameter, not a literal `&amp;no=`.
