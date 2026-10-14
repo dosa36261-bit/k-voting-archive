@@ -21,6 +21,18 @@ node scripts/check-ui.mjs
 firebase deploy --only functions:archive,firestore:rules,storage --project k-voting
 ```
 
+On first deployment, allow the Firebase CLI to configure the cross-service
+Storage role (`roles/firebaserules.firestoreServiceAgent`). Non-interactive
+deployment skips this setup; the Storage service account must have the role
+before upload grants can be read. Allow time for IAM propagation.
+
+`node scripts/check-security-live.mjs --run` explicitly creates a temporary
+feedback post and image to test the deployed API and rules, then removes them.
+The 2026-10-14 deployment passed 11 live checks, including direct-write denial,
+private-verifier read denial, password checks, duplicate likes, authorized image
+upload and overwrite denial. A browser check also verified the actual SDK upload
+flow. All 239 original posts and 21 comments were preserved without content changes.
+
 The existing billed project is used. The function has zero minimum instances, a maximum of three instances, and a 60-second timeout. Container artifact cleanup is enabled during deployment. Budget alerts do not constitute a hard spending cap.
 
 ## Backups

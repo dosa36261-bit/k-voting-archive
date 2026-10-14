@@ -196,7 +196,7 @@ Helpers:
 - `getMediaLinks`
 - `getThumbnail`
 - `linkifyText`
-- `hashPassword`
+- `functions/passwords.js`: server-only password hashing and verification
 
 ## Keyboard Behavior
 

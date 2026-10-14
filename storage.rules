@@ -3,6 +3,7 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /evidence-images/{evidenceId}/{fileName} {
+      // Only the callable backend can issue these short-lived upload grants.
       function hasUploadGrant() {
         let grant = firestore.get(/databases/(default)/documents/_archiveUploadGrants/$(request.auth.uid + '_' + evidenceId)).data;
         return grant.expiresAt > request.time && fileName in grant.files;
