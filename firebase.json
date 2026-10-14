@@ -1,4 +1,5 @@
 {
+  "functions": [{ "source": "functions", "codebase": "archive", "ignore": ["node_modules", "test", "*.log"] }],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

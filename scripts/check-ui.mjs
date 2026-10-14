@@ -27,6 +27,7 @@ async function checkPaginationRace() {
     const context = vm.createContext({
         window: win, console,
         initializeApp: () => ({}), getFirestore: () => ({}), getStorage: () => ({}),
+        getAuth: () => ({}), getFunctions: () => ({}), httpsCallable: () => ({}),
         collection: () => ({}), where: (...parts) => parts, query: (...parts) => parts,
         orderBy: (...parts) => parts, documentId: () => '__name__', limit: n => n, startAfter: value => value,
         getDocs: () => new Promise((resolve, reject) => requests.push({ resolve, reject })),
@@ -164,14 +165,14 @@ try {
     const likes = await page.evaluate(async () => {
         const item = window.currentGridEvidences[window.currentLightboxIndex];
         const original = item.likes;
-        window.saveEvidenceToFirestore = async () => false;
+        window.archiveAction = async () => null;
         await window.likeCurrentPost();
         const afterFailure = item.likes;
         let resolve, calls = 0;
-        window.saveEvidenceToFirestore = () => { calls++; return new Promise(done => { resolve = done; }); };
+        window.archiveAction = () => { calls++; return new Promise(done => { resolve = done; }); };
         const pending = window.likeCurrentPost();
         await window.likeCurrentPost();
-        resolve(true); await pending;
+        resolve({ post: { likes: original + 1 } }); await pending;
         return { original, afterFailure, afterSuccess: item.likes, calls };
     });
     assert.equal(likes.afterFailure, likes.original);
@@ -179,7 +180,7 @@ try {
     assert.equal(likes.calls, 1);
     await page.locator('#comment-text').fill('저장 실패 확인');
     await page.locator('#comment-password').fill('1234');
-    await page.evaluate(() => { window.saveEvidenceToFirestore = async () => false; });
+    await page.evaluate(() => { window.archiveAction = async () => null; });
     await page.locator('#comment-form button[type="submit"]').click();
     await page.waitForTimeout(150);
     assert.equal(await page.evaluate(() => window.currentGridEvidences[window.currentLightboxIndex].comments.length), 0);

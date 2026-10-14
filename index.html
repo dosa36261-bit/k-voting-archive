@@ -440,7 +440,9 @@
     <!-- Firebase SDK 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, setDoc, getDoc, getDocs, increment, query, where, orderBy, limit, startAfter, documentId } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, getDoc, getDocs, query, where, orderBy, limit, startAfter, documentId } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -455,6 +457,30 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
+        const auth = getAuth(app);
+        const archiveApi = httpsCallable(getFunctions(app, 'asia-northeast3'), 'archiveApi');
+        let authPromise;
+        let adminToken = '';
+        window.archiveAction = async function(action, payload = {}) {
+            try {
+                await auth.authStateReady();
+                if (!auth.currentUser) {
+                    if (!authPromise) authPromise = signInAnonymously(auth).finally(() => { authPromise = null; });
+                    await authPromise;
+                }
+                const result = (await archiveApi({ ...payload, action, adminToken })).data;
+                if (action === 'adminLogin') adminToken = result.token;
+                return result;
+            } catch (error) {
+                console.error('Archive request failed:', error.code);
+                if (adminToken && error.message?.includes('관리자 인증')) {
+                    adminToken = '';
+                    window.clearAdminSession?.();
+                }
+                alert(error.message || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+                return null;
+            }
+        };
         
         const appId = 'k-voting';
         const collectionName = 'evidences';
@@ -502,32 +528,11 @@
         }
         window.mergeEvidenceItems = mergeEvidenceItems;
 
-        // 전역 스코프에 Firestore 저장 함수 주입
-        window.saveEvidenceToFirestore = async function(evidenceId, dataObj) {
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
-                await setDoc(docRef, dataObj, { merge: true });
-                return true;
-            } catch (err) {
-                console.error("Firestore 저장 프로세스 실패: ", err);
-                return false;
-            }
+        window.saveEvidenceToFirestore = async function(evidenceId, dataObj, password = '') {
+            return window.archiveAction('savePost', { id: evidenceId, post: dataObj, password });
         };
-
-        // 전역 삭제 함수 보강
-        window.deleteEvidenceFromFirestore = async function(evidenceId) {
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', collectionName, evidenceId);
-                await setDoc(docRef, {
-                    deleted: true,
-                    deletedAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-                return true;
-            } catch (err) {
-                console.error("Firestore 문서 삭제 중 오류: ", err);
-                return false;
-            }
+        window.deleteEvidenceFromFirestore = async function(evidenceId, password = '') {
+            return !!await window.archiveAction('deletePost', { id: evidenceId, password });
         };
 
         // 앱 구동 즉시 비동기 리스너 바인딩
@@ -652,55 +657,21 @@
             return window.categoryCounts;
         };
 
-        window.adjustCategoryCount = async function(category, amount) {
-            if (!category || !categoryKeys.includes(category) || !amount) return true;
-            try {
-                await setDoc(getCategoryCountsDocRef(), {
-                    [category]: increment(amount),
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-                window.categoryCounts = {
-                    ...(window.categoryCounts || {}),
-                    [category]: Math.max(0, Number((window.categoryCounts || {})[category] || 0) + amount)
-                };
-                window.updateCategoryCounters();
-                return true;
-            } catch (error) {
-                console.error("Category count update failed:", error);
-                return false;
-            }
-        };
-
-
-        window.adjustCategoryCountsForChange = async function(oldCategory, newCategory) {
-            if (!oldCategory && newCategory) return window.adjustCategoryCount(newCategory, 1);
-            if (oldCategory && !newCategory) return window.adjustCategoryCount(oldCategory, -1);
-            if (!oldCategory || !newCategory || oldCategory === newCategory) return true;
-            try {
-                await setDoc(getCategoryCountsDocRef(), {
-                    [oldCategory]: increment(-1),
-                    [newCategory]: increment(1),
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-                window.categoryCounts = {
-                    ...(window.categoryCounts || {}),
-                    [oldCategory]: Math.max(0, Number((window.categoryCounts || {})[oldCategory] || 0) - 1),
-                    [newCategory]: Number((window.categoryCounts || {})[newCategory] || 0) + 1
-                };
-                window.updateCategoryCounters();
-                return true;
-            } catch (error) {
-                console.error("Category count change update failed:", error);
-                return false;
-            }
+        // The server updates counters in the same transaction as the post.
+        window.adjustCategoryCount = window.adjustCategoryCountsForChange = async function() {
+            return window.loadCategoryCounts();
         };
 
         window.uploadImagesToFirebaseStorage = async function(evidenceId, title, source, files) {
             try {
+                const fileNames = files.map((file, index) => window.getFirebaseStorageFileName(file, index));
+                const grant = await window.archiveAction('uploadGrant', {
+                    id: evidenceId, files: fileNames,
+                    password: document.getElementById('form-post-password').value.trim()
+                });
+                if (!grant) return null;
                 const uploads = files.map(async (file, index) => {
-                    const fileName = window.getFirebaseStorageFileName
-                        ? window.getFirebaseStorageFileName(file, index)
-                        : `${Date.now()}-${index + 1}`;
+                    const fileName = fileNames[index];
                     const path = `evidence-images/${evidenceId}/${fileName}`;
                     const imageRef = storageRef(storage, path);
                     await uploadBytes(imageRef, file, {
@@ -740,7 +711,6 @@
     </script>
 
     <script>
-        const ADMIN_PASSWORD_HASH = "6e74b0e24cc5de672103e711e8239771d00fdbf012b2633e09f25de74014a6b0";
         const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
         const MAX_IMAGE_UPLOAD_COUNT = 20;
         const MAX_MEDIA_LINK_COUNT = 20;
@@ -1610,10 +1580,9 @@
             const button = document.getElementById("like-post-button");
             button.disabled = true;
             try {
-                const nextLikes = (item.likes || 0) + 1;
-                const updated = await window.saveEvidenceToFirestore(item.id, { likes: nextLikes, updatedAt: new Date().toISOString() });
-                if (!updated) throw new Error("Like save failed");
-                item.likes = nextLikes;
+                const updated = await window.archiveAction('like', { id: item.id });
+                if (!updated) return;
+                item.likes = updated.post.likes;
                 markPostLiked(item.id);
                 if (window.currentGridEvidences[window.currentLightboxIndex]?.id === item.id) document.getElementById("lightbox-likes-count").textContent = item.likes;
                 showNotification("추천이 반영되었습니다.");
@@ -1709,14 +1678,11 @@
                 return;
             }
             
-            const passwordHash = isAdminLoggedIn ? "" : await hashPassword(passwordInput.value.trim());
-            const nextComments = [...item.comments, { author, text: textInput.value.trim(), passwordHash, isAdmin: isAdminLoggedIn }];
-            const saved = await window.saveEvidenceToFirestore(item.id, {
-                comments: nextComments,
-                updatedAt: new Date().toISOString()
+            const saved = await window.archiveAction('addComment', {
+                id: item.id, author, text: textInput.value.trim(), password: passwordInput.value.trim()
             });
             if (saved) {
-                item.comments = nextComments;
+                item.comments = saved.post.comments;
                 renderPostComments(item);
                 authorInput.value = isAdminLoggedIn ? "관리자" : "ㅇㅇ";
                 textInput.value = "";
@@ -1953,26 +1919,11 @@
             }
         }
 
-        async function hashPassword(password) {
-            const encoded = new TextEncoder().encode(password);
-            const digest = await crypto.subtle.digest("SHA-256", encoded);
-            return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
-        }
-
         async function verifyPostPassword(item, message) {
-            if (isAdminLoggedIn) return true;
-            if (!item.passwordHash) {
-                alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 확인을 지원하지 않습니다. 관리자에게 문의해주세요.");
-                return false;
-            }
-            const inputPassword = prompt(message);
-            if (!inputPassword) return false;
-            const inputHash = await hashPassword(inputPassword.trim());
-            if (inputHash !== item.passwordHash) {
-                alert("비밀번호가 다릅니다.");
-                return false;
-            }
-            return true;
+            const password = isAdminLoggedIn ? '' : prompt(message);
+            if (password === null) return null;
+            const result = await window.archiveAction('verifyPost', { id: item.id, password: password.trim() });
+            return result ? password.trim() : null;
         }
 
         window.saveEvidence = async function(e) {
@@ -2026,9 +1977,8 @@
                 return;
             }
 
-            const passwordHash = postPassword ? await hashPassword(postPassword) : "";
             let success = false;
-            const evidenceId = editId || "ev-" + Date.now();
+            const evidenceId = editId || "ev-" + Date.now() + "-" + crypto.randomUUID();
             let previousCategory = "";
             let savedEvidence = null;
 
@@ -2036,14 +1986,6 @@
                 const original = window.evidences.find(item => item.id === editId);
                 if (!original) return;
                 previousCategory = original.category || "";
-                if (!isAdminLoggedIn && !original.passwordHash) {
-                    alert("이전 방식으로 작성된 게시글이라 작성자 비밀번호 수정을 지원하지 않습니다. 관리자에게 문의해주세요.");
-                    return;
-                }
-                if (!isAdminLoggedIn && passwordHash !== original.passwordHash) {
-                    alert("비밀번호가 다릅니다.");
-                    return;
-                }
                 const finalImages = await prepareImagesForSave(evidenceId, title, source);
                 if (!finalImages) {
                     alert("이미지 업로드에 실패했습니다. Firebase Storage 설정 또는 네트워크 상태를 확인해주세요.");
@@ -2068,7 +2010,7 @@
                     source,
                     desc,
                     updatedAt
-                });
+                }, postPassword);
             } else {
                 const finalImages = await prepareImagesForSave(evidenceId, title, source);
                 if (!finalImages) {
@@ -2086,13 +2028,13 @@
                     desc,
                     likes: 0,
                     comments: [],
-                    passwordHash,
                     createdAt
                 };
-                success = await window.saveEvidenceToFirestore(evidenceId, savedEvidence);
+                success = await window.saveEvidenceToFirestore(evidenceId, savedEvidence, postPassword);
             }
 
             if (success) {
+                savedEvidence = success.post;
                 if (savedEvidence) {
                     window.applyFetchedEvidences([savedEvidence], { allowEmpty: true, cache: true });
                 }
@@ -2221,15 +2163,21 @@
 
         window.openAdminModal = function() { setModalOpen("admin-modal", true); document.getElementById("admin-pass-input").focus(); };
         window.closeAdminModal = function() { setModalOpen("admin-modal", false); };
+        window.clearAdminSession = function() {
+            isAdminLoggedIn = false;
+            document.getElementById("admin-indicator").classList.add("hidden");
+            updateCommentFormForAdminState();
+        };
         window.tryAdminLogin = async function() {
-            const inputHash = await hashPassword(document.getElementById("admin-pass-input").value);
-            if (inputHash === ADMIN_PASSWORD_HASH) {
+            const result = await window.archiveAction('adminLogin', { password: document.getElementById("admin-pass-input").value });
+            document.getElementById("admin-pass-input").value = '';
+            if (result) {
                 isAdminLoggedIn = true;
                 document.getElementById("admin-indicator").classList.remove("hidden");
                 updateCommentFormForAdminState();
                 window.closeAdminModal(); showNotification("관리자 인증 성공!");
                 if (window.selectedCategoryKey) window.renderCategoryGrid(); else window.renderHeroSlider();
-            } else alert("비밀번호가 다릅니다.");
+            }
         };
 
         window.deleteEvidence = async function(id) {
@@ -2237,10 +2185,10 @@
             if (!item) return;
 
             const verified = await verifyPostPassword(item, "게시글 작성 시 설정한 비밀번호를 입력해주세요.");
-            if (!verified) return;
+            if (verified === null) return;
 
             if (confirm("정말 이 게시물을 삭제하시겠습니까?")) {
-                const deleted = await window.deleteEvidenceFromFirestore(id);
+                const deleted = await window.deleteEvidenceFromFirestore(id, verified);
                 if (deleted) {
                     window.evidences = window.evidences.filter(e => e.id !== id);
                     window.currentGridEvidences = window.currentGridEvidences.filter(e => e.id !== id);
@@ -2259,31 +2207,14 @@
             if (!item || !item.comments || !item.comments[commentIdx]) return;
 
             const comment = item.comments[commentIdx];
-            if (!isAdminLoggedIn) {
-                if (comment.isAdmin === true) {
-                    alert("관리자 댓글은 관리자 로그인 후 삭제할 수 있습니다.");
-                    return;
-                }
-                if (!comment.passwordHash) {
-                    alert("이전 댓글은 작성자 비밀번호 삭제를 지원하지 않습니다. 관리자에게 문의해주세요.");
-                    return;
-                }
-                const password = prompt("댓글 작성 시 설정한 비밀번호를 입력해주세요.");
-                if (!password) return;
-                const inputHash = await hashPassword(password.trim());
-                if (inputHash !== comment.passwordHash) {
-                    alert("비밀번호가 다릅니다.");
-                    return;
-                }
-            }
-
+            const password = isAdminLoggedIn ? '' : prompt("댓글 작성 시 설정한 비밀번호를 입력해주세요.");
+            if (password === null) return;
             if (confirm("정말 이 댓글을 삭제하시겠습니까?")) {
-                const nextComments = item.comments.filter((_, index) => index !== commentIdx);
-                const deleted = await window.saveEvidenceToFirestore(itemId, { comments: nextComments });
+                const deleted = await window.archiveAction('deleteComment', { id: itemId, commentId: comment.id, password: password.trim() });
                 if (deleted) {
-                    item.comments = nextComments;
+                    item.comments = deleted.post.comments;
                     showNotification("댓글 삭제 완료.");
-                    if (window.currentGridEvidences[window.currentLightboxIndex]) renderPostComments(window.currentGridEvidences[window.currentLightboxIndex]);
+                    if (window.currentGridEvidences[window.currentLightboxIndex]?.id === itemId) renderPostComments(item);
                 }
             }
         };
@@ -2297,10 +2228,12 @@
                 alert("출처는 160자 이하로 입력해주세요.");
                 return;
             }
+            const password = await verifyPostPassword(item, "게시글 비밀번호를 입력해주세요.");
+            if (password === null) return;
             const saved = await window.saveEvidenceToFirestore(item.id, {
                 source: newSource.trim(),
                 updatedAt: new Date().toISOString()
-            });
+            }, password);
             if (saved) {
                 item.source = newSource.trim();
                 document.getElementById("lightbox-source").textContent = item.source;

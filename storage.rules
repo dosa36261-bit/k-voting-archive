@@ -3,8 +3,14 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /evidence-images/{evidenceId}/{fileName} {
+      function hasUploadGrant() {
+        let grant = firestore.get(/databases/(default)/documents/_archiveUploadGrants/$(request.auth.uid + '_' + evidenceId)).data;
+        return grant.expiresAt > request.time && fileName in grant.files;
+      }
       allow read: if true;
-      allow write: if request.resource != null
+      allow write: if request.auth != null
+        && hasUploadGrant()
+        && request.resource != null
         && resource == null
         && request.resource.size <= 25 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|gif|webp)')

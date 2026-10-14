@@ -1,84 +1,53 @@
 # Security And Backup Notes
 
-This project is a public, browser-only archive. Users write directly to Firestore from `index.html`, and image/GIF files are uploaded to Firebase Storage.
+The static frontend reads public Firestore documents. All writes use the Firebase callable `archiveApi` in `asia-northeast3`. The existing administrator password screen is preserved; password verification now happens on the server.
 
-## Current Backup Command
+## Access control
 
-Run this from the repository root:
+- Firestore denies every direct browser write, including post changes and category counts. Private collections are not readable by clients.
+- Post/comment verifiers are in `_archivePostSecrets`; the administrator verifier is in `_archiveAdmin/config`. New passwords use salted scrypt. Legacy SHA-256 verifiers accept the original password and are never accepted as bearer credentials.
+- Administrator login creates a random, one-hour session bound to the anonymous Firebase user. Its token stays in browser memory. Changing a frontend variable cannot grant server authority.
+- Comments use stable IDs. Comments, votes and category counters are updated by server transactions.
+- Likes are limited per anonymous Firebase identity. Clearing browser data can create a new identity; this is not proof of a unique person.
+- Storage uploads need anonymous authentication and a 15-minute grant for specific filenames. The server checks the post password before granting uploads to an existing post. Size/MIME/no-overwrite restrictions remain enforced by Storage rules.
+- API limits are checked by both network address and UID. App Check is not currently enabled.
 
-```bash
-npm run backup
+## Deployment and verification
+
+```powershell
+npm ci --prefix functions
+npm test --prefix functions
+node scripts/check-ui.mjs
+firebase deploy --only functions:archive,firestore:rules,storage --project k-voting
 ```
 
-The script creates:
+The existing billed project is used. The function has zero minimum instances, a maximum of three instances, and a 60-second timeout. Container artifact cleanup is enabled during deployment. Budget alerts do not constitute a hard spending cap.
 
-```text
-backups/<date>/evidences.json
-backups/<date>/manifest.json
-backups/<date>/images/
+## Backups
+
+`npm run backup` saves public post metadata and images to ignored `backups/<date>/`. Video/SNS links are retained, but remote videos are not downloaded.
+
+Private password verifiers require a separate operator-authenticated backup:
+
+```powershell
+node scripts/backup-security.mjs
 ```
 
-`backups/` is ignored by Git so private backup files are not pushed to GitHub.
+This reuses the local Firebase CLI login and saves only under ignored `backups/`. Preserve these backups securely; do not publish or commit them. Anonymous sessions, transient upload grants and rate counters do not need to be restored.
 
-If the script says `Firestore quota exceeded`, Firebase/Google Cloud read quota is exhausted. Wait for quota reset or enable billing with a budget cap before trying again.
+## Migration
 
-## Owner Checklist
+`node scripts/migrate-security.mjs` creates a read-only metadata backup and prints a summary. `--apply` requires direct public writes to be closed first. It moves existing verifiers, assigns stable comment IDs, removes public verifier fields and recalculates counts. Initial administrator migration reads `ARCHIVE_LEGACY_ADMIN_HASH` from the process environment. Subsequent runs keep existing private verifiers.
 
-Do these in order.
+Do not roll back to public write rules. Restore post metadata and private verifiers with operator credentials if needed. `npm run rebuild-counts` also requires the operator login.
 
-1. In Firebase Console, open Firestore Database > Rules.
-2. Copy the contents of `firestore.rules` into the rules editor.
-3. Click Publish.
-4. Open Firebase/Google Cloud usage or quotas and check whether Firestore reads are exhausted.
-5. If quota is exhausted, wait for the free quota reset or enable Blaze only after setting budget alerts.
-6. After quota is available again, run:
+## Remaining limitations
 
-```bash
-npm run backup
-```
+Previously exposed legacy hashes may exist in old caches or Git history. Removing them from the current public documents cannot retract old copies. New passwords are salted and future successful author edits upgrade legacy post verifiers. The administrator password remains unchanged as requested.
 
-7. Confirm that a new `backups/<date>/manifest.json` and `backups/<date>/evidences.json` exist.
+Anonymous identities and rate limits reduce abuse but cannot prevent every spam or storage-abuse attempt. App Check and monitored usage limits remain possible future improvements.
 
-If Firebase CLI is installed and logged in, rules can also be deployed with:
+## Restore log
 
-```bash
-firebase deploy --only firestore:rules
-```
-
-## What Is Backed Up
-
-- Firestore post documents from `artifacts/k-voting/public/data/evidences`
-- Active and soft-deleted documents
-- Image/GIF URLs listed in each post's `images` or legacy `image` field
-
-Video/SNS links are saved in `evidences.json`, but external videos from YouTube/X/Threads are not downloaded.
-
-## Restore Log
-
-- 2026-07-02: Restored 136 legacy Cloudinary image files from local backups to Firebase Storage and replaced the affected Firestore image URLs. Verification afterwards found 0 remaining Cloudinary URLs and 0 broken image URLs.
-
-## Current Safety Improvements
-
-- Firestore `delete` is denied in `firestore.rules`.
-- The site now uses soft delete: deleted posts are marked with `deleted: true` and hidden from the UI.
-- New posts must include a valid 64-character password hash.
-- Public updates are broad enough to support browser-side post edit/delete and comment deletion while preserving document IDs and password hashes.
-- The current local `firestore.rules` permits public category-count creates/updates after field and range checks. These counters are not protected by authentication. The deployed rules must be checked separately; this UI update does not deploy Firebase rules.
-- Firebase Storage uploads are capped at 25MB and cannot overwrite existing files.
-
-## Remaining Risks
-
-These are not fully solved while the site is a browser-only public app:
-
-- A determined attacker can still send direct Firestore update requests within the public rules. Browser-side post/comment password checks are not a trusted server-side boundary.
-- The plaintext admin password is no longer in frontend source code, but the frontend still exposes a verifier hash and should not be treated as real security.
-- Post password checks happen in the browser, not on a trusted server.
-- Firebase Storage public uploads can still be abused without App Check, server-side rate limits, or authenticated upload mediation.
-
-## Recommended Next Steps
-
-1. Enable a budget alert/limit in Google Cloud before turning on paid Firebase features.
-2. Use Firebase scheduled export to Cloud Storage for managed Firestore backups if Blaze billing is enabled.
-3. Keep running the local backup script or enable managed Firebase backups.
-4. Move admin/delete/edit operations to Firebase Auth plus Cloud Functions.
-5. Keep CAPTCHA off unless abuse becomes severe; prefer rate limits and server-side checks first.
+- 2026-07-02: Restored 136 legacy Cloudinary images to Firebase Storage; verified zero remaining Cloudinary URLs and zero broken image URLs.
+- 2026-10-14: Backed up 239 posts (226 active) and 21 comments before the server-side security migration. Images are unchanged by this migration.

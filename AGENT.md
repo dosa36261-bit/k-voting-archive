@@ -20,7 +20,7 @@ This is a very small static site:
 - `styles.css`: shared UI surfaces, card layout, responsive styles, focus and reduced-motion rules.
 - `scripts/check-ui.mjs`: isolated Playwright regression checks; Firebase is removed from the fixture page so it never reads or writes production data. Requires Playwright and Chrome. Run `node scripts/check-ui.mjs`.
 - `UI_REVIEW.md`: UI review coverage, verification, and remaining code risks.
-- `firestore.rules`: suggested Firestore rules for the Firebase console.
+- `firestore.rules`: deployed public-read-only rules; all writes use the callable backend.
 - `vercel.json`: rewrites all routes to `index.html` so shared links do not show Vercel `Not Found`.
 - `QR.png`: QR image shown from the header QR button for public sharing.
 - `AGENT.md`: this file.
@@ -33,7 +33,7 @@ This is a very small static site:
 - Do not commit unrelated local artifacts such as `node_modules/` unless the operator explicitly asks. If the worktree has unrelated changes, leave them alone and stage only the files needed for the task.
 - Keep changes scoped to this static app unless the operator specifically asks for a larger restructure.
 
-There is no build step, package manager, framework, backend server, or bundler. Vercel deploys the static files directly from GitHub.
+Vercel deploys the static frontend directly from GitHub. The trusted write backend is `functions/` (Firebase callable `archiveApi`, Node 22, asia-northeast3). Run `npm ci --prefix functions` and `npm test --prefix functions`. Deploy with `firebase deploy --only functions:archive,firestore:rules,storage --project k-voting`.
 
 ## External Services
 
@@ -106,11 +106,10 @@ Each post document roughly looks like:
     {
       author: "...",
       text: "...",
-      passwordHash: "sha256...",
+      id: "stable-comment-uuid",
       isAdmin: false
     }
   ],
-  passwordHash: "sha256...",
   createdAt: "ISO date",
   updatedAt: "ISO date"
 }
@@ -141,7 +140,7 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 - Content URLs are linkified.
 - Copied/shared post links use `/?post=ev-...` and old `#post=ev-...` links are still understood. Normal in-site post opening keeps the category URL and uses history state so mobile Back closes the post modal before leaving the category.
 - `vercel.json` prevents shared links from showing Vercel `Not Found`.
-- Likes are limited to one per browser using `localStorage`, not true account-based identity.
+- Likes are deduplicated transactionally by Firebase anonymous UID, with localStorage for immediate UI feedback. Clearing browser identity can still bypass this; it is not one-person-one-vote.
 - Post edit/delete uses the post password; admin can edit/delete without post password.
 - Comments use author, text, and comment password. Comments can be deleted by admin or by matching comment password.
 - Admin comments are stored with `isAdmin: true` and render as bold `관리자`.
@@ -152,19 +151,11 @@ The inquiry board uses the same evidence post shape with category `feedback-boar
 
 ## Admin Behavior
 
-Admin login is client-side only and compares the SHA-256 hash of the typed password:
+The existing password modal sends the entered password to `archiveApi`. The server verifies the private `_archiveAdmin/config` record and issues a random session token bound to the anonymous Firebase UID for one hour. The browser keeps that token in memory only. Frontend admin flags have no authority.
 
-```js
-const ADMIN_PASSWORD_HASH = "6e74b0e24cc5de672103e711e8239771d00fdbf012b2633e09f25de74014a6b0";
-```
+Post/comment verifiers live in `_archivePostSecrets`, denied to browser reads and writes. New passwords use salted scrypt; migrated SHA-256 verifiers accept the original plaintext password, never the hash itself. Successful author edits upgrade legacy post verifiers. Keep every private collection denied in Firestore rules.
 
-This removes the plaintext admin password from the frontend source, but it is still not real security. Anyone inspecting the source can see the verifier hash, and the app still relies on client-side checks. It is only a convenience UI gate. Actual destructive operations are possible if Firestore rules allow them.
-
-Admin can:
-
-- Delete posts.
-- Edit posts without entering post password.
-- Delete comments without comment password.
+All post changes, comment operations, likes and counts run through server transactions. Storage requires an authenticated, short-lived upload grant for the exact filenames, issued after checking post authorization. Anonymous authentication is transparent to visitors.
 
 ## Important Functions In `index.html`
 
@@ -215,19 +206,20 @@ Helpers:
 
 ## Known Limitations And Risks
 
-- No real user accounts.
-- Like limiting is localStorage-based, so another browser/device can like again.
-- Post/comment password hashes are stored client-side in Firestore. Better than plaintext, but not strong authentication.
-- Firestore `delete` is denied, but public updates are still broad enough to support browser-side post edit/delete and comment deletion. This is vulnerable to direct Firestore requests because passwords are checked in the client.
-- Firebase Storage writes are public client writes under `evidence-images/`, guarded by `storage.rules` for file size, image MIME type, metadata, filename, and no-overwrite checks. This is still abuse-prone without Auth/App Check.
-- X/Twitter real video thumbnails cannot be extracted reliably from a static frontend. The app uses official embeds and a fallback X thumbnail card.
-- X embeds may fail for private/deleted/restricted posts or if X blocks embedding.
+- Anonymous identities are browser identities, not verified people. Network/UID rate limits reduce abuse but App Check is not enabled.
+- Legacy password hashes existed in public documents and Git history before migration. They have been removed from current public documents; changing an exposed or weak password remains advisable.
+- Admin sessions expire after one hour and on reload. Use the same existing password modal to log in again.
+- New server code runs on the existing billed Firebase project with zero minimum instances and a maximum of three instances.
+- Recent-order pagination still fetches document IDs before client sorting; full-dataset updated-date ordering is not guaranteed.
+- X embeds may fail for private/deleted/restricted posts or when X blocks embedding.
 
-## Recommended Next Improvements
+## Security Operations
 
-- Move admin edit/delete/moderation operations to serverless API routes or Firebase Auth plus Cloud Functions.
-- Enable App Check and billing/budget alerts before heavier public traffic.
-- Consider migrating from one-file HTML to a small framework only if the UI keeps growing.
+- `scripts/admin-firestore.mjs` reuses local Firebase CLI OAuth credentials in memory. Never put credentials or service-account keys in source.
+- `node scripts/backup-security.mjs` saves private verifier/config backups under ignored `backups/`. The ordinary `npm run backup` covers public metadata and images only.
+- `node scripts/migrate-security.mjs` creates a metadata backup and reports counts; `--apply` migrates only after direct client writes have been closed. Initial setup requires `ARCHIVE_LEGACY_ADMIN_HASH` in the process environment. Never roll back to public write rules.
+- `npm run rebuild-counts` now requires the local operator Firebase login and backend dependencies.
+- Validate with `npm test --prefix functions` and `node scripts/check-ui.mjs`; optional axe coverage uses `UI_AXE_PATH`.
 
 ## Common Troubleshooting
 
