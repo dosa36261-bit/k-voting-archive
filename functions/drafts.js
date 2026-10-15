@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 export const draftCategories = ['shape-memory', 'strange-ballot', 'bad-management', 'nec-admin', 'etc', 'free-board'];
+export const draftReviewStates = ['draft', 'hold', 'waiting'];
 export const draftsPath = '_archiveDrafts';
-export const draftActions = new Set(['listDrafts', 'importDrafts', 'saveDraft', 'publishDraft', 'deleteDraft']);
+export const draftActions = new Set(['listDrafts', 'importDrafts', 'saveDraft', 'moveDraft', 'publishDraft', 'deleteDraft']);
 
 // Shared by the callable backend and the operator's AI-draft import CLI.
 // Whitelist content fields; imported status/permissions can never publish a post.
@@ -44,7 +45,7 @@ export function createDraftService(db, { check, now, postsPath, countsPath }) {
     }
     if (input.action === 'importDrafts') {
       check(Array.isArray(input.drafts) && input.drafts.length > 0 && input.drafts.length <= 20, '초안을 1~20개 선택해주세요.');
-      const drafts = input.drafts.map(value => ({ ...normalize(value), id: randomUUID(), status: 'draft', version: 1, createdAt: updatedAt, updatedAt }));
+      const drafts = input.drafts.map(value => ({ ...normalize(value), id: randomUUID(), status: 'draft', reviewState: 'draft', version: 1, createdAt: updatedAt, updatedAt }));
       await db.runTransaction(async tx => {
         drafts.forEach(draft => tx.set(db.doc(`${draftsPath}/${draft.id}`), draft));
       });
@@ -67,6 +68,13 @@ export function createDraftService(db, { check, now, postsPath, countsPath }) {
       if (input.action === 'deleteDraft') { tx.delete(ref); return { ok: true }; }
       if (input.action === 'saveDraft') {
         const result = { ...draft, ...normalize(input.draft), updatedAt, version: draft.version + 1 };
+        tx.set(ref, result);
+        return { draft: result };
+      }
+      if (input.action === 'moveDraft') {
+        check(draftReviewStates.includes(input.reviewState), '이동할 검토 상태를 선택해주세요.');
+        // Save current edits and change the private review queue in one transaction.
+        const result = { ...draft, ...normalize(input.draft), reviewState: input.reviewState, updatedAt, version: draft.version + 1 };
         tx.set(ref, result);
         return { draft: result };
       }

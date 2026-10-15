@@ -144,6 +144,15 @@ main.site-shell { padding-block:24px; }
 .admin-heading h2 { font-size:28px; font-weight:750; }
 .admin-heading p { font-size:16px; color:#526176; margin-top:6px; }
 .admin-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+.admin-toolbar-actions { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.admin-toolbar-actions .primary-button { display:flex; align-items:center; gap:8px; }
+.admin-refresh-button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:46px; padding:10px 12px; border-radius:10px; color:var(--color-muted); background:transparent; font-size:15px; font-weight:600; }
+.admin-refresh-button i { display:grid; place-items:center; width:28px; height:28px; border:1px solid #cbd5e1; border-radius:50%; background:white; font-size:13px; }
+.draft-review-tabs { display:flex; gap:4px; padding:4px; background:#e9edf4; border-radius:14px; }
+.draft-review-tabs button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:10px 18px; border-radius:10px; font-size:16px; font-weight:700; color:var(--color-muted); white-space:nowrap; }
+.draft-review-tabs button[aria-selected=true] { background:white; color:#172a46; box-shadow:0 1px 3px #00000012,0 1px 2px #00000008; }
+.draft-review-tabs span { display:grid; place-items:center; min-width:23px; height:23px; padding:0 6px; border-radius:6px; font-size:13px; font-variant-numeric:tabular-nums; color:#526176; background:#dce3ed; }
+.draft-review-tabs button[aria-selected=true] span { background:#eaf1ff; color:#1d4ed8; }
 .admin-panel { background:white; border:1px solid var(--color-border); border-radius:14px; padding:22px; margin-bottom:20px; }
 .admin-panel h3 { font-size:21px; font-weight:700; }
 .admin-workspace { display:grid; grid-template-columns:280px minmax(0,1fr); gap:20px; }
@@ -152,7 +161,21 @@ main.site-shell { padding-block:24px; }
 .draft-list button[aria-pressed=true] { border-color:#2563eb; background:#eff6ff; }
 .draft-list strong { display:block; font-size:17px; }
 .draft-list span { display:block; font-size:14px; color:#526176; margin-top:4px; }
-.draft-form { display:flex; flex-direction:column; gap:8px; }
+.draft-list-empty { padding:20px 12px; color:var(--color-muted); font-size:15px; line-height:1.6; }
+.draft-published-history { margin-top:22px; padding-top:16px; border-top:1px solid var(--color-border); }
+.draft-published-history summary { cursor:pointer; padding:10px 0; color:var(--color-muted); font-size:15px; font-weight:650; }
+.draft-published-history summary span { margin-left:6px; font-variant-numeric:tabular-nums; }
+.draft-published-history .draft-list { margin-top:8px; }
+.draft-form { display:flex; flex-direction:column; gap:8px; scroll-margin-top:110px; }
+.draft-form textarea { resize:none; overflow:hidden; overflow-wrap:anywhere; }
+.draft-review-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; border-bottom:1px solid var(--color-border); padding-bottom:16px; margin-bottom:10px; }
+.draft-review-actions > span { font-size:15px; color:var(--color-muted); font-weight:650; }
+.draft-review-actions > div { display:flex; gap:6px; }
+.draft-review-actions button { min-height:40px; padding:8px 16px; border:1px solid #cbd5e1; border-radius:8px; background:white; color:#334155; font-size:15px; font-weight:650; }
+.draft-review-actions button[aria-pressed=true] { opacity:1; border-color:#bdd0f8; background:#eff6ff; color:#1d4ed8; }
+.draft-review-actions button[data-review-state=hold][aria-pressed=true] { border-color:#ead3a5; background:#fff8eb; color:#795407; }
+.draft-review-actions button[data-review-state=waiting][aria-pressed=true] { border-color:#abdad5; background:#edf9f7; color:#14665c; }
+.draft-review-actions p { flex-basis:100%; font-size:14px; color:var(--color-muted); line-height:1.5; }
 .draft-form fieldset { display:contents; }
 .draft-form .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .draft-form .form-row > div { min-width:0; display:flex; flex-direction:column; gap:8px; }
@@ -163,6 +186,7 @@ main.site-shell { padding-block:24px; }
 .admin-feedback-list a { display:flex; align-items:center; gap:10px; padding:12px; background:#f8fafc; border-radius:8px; font-size:17px; overflow-wrap:anywhere; }
 #draft-published-link { color:#1d4ed8; text-decoration:underline; padding:8px 0; }
 @media (hover:hover) { .header-nav button:hover,.secondary-button:hover { background:#edf2fa; } .category-card:hover,.evidence-card:hover { border-color:#8cace5; } .category-card:hover h3,.evidence-card:hover h3,.hero-card-link:hover h3 { color:#1d4ed8; } .primary-button:hover { background:#1d4ed8; } }
+@media (hover:hover) { .admin-refresh-button:hover { background:#e9edf4; color:#172a46; } .draft-review-tabs button:not([aria-selected=true]):hover { background:#ffffff80; } .draft-review-actions button:not(:disabled):hover,.draft-thumbnail-button:hover { background:#f1f5f9; border-color:#8cace5; } }
 @media (prefers-reduced-motion:no-preference) { .hero-card { transition:transform 240ms cubic-bezier(.77,0,.175,1),opacity 240ms ease-out; } .hero-track.instant .hero-card { transition:none; } .category-card,.evidence-card { transition:border-color 150ms ease-out; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
 @media (max-width:1239px) { .evidence-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
@@ -229,9 +253,13 @@ input,select,textarea { font-size:16px!important; }
 .draft-preview-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 #draft-image-count { color:#526176; font-size:16px; }
 .draft-image-previews { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px; }
-.draft-image-preview { display:flex; flex-direction:column; overflow:hidden; min-width:0; border:1px solid #cbd5e1; border-radius:10px; background:#f1f5f9; text-align:left; }
-.draft-image-preview img { width:100%; height:180px; object-fit:contain; }
+.draft-image-card { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.draft-image-preview { display:flex; flex-direction:column; overflow:hidden; width:100%; min-width:0; border:1px solid #cbd5e1; border-radius:10px; background:#f1f5f9; text-align:left; }
+.draft-image-preview img { width:100%; height:180px; object-fit:contain; outline:1px solid rgb(0 0 0 / .1); outline-offset:-1px; }
 .draft-image-preview span { display:block; padding:10px; font-size:15px; color:#334155; background:white; width:100%; }
+.draft-image-card[data-primary=true] .draft-image-preview { border-color:#8cace5; }
+.draft-image-card[data-primary=true] .draft-image-preview span { background:#eff6ff; color:#1d4ed8; font-weight:650; }
+.draft-thumbnail-button { align-self:flex-start; min-height:38px; padding:6px 10px; border:1px solid transparent; border-radius:8px; color:#526176; font-size:14px; font-weight:600; }
 .draft-image-preview.image-failed { min-height:160px; justify-content:flex-end; }
 #draft-image-modal { background:#101a2dec; padding:24px; }
 .draft-viewer-shell { width:min(1200px,100%); height:calc(100dvh - 48px); max-height:none!important; display:flex; flex-direction:column; background:white; border-radius:16px; overflow:hidden!important; }
@@ -245,6 +273,7 @@ input,select,textarea { font-size:16px!important; }
 .draft-viewer-navigation { display:flex; align-items:center; gap:6px; margin-right:auto; }
 #draft-viewer-position { min-width:40px; text-align:center; font-size:16px; }
 @media (max-width:959px) { .keyboard-hint { gap:10px; } .hero-heading-tools { gap:12px; } .draft-image-previews { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:639px) { .draft-review-tabs { width:100%; } .draft-review-tabs button { flex:1; min-width:0; padding-inline:10px; gap:6px; } .admin-toolbar-actions { width:100%; justify-content:space-between; } .admin-refresh-button { margin-left:auto; } .draft-review-actions { gap:10px; } .draft-review-actions > span { flex-basis:100%; } .draft-review-actions > div { width:100%; } .draft-review-actions button { flex:1; } }
 @media (max-width:719px) {
 .hero-heading-row { flex-wrap:wrap; gap:8px; } .hero-heading-tools { width:100%; justify-content:space-between; } .keyboard-hint { font-size:13px; }
 .draft-image-preview img { height:140px; } .draft-image-preview span { font-size:14px; padding:8px; }

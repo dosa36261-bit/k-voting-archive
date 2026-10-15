@@ -115,8 +115,9 @@ test('all draft actions require server admin authorization', async () => {
 });
 test('imported drafts stay private even if the file forges status or publication fields', async () => {
   const f = await adminFixture();
-  const { drafts } = await f.admin({ action: 'importDrafts', drafts: [{ ...draftContent, status: 'published', postId: 'forged', isAdmin: true }] });
+  const { drafts } = await f.admin({ action: 'importDrafts', drafts: [{ ...draftContent, status: 'published', reviewState: 'waiting', postId: 'forged', isAdmin: true }] });
   assert.equal(drafts[0].status, 'draft');
+  assert.equal(drafts[0].reviewState, 'draft');
   assert.equal(drafts[0].postId, undefined);
   assert.equal([...f.data.keys()].some(key => key.startsWith(postsPath)), false);
   assert.equal((await f.admin({ action: 'listDrafts' })).drafts.length, 1);
@@ -126,8 +127,32 @@ test('stale draft edits and publication are rejected without changing the draft'
   const { drafts: [draft] } = await f.admin({ action: 'importDrafts', drafts: [draftContent] });
   const saved = await f.admin({ action: 'saveDraft', id: draft.id, version: 1, draft: { ...draftContent, title: '수정한 제목' } });
   assert.equal(saved.draft.version, 2);
-  for (const action of ['saveDraft', 'deleteDraft', 'publishDraft']) await assert.rejects(f.admin({ action, id: draft.id, version: 1, draft: draftContent }), { code: 'aborted' });
+  for (const action of ['saveDraft', 'moveDraft', 'deleteDraft', 'publishDraft']) await assert.rejects(f.admin({ action, id: draft.id, version: 1, reviewState: 'hold', draft: draftContent }), { code: 'aborted' });
   assert.equal(f.data.get(`${draftsPath}/${draft.id}`).title, '수정한 제목');
+});
+test('review moves save edits atomically, keep drafts private and preserve state on ordinary saves', async () => {
+  const f = await adminFixture();
+  const { drafts: [draft] } = await f.admin({ action: 'importDrafts', drafts: [draftContent] });
+  // Older documents have no reviewState; they can join the same workflow without a migration.
+  delete f.data.get(`${draftsPath}/${draft.id}`).reviewState;
+  let version = 1;
+  for (const reviewState of ['hold', 'waiting', 'draft']) {
+    const result = await f.admin({ action: 'moveDraft', id: draft.id, version, reviewState, draft: { ...draftContent, title: `${reviewState}에서 검토할 제목` } });
+    version++;
+    assert.equal(result.draft.version, version);
+    assert.equal(result.draft.status, 'draft');
+    assert.equal(result.draft.reviewState, reviewState);
+    assert.equal(result.draft.title, `${reviewState}에서 검토할 제목`);
+    assert.deepEqual(result.draft.images, draftContent.images);
+    assert.equal([...f.data.keys()].some(key => key.startsWith(postsPath)), false);
+    const saved = await f.admin({ action: 'saveDraft', id: draft.id, version, draft: { ...draftContent, reviewState: 'published' } });
+    version++;
+    assert.equal(saved.draft.reviewState, reviewState);
+  }
+  const snapshot = structuredClone(f.data.get(`${draftsPath}/${draft.id}`));
+  await assert.rejects(f.admin({ action: 'moveDraft', id: draft.id, version, reviewState: 'published', draft: draftContent }), { code: 'invalid-argument' });
+  await assert.rejects(f.admin({ action: 'moveDraft', id: draft.id, version, reviewState: 'hold', draft: { ...draftContent, images: ['javascript:alert(1)'] } }), { code: 'invalid-argument' });
+  assert.deepEqual(f.data.get(`${draftsPath}/${draft.id}`), snapshot);
 });
 test('concurrent publication creates exactly one post and count, without private notes', async () => {
   const f = await adminFixture();
@@ -137,8 +162,10 @@ test('concurrent publication creates exactly one post and count, without private
   assert.equal(result[1].alreadyPublished, true);
   assert.equal(f.data.get(countsPath)['free-board'], 1);
   assert.equal(result[0].post.reviewNotes, undefined);
+  assert.equal(result[0].post.reviewState, undefined);
   assert.equal(f.data.get(`_archivePostSecrets/${result[0].post.id}`).password, null);
   await assert.rejects(f.call({ action: 'deletePost', id: result[0].post.id, password: 'guess' }), { code: 'permission-denied' });
+  await assert.rejects(f.admin({ action: 'moveDraft', id: draft.id, version: result[0].draft.version, reviewState: 'draft', draft: draftContent }), { code: 'failed-precondition' });
 });
 test('draft validation rejects executable URLs, oversized content and an incomplete publication', async () => {
   assert.throws(() => normalizeDraft({ ...draftContent, images: ['javascript:alert(1)'] }));

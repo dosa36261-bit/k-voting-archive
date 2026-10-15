@@ -329,15 +329,20 @@ try {
     // Exercise direct agent drafting with a mocked API; no exchange file or production writes.
     await page.evaluate(() => {
         window.__drafts = [];
+        window.__moveFails = false;
         window.archiveAction = async (action, payload = {}) => {
             if (action === 'adminLogin') return { token: 'fixture' };
             if (action === 'listDrafts') return { drafts: structuredClone(window.__drafts) };
             if (action === 'importDrafts') {
-                const drafts = payload.drafts.map((draft, index) => ({ ...draft, id: `draft-${index}`, status: 'draft', version: 1 }));
+                const drafts = payload.drafts.map((draft, index) => ({ ...draft, id: `draft-${window.__drafts.length + index}`, status: 'draft', reviewState: 'draft', version: 1 }));
                 window.__drafts.push(...drafts); return { drafts: structuredClone(drafts) };
             }
             const draft = window.__drafts.find(item => item.id === payload.id);
             if (action === 'saveDraft') { Object.assign(draft, payload.draft, { version: draft.version + 1 }); return { draft: structuredClone(draft) }; }
+            if (action === 'moveDraft') {
+                if (window.__moveFails) throw new Error('상태 변경에 실패했습니다. 다시 시도해주세요.');
+                Object.assign(draft, payload.draft, { reviewState: payload.reviewState, version: draft.version + 1 }); return { draft: structuredClone(draft) };
+            }
             if (action === 'publishDraft') { Object.assign(draft, { status: 'published', postId: 'ev-published' }); return { draft, post: { ...draft, id: 'ev-published' } }; }
         };
     });
@@ -352,7 +357,12 @@ try {
     await page.locator('#admin-draft-form:not(.hidden)').waitFor();
     await page.locator('#draft-title').fill('AI 초안 검토');
     await page.locator('#draft-desc').fill('1. 핵심 정보');
-    await page.locator('#draft-images').fill(base + '/fixture.svg');
+    assert.equal(await page.locator('#draft-images').isVisible(), false, 'Reviewers see photos, not image URLs');
+    const setDraftImages = values => page.evaluate(urls => {
+        const field = document.getElementById('draft-images'); field.value = urls.join('\n');
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+    }, values);
+    await setDraftImages([base + '/fixture.svg']);
     await page.waitForFunction(() => document.querySelector('.draft-image-preview img')?.naturalWidth > 0);
     await page.locator('.draft-image-preview').click();
     await page.waitForFunction(() => document.getElementById('draft-viewer-image').naturalWidth > 0);
@@ -363,19 +373,74 @@ try {
     await page.waitForFunction(() => document.activeElement?.classList.contains('draft-image-preview'));
     assert.equal(await page.locator('#lightbox-modal').isVisible(), false);
     // Reject unsafe preview URLs and keep failed loads reviewable without breaking the editor.
-    await page.locator('#draft-images').fill('javascript:alert(1)\n' + base + '/missing-image.png');
+    await setDraftImages(['javascript:alert(1)', base + '/missing-image.png']);
     await page.waitForFunction(() => document.querySelector('.draft-image-preview.image-failed'));
     assert.equal(await page.locator('.draft-image-preview').count(), 1);
-    assert.ok((await page.locator('#draft-image-status').innerText()).includes('주소를 확인'));
+    assert.ok((await page.locator('#draft-image-status').innerText()).includes('표시할 수 없는 사진'));
     await page.locator('.draft-image-preview').click();
     await page.locator('#draft-viewer-error:not(.hidden)').waitFor();
     assert.equal(await page.locator('#draft-image-zoom').isDisabled(), true);
     await page.keyboard.press('Escape');
-    await page.locator('#draft-images').fill(base + '/fixture.svg');
+    await setDraftImages([base + '/fixture.svg', base + '/fixture.svg#second']);
     await page.waitForFunction(() => document.querySelector('.draft-image-preview img')?.naturalWidth > 0);
+    await page.getByRole('button', { name: '이미지 2을 썸네일로 지정', exact: true }).click();
+    assert.equal(await page.locator('#draft-images').inputValue(), `${base}/fixture.svg#second\n${base}/fixture.svg`);
     await page.locator('#draft-title').fill('검토를 마친 제목');
     await page.locator('#draft-save-button').click();
     assert.equal(await page.locator('#admin-draft-list strong').innerText(), '검토를 마친 제목');
+    // Long content grows with the editor, including a single long URL and a narrower viewport.
+    await page.locator('#draft-desc').fill(Array.from({ length: 18 }, (_, n) => `${n + 1}. 사진과 문서에서 확인할 내용을 길게 적어도 입력란 안에서 스크롤하지 않고 읽을 수 있어야 합니다.`).join('\n'));
+    await page.locator('#draft-media').fill(base + '/' + 'long-source-link-'.repeat(60));
+    await page.locator('#draft-notes').fill(Array.from({ length: 20 }, (_, n) => `검토 메모 ${n + 1}: 다음 검토자가 확인할 자료와 확인 사항을 남깁니다.`).join('\n'));
+    const textareasFit = () => page.waitForFunction(() => [...document.querySelectorAll('#admin-draft-form textarea')].every(field => field.scrollHeight <= field.clientHeight + 1 && field.scrollWidth <= field.clientWidth + 1));
+    await textareasFit();
+    await page.setViewportSize({ width: 390, height: 950 });
+    await textareasFit();
+    await noOverflow('expanded draft fields');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.locator('#draft-desc').fill('1. 언제, 어느 현장에서 나온 사진인지 적습니다.\n2. 사진에서 확인할 특징을 짧게 설명합니다.\n3. 관련 자료는 참고 링크에서 확인할 수 있습니다.');
+    await page.locator('#draft-media').fill(base + '/source-one\n' + base + '/source-two');
+    await page.locator('#draft-notes').fill('사진의 출처와 촬영 장소를 확인했습니다.\n같은 사건의 관련 자료도 함께 확인합니다.\n대표 썸네일은 첫 번째 사진입니다.\n보류할 내용은 이 메모에 남깁니다.\n긴 메모도 전체가 보입니다.');
+    await page.locator('#draft-title').fill('보류하면서 수정한 제목');
+    await page.evaluate(image => window.__drafts.push({ id: 'next-draft', title: '다음에 검토할 자료', category: 'etc', desc: '', source: '', images: [image], mediaLinks: [], reviewNotes: '', status: 'draft', version: 1 }), base + '/fixture.svg');
+    // Refresh first persists these edits through Save, then picks up the next item from the API.
+    await page.locator('#draft-save-button').click();
+    await page.locator('#draft-refresh-button').click();
+    await page.locator('#draft-title').fill('상태 이동과 함께 저장한 제목');
+    await page.locator('[data-review-state=hold]').click();
+    assert.equal(await page.locator('#draft-title').inputValue(), '다음에 검토할 자료', 'Moving advances to the next draft in the current tab');
+    assert.equal(await page.locator('[data-review-count=hold]').innerText(), '1');
+    assert.equal(await page.locator('#draft-tab-draft').getAttribute('aria-selected'), 'true');
+    await page.locator('#draft-tab-hold').click();
+    assert.equal(await page.locator('#draft-title').inputValue(), '상태 이동과 함께 저장한 제목');
+    assert.equal(await page.locator('[data-review-state=hold]').isDisabled(), true);
+    assert.equal(await page.locator('.draft-image-preview').count(), 2, 'All evidence photos survive queue changes');
+    await textareasFit();
+    await page.locator('[data-review-state=waiting]').click();
+    assert.equal(await page.locator('#admin-draft-form').isVisible(), false, 'The last moved item leaves an empty tab');
+    await page.locator('#draft-tab-waiting').click();
+    await page.locator('#draft-refresh-button').click();
+    assert.equal(await page.locator('#draft-tab-waiting').getAttribute('aria-selected'), 'true');
+    assert.equal(await page.locator('#draft-title').inputValue(), '상태 이동과 함께 저장한 제목');
+    await page.evaluate(() => { window.__moveFails = true; });
+    await page.locator('#draft-title').fill('실패해도 남아야 할 수정');
+    await page.locator('[data-review-state=draft]').click();
+    assert.equal(await page.locator('#draft-title').inputValue(), '실패해도 남아야 할 수정');
+    assert.equal(await page.locator('#draft-tab-waiting').getAttribute('aria-selected'), 'true');
+    assert.ok((await page.locator('#draft-status').innerText()).includes('실패'));
+    await page.evaluate(() => { window.__moveFails = false; });
+    await page.locator('[data-review-state=draft]').click();
+    await page.locator('#draft-tab-draft').click();
+    assert.equal(await page.locator('#draft-title').inputValue(), '실패해도 남아야 할 수정');
+    assert.equal(await page.locator('#draft-images').inputValue(), `${base}/fixture.svg#second\n${base}/fixture.svg`);
+    assert.equal(await page.evaluate(() => window.__drafts.every(draft => draft.status === 'draft')), true, 'Review status never publishes a post');
+    await page.locator('#draft-tab-draft').focus();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator('#draft-tab-hold').getAttribute('aria-selected'), 'true');
+    await page.keyboard.press('Home');
+    assert.equal(await page.locator('#draft-tab-draft').getAttribute('aria-selected'), 'true');
+    await page.locator('#draft-title').fill('검토를 마친 제목');
+    await page.locator('#draft-save-button').click();
     await page.evaluate(() => window.setAdminFeedback([{ id: 'pending-feedback', title: '미답변 문의', comments: [] }, { id: 'answered', title: '답변됨', comments: [{ isAdmin: true }] }]));
     assert.equal(await page.locator('#admin-feedback-count').innerText(), '1');
     assert.equal(await page.locator('#feedback-alert-dot').isVisible(), true);
@@ -387,7 +452,7 @@ try {
     await screenshot('admin-390');
     for (const width of [320, 390, 768, 1024, 1440, 1920]) {
         await page.setViewportSize({ width, height: 950 });
-        await page.locator('.draft-image-preview').click();
+        await page.locator('.draft-image-preview').first().click();
         await noOverflow(`draft image ${width}`);
         if (width === 390) { await audit('draft-image-viewer-mobile'); await screenshot('draft-image-390'); }
         await page.keyboard.press('Escape');
@@ -398,8 +463,10 @@ try {
     await page.locator('#draft-publish-button').click();
     await page.locator('#draft-published-link:not(.hidden)').waitFor();
     assert.equal(await page.locator('#draft-title').isDisabled(), true);
-    assert.equal(await page.locator('.draft-image-preview').isEnabled(), true);
-    await page.locator('.draft-image-preview').click();
+    assert.equal(await page.locator('.draft-image-preview').first().isEnabled(), true);
+    assert.equal(await page.locator('#draft-published-history').isVisible(), true);
+    assert.equal(await page.locator('#draft-review-actions').isVisible(), false);
+    await page.locator('.draft-image-preview').first().click();
     await page.locator('#draft-image-modal:not(.hidden)').waitFor();
     await page.evaluate(() => window.clearAdminSession());
     assert.equal(await page.locator('#draft-image-modal').isVisible(), false);
@@ -434,7 +501,7 @@ try {
     });
     assert.equal(await page.evaluate(() => window.evidences.some(item => item.id === 'deleted-cached-post')), false);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: ['pagination race, recovery and 24/25 boundary', 'closed-post scroll regression', 'direction-aware header and focus reveal', 'back/forward, stale post fetch and deferred initial routes', 'private draft review UI and feedback badges', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
+    console.log(JSON.stringify({ passed: ['pagination race, recovery and 24/25 boundary', 'closed-post scroll regression', 'direction-aware header and focus reveal', 'back/forward, stale post fetch and deferred initial routes', 'private draft review UI and feedback badges', 'review tabs, atomic moves, next-item selection and failure recovery', 'thumbnail ordering without dropping photos', 'growing textareas and long references on narrow screens', 'native keyboard navigation', 'special-character IDs', 'search and empty recovery', 'dialog focus trap and restore', 'failed saves and duplicate likes', '6 responsive widths', 'keyboard upload reordering', 'reduced-motion video', 'help and feedback dialogs'], audits }, null, 2));
     assert.equal(audits.reduce((total, item) => total + item.violations.length, 0), 0, 'Accessibility violations remain; see audit output.');
 } finally {
     await browser.close();

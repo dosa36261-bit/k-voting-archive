@@ -269,13 +269,21 @@ Open Vercel Deployments and redeploy latest `main` commit.
 
 ### Direct agent drafting
 
-Read `AGENTS.md` for the operator's editorial rules. Use one clear evidence photo, a short concrete headline, numbered one-sentence points, and the election/location as `source`. Put article/video/SNS references in `mediaLinks`. Do not add routine defensive disclaimers to the public text or make unsupported technical claims.
+Read `AGENTS.md` for the operator's editorial rules. Choose a clear evidence photo for the thumbnail, include all relevant photos of the same issue, use a short concrete headline and numbered one-sentence points, and put the election/location in `source`. Put article/video/SNS references in `mediaLinks`. Do not add routine defensive disclaimers to the public text or make unsupported technical claims.
 
 Agents write directly through the AI draft workspace or `scripts/agent-drafts.mjs` using authorized operator IAM. The module exports `listAgentDrafts()` and `saveAgentDraft(content, { id, version })`; omit the second argument to create a new private draft. There is no JSON exchange-file workflow. Humans use the regular post form; ordinary admin login stays on the current page and AI drafts are a separate footer entry. Publication still requires an explicit user request.
 
 Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows the 100 most recently updated drafts/publications. Automated research scheduling or an LLM service is not wired in this scaffold.
 
-Validation: `npm test --prefix functions` (14 security/concurrency cases) and `node scripts/check-ui.mjs` (6 responsive widths, navigation/scroll regression, header behavior, admin draft workflow and image preview). Use `UI_AXE_PATH` for 16-state axe coverage.
+### Review queues (2026-10-15)
+
+- The workspace has **초안 / 보류 / 대기** tabs. `reviewState` is `draft`, `hold`, or `waiting`; missing values on older documents mean `draft`. All three remain private with `status: 'draft'`. Only the explicit publication action creates a public post.
+- `moveDraft` requires the same verified admin session and current draft version as editing. It saves the current content and the review state in one transaction. Ordinary saves preserve the queue. Published records cannot be moved and remain accessible in the collapsed publication history.
+- Moving a record keeps the current tab open and selects its next record. Failed moves keep the current edit intact. Refresh preserves the selected tab. Tab navigation supports Left/Right/Home/End.
+- Reviewers see the photos rather than raw image addresses. A **썸네일로 지정** button moves a chosen image to the first position without dropping the other images; saving or moving the draft persists that order. Content, references and private notes grow to fit their text.
+- Include every relevant evidence photo for the same issue, and choose the clearest first photo for the thumbnail. One representative photo is not a one-image limit. Prefer photos that explain the issue on their own; avoid material that requires playing a video to understand it. Use short, direct titles, put the place in `source`, and describe the visible issue in plain language.
+
+Validation: `npm test --prefix functions` (15 security/concurrency cases) and `node scripts/check-ui.mjs` (6 responsive widths, navigation/scroll regression, review queue transitions, expanding fields and image/thumbnail review). Use `UI_AXE_PATH` for accessibility coverage.
 
 
 The operator subsequently requested removal of the redesign example `ev-draft-246bb565-a373-47ff-8f3e-9c18eb528ec9` and its private published draft `246bb565-a373-47ff-8f3e-9c18eb528ec9`. Do not recreate or republish it. The ignored historical `backups/check-admin-ui.mjs` script would recreate that old example; do not run it unchanged.
