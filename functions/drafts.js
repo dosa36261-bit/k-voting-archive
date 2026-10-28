@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 export const draftCategories = ['shape-memory', 'strange-ballot', 'bad-management', 'nec-admin', 'etc', 'free-board'];
 export const draftReviewStates = ['draft', 'hold', 'waiting'];
 export const draftsPath = '_archiveDrafts';
+// Upper bound for one listDrafts response; ~1.8KB per draft keeps this far below the callable payload limit.
+export const draftListLimit = 2000;
 export const draftActions = new Set(['listDrafts', 'importDrafts', 'saveDraft', 'moveDraft', 'publishDraft', 'deleteDraft']);
 
 // Shared by the callable backend and the operator's AI-draft import CLI.
@@ -40,7 +42,7 @@ export function createDraftService(db, { check, now, postsPath, countsPath }) {
   return async function draftAction(input) {
     const updatedAt = new Date(now()).toISOString();
     if (input.action === 'listDrafts') {
-      const snapshot = await db.collection(draftsPath).orderBy('updatedAt', 'desc').limit(100).get();
+      const snapshot = await db.collection(draftsPath).orderBy('updatedAt', 'desc').limit(draftListLimit).get();
       return { drafts: snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) };
     }
     if (input.action === 'importDrafts') {

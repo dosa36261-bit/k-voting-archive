@@ -202,7 +202,7 @@ function renderAdminDraftList() {
     }
     document.getElementById('draft-published-history').classList.toggle('hidden', !published.length);
     document.getElementById('draft-published-count').textContent = published.length;
-    draftStatus.textContent = `${draftReviewLabels[activeDraftReviewState]} ${visible.length}개 · 전체 ${adminDrafts.filter(item => item.status === 'draft').length}개 (최근 100개)`;
+    draftStatus.textContent = `${draftReviewLabels[activeDraftReviewState]} ${visible.length}개 · 전체 ${adminDrafts.filter(item => item.status === 'draft').length}개`;
     updateDraftControls();
 }
 function selectAdminDraft(draft) {

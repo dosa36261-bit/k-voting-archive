@@ -273,7 +273,7 @@ Read `AGENTS.md` for the operator's editorial rules. Choose a clear evidence pho
 
 Agents write directly through the AI draft workspace or `scripts/agent-drafts.mjs` using authorized operator IAM. The module exports `listAgentDrafts()` and `saveAgentDraft(content, { id, version })`; omit the second argument to create a new private draft. There is no JSON exchange-file workflow. Humans use the regular post form; ordinary admin login stays on the current page and AI drafts are a separate footer entry. Publication still requires an explicit user request.
 
-Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows the 100 most recently updated drafts/publications. Automated research scheduling or an LLM service is not wired in this scaffold.
+Private drafts live in `_archiveDrafts` and are included in `scripts/backup-security.mjs`. They are never in public post documents until approved; `reviewNotes` stays private. The list shows up to `draftListLimit` (2000, in `functions/drafts.js`) drafts/publications, most recently updated first. Automated research scheduling or an LLM service is not wired in this scaffold.
 
 ### Review queues (2026-10-15)
 
